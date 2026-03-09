@@ -217,13 +217,3 @@ curl http://localhost:8000/ml/recommendations/<user_uuid>
 | `DATABASE_URL` | `postgres://eduuser:edupassword@db:5432/edudb` | Строка подключения к БД |
 | `DJANGO_SECRET_KEY` | `django-insecure-dev-key` | Секретный ключ Django |
 | `DEBUG` | `True` | Режим отладки |
-
-> ⚠️ Перед деплоем на продакшн обязательно смените `DJANGO_SECRET_KEY` и установите `DEBUG=False`.
-
----
-
-## Автор
-
-Смольников Никита Матвеевич  
-Курсовая работа по дисциплине «Проектирование программно-информационных систем»  
-Направление 09.03.04 — Программная инженерия
