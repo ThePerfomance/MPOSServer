@@ -1,7 +1,6 @@
 from django.core.management.base import BaseCommand
 from api.models import User, Group, GroupMember, Subject, Test, Question, Answer, TestResult
-from django.utils import timezone
-
+from datetime import datetime, timedelta
 
 class Command(BaseCommand):
     help = 'Seed database with initial data'
@@ -14,8 +13,8 @@ class Command(BaseCommand):
         self.stdout.write('Seeding database...')
 
         # ── USERS ──
-        u1 = User.objects.create(firstname='Иван',    lastname='Иванов',    patronymic='Иванович',   email='Ivan@example.com', password_hash='JohnDoe@example.com', role='student')
-        u2 = User.objects.create(firstname='Сергей',  lastname='Сергеев',   patronymic='Сергеевич',  email='Ser@example.com',  password_hash='Ser@example.com',     role='student')
+        u1 = User.objects.create(firstname='Никита',    lastname='Смольников',    patronymic='Матвеевич',   email='nikita@mail.ru', password_hash='123456n', role='student')
+        u2 = User.objects.create(firstname='Александра',  lastname='Непейн',   patronymic='Александровна',  email='nepein@mail.ru',  password_hash='123456n',     role='teacher')
         u3 = User.objects.create(firstname='Петр',    lastname='Петров',    patronymic='Петрович',   email='Petr@example.com', password_hash='Petr@example.com',    role='student')
         u4 = User.objects.create(firstname='Евгения', lastname='Федорова',  patronymic='Николаевна', email='Evg@example.com',  password_hash='Evg@example.com',     role='teacher')
         u5 = User.objects.create(firstname='Нина',    lastname='Алексеева', patronymic='Васильевна', email='Nina@example.com', password_hash='Nina@example.com',    role='teacher')
@@ -39,7 +38,7 @@ class Command(BaseCommand):
         groups = {name: Group.objects.create(name=name) for name in group_names}
 
         # ── GROUP MEMBERS ──
-        GroupMember.objects.create(user=u1, group=groups['22ИБ(б)БАС-1'])
+        GroupMember.objects.create(user=u1, group=groups['22ПИнж(б)РПиС-2'])
         GroupMember.objects.create(user=u2, group=groups['22ПИнж(б)РПиС-2'])
         GroupMember.objects.create(user=u3, group=groups['22ПИнж(б)РПиС-2'])
         GroupMember.objects.create(user=u4, group=groups['22ИБ(б)БАС-1'])
@@ -65,12 +64,18 @@ class Command(BaseCommand):
         t12 = Test.objects.create(title='Итоговый тест', subject=sw)
 
         # ── TEST RESULTS ──
-        dt = timezone.now()
-        TestResult.objects.create(user=u1, test=t1, score=5,  started_at=dt)
-        TestResult.objects.create(user=u1, test=t1, score=10, started_at=dt)
-        TestResult.objects.create(user=u1, test=t2, score=5,  started_at=dt)
-        TestResult.objects.create(user=u2, test=t1, score=5,  started_at=dt)
-        TestResult.objects.create(user=u3, test=t3, score=10, started_at=dt)
+        dt_start = datetime(2026, 3, 1, 10, 0, 0)  # фиксированное время начала
+
+        TestResult.objects.create(user=u1, test=t1, score=5, started_at=dt_start,
+                                  completed_at=dt_start + timedelta(minutes=7))
+        TestResult.objects.create(user=u1, test=t1, score=10, started_at=dt_start + timedelta(days=1),
+                                  completed_at=dt_start + timedelta(days=1, minutes=5))
+        TestResult.objects.create(user=u1, test=t2, score=5, started_at=dt_start + timedelta(days=2),
+                                  completed_at=dt_start + timedelta(days=2, minutes=9))
+        TestResult.objects.create(user=u2, test=t1, score=5, started_at=dt_start + timedelta(days=1),
+                                  completed_at=dt_start + timedelta(days=1, minutes=6))
+        TestResult.objects.create(user=u3, test=t3, score=10, started_at=dt_start + timedelta(days=3),
+                                  completed_at=dt_start + timedelta(days=3, minutes=8))
 
         # ── helper ──
         def qa(test, text, answers):
