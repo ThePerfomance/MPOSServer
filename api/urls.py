@@ -52,6 +52,7 @@ urlpatterns = [
 
     # ML
     path("ml/cluster-students", views.ml_cluster_students),
+    path("ml/cluster-group/<uuid:group_id>", views.ml_cluster_group),
     path("ml/segment-tests", views.ml_segment_tests),
     path("ml/predict-result", views.ml_predict_result),
     path("ml/recommendations/<uuid:user_id>", views.ml_recommendations),

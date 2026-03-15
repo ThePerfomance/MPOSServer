@@ -290,43 +290,121 @@ def answer_detail(request, pk):
 # ML ENDPOINTS
 # ═══════════════════════════════════════════════════════════════════════
 
-@api_view(["POST"])
-def ml_cluster_students(request):
-    """
-    POST /ml/cluster-students
-    Кластеризует всех студентов по средним баллам и числу пройденных тестов.
-    Сохраняет результаты в StudentCluster.
-    Тело запроса (опционально): {"n_clusters": 3}
-    """
-    n_clusters = request.data.get("n_clusters", 3)
-    students = User.objects.filter(role="student")
-
+def _collect_student_stats(students):
+    """Собирает 5 признаков для каждого студента — как в Android KMeans.kt."""
+    from datetime import datetime
     stats = []
     for student in students:
         qs = TestResult.objects.filter(user=student)
         agg = qs.aggregate(avg=Avg("score"), cnt=Count("id"))
-        stats.append({
-            "user_id": str(student.id),
-            "avg_score": float(agg["avg"] or 0),
-            "tests_taken": int(agg["cnt"] or 0),
-        })
+        avg_score   = float(agg["avg"] or 0)
+        tests_taken = int(agg["cnt"] or 0)
 
-    clusters = cluster_students(stats, n_clusters=n_clusters)
+        # Среднее время выполнения (минуты)
+        times = []
+        for r in qs:
+            if r.started_at and r.completed_at:
+                delta = (r.completed_at - r.started_at).total_seconds() / 60.0
+                if delta >= 0:
+                    times.append(delta)
+        avg_time = float(sum(times) / len(times)) if times else 0.0
+
+        # Количество уникальных тестов
+        test_count = qs.values("test").distinct().count()
+
+        # Средневзвешенная сложность (test_id % 5 + 1 — как в Android)
+        difficulty_vals = [((r.test_id or 1) % 5 + 1) for r in qs]
+        weighted_diff = float(sum(difficulty_vals) / len(difficulty_vals)) if difficulty_vals else 0.0
+
+        stats.append({
+            "user_id":             str(student.id),
+            "firstname":           student.firstname,
+            "lastname":            student.lastname,
+            "avg_score":           avg_score,
+            "tests_taken":         tests_taken,
+            "avg_time":            avg_time,
+            "test_count":          test_count,
+            "weighted_difficulty": weighted_diff,
+        })
+    return stats
+
+
+@api_view(["POST"])
+def ml_cluster_students(request):
+    """
+    POST /ml/cluster-students
+    Кластеризует всех студентов (5 признаков + PCA + KMeans).
+    Тело запроса (опционально): {"n_clusters": 5}
+    """
+    n_clusters = int(request.data.get("n_clusters", 5))
+    students = User.objects.filter(role="student")
+    stats = _collect_student_stats(students)
+    result = cluster_students(stats, n_clusters=n_clusters)
 
     saved = []
-    for c in clusters:
+    for c in result["clusters"]:
         obj, _ = StudentCluster.objects.update_or_create(
             user_id=c["user_id"],
             defaults={
-                "cluster_id": c["cluster_id"],
-                "cluster_label": c["cluster_label"],
-                "avg_score": c["avg_score"],
-                "tests_taken": c["tests_taken"],
+                "cluster_id":    c["cluster_id"],
+                "cluster_label": c["rank"],
+                "avg_score":     c["avg_score"],
+                "tests_taken":   c["tests_taken"],
             },
         )
         saved.append(StudentClusterSerializer(obj).data)
 
-    return Response({"clusters": saved})
+    return Response({
+        "clusters":   saved,
+        "pca_points": result["pca_points"],
+        "metrics":    result["metrics"],
+    })
+
+
+@api_view(["POST"])
+def ml_cluster_group(request, group_id):
+    """
+    POST /ml/cluster-group/<group_id>
+    Кластеризует студентов конкретной группы.
+    Возвращает ранги S/A/B/C/D, PCA-точки и метрики — всё что нужно Android.
+    """
+    group = get_object_or_404(Group, pk=group_id)
+    members = GroupMember.objects.filter(group=group).values_list("user_id", flat=True)
+    students = User.objects.filter(id__in=members, role="student")
+
+    if not students.exists():
+        return Response({"error": "Нет студентов в группе"}, status=400)
+
+    n_clusters = int(request.data.get("n_clusters", 5))
+    stats = _collect_student_stats(students)
+    result = cluster_students(stats, n_clusters=n_clusters)
+
+    # Сохраняем кластеры в БД
+    for c in result["clusters"]:
+        StudentCluster.objects.update_or_create(
+            user_id=c["user_id"],
+            defaults={
+                "cluster_id":    c["cluster_id"],
+                "cluster_label": c["rank"],
+                "avg_score":     c["avg_score"],
+                "tests_taken":   c["tests_taken"],
+            },
+        )
+
+    # Обогащаем pca_points именами студентов
+    user_map = {s["user_id"]: s for s in stats}
+    for p in result["pca_points"]:
+        s = user_map.get(p["user_id"], {})
+        p["firstname"] = s.get("firstname", "")
+        p["lastname"]  = s.get("lastname", "")
+
+    return Response({
+        "group_id":   str(group_id),
+        "group_name": group.name,
+        "clusters":   result["clusters"],
+        "pca_points": result["pca_points"],
+        "metrics":    result["metrics"],
+    })
 
 
 @api_view(["POST"])
@@ -418,7 +496,7 @@ def ml_recommendations(request, user_id):
     tests_with_diff = [
         {"test_id": td.test_id, "difficulty": td.difficulty} for td in difficulties
     ]
-    recs = build_recommendations(cluster.cluster_label, tests_with_diff)
+    recs = build_recommendations(cluster.cluster_label, tests_with_diff)  # cluster_label теперь хранит rank (S/A/B/C/D)
 
     # Сохраняем рекомендации в БД
     Recommendation.objects.filter(user=user).delete()
