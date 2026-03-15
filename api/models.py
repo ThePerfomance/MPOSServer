@@ -81,8 +81,8 @@ class TestResult(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True, related_name="results")
     test = models.ForeignKey(Test, on_delete=models.CASCADE, null=True, blank=True, related_name="results")
     score = models.IntegerField()
-    started_at = models.DateTimeField()
-    completed_at = models.DateTimeField(auto_now_add=True)
+    started_at = models.DateTimeField(null=True, blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)  # выставляется сервером при создании
 
     class Meta:
         db_table = "test_results"
