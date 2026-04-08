@@ -1,3 +1,5 @@
+# config/settings.py
+
 import os
 import re
 from pathlib import Path
@@ -9,8 +11,10 @@ DEBUG = os.environ.get("DEBUG", "True") == "True"
 ALLOWED_HOSTS = ["*"]
 
 INSTALLED_APPS = [
-    "django.contrib.contenttypes",
+    "django.contrib.admin",
     "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.messages",
     "rest_framework",
     "corsheaders",
     "api",
@@ -19,10 +23,29 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
 ]
 
 CORS_ALLOW_ALL_ORIGINS = True
 ROOT_URLCONF = "config.urls"
+
+TEMPLATES = [ # <-- Добавлено для admin
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [], # Укажите здесь пути к вашим кастомным шаблонам, если есть
+        'APP_DIRS': True, # Искать шаблоны в директориях приложений
+        'OPTIONS': {
+            'context_processors': [
+                'django.template.context_processors.debug',
+                'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
+            ],
+        },
+    },
+]
 
 # Database — parse DATABASE_URL
 DATABASE_URL = os.environ.get("DATABASE_URL", "postgres://eduuser:edupassword@db:5432/edudb")

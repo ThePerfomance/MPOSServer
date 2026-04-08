@@ -1,14 +1,15 @@
+# api/serializers.py
+
 from rest_framework import serializers
 from .models import (
-    User, Group, GroupMember, Subject, Test, Question, Answer, TestResult,
-    StudentCluster, TestDifficulty, ScorePrediction, Recommendation,
+    User, Group, GroupMember, Subject, Block, Lesson, Test, Question, Answer,
+    TestResult, StudentCluster, TestDifficulty, ScorePrediction, Recommendation
 )
-
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = "__all__"
+        exclude = ['password_hash']
 
 
 class GroupSerializer(serializers.ModelSerializer):
@@ -41,10 +42,64 @@ class GroupMemberSerializer(serializers.ModelSerializer):
         return GroupMember.objects.create(**validated_data)
 
 
+class TestSerializer(serializers.ModelSerializer):
+    # Убрали 'subject' из полей
+    class Meta:
+        model = Test
+        fields = ["id", "title", "description", "duration", "is_published"] # Добавлены новые поля
+        # exclude = ['subject'] # Альтернативный способ исключения поля 'subject'
+
+
+# --- Циклическая зависимость: определяем в нужном порядке или используем PrimaryKeyRelatedField ---
+# Сначала определяем TestSerializer, затем LessonSerializer, затем BlockSerializer
+
+class LessonSerializer(serializers.ModelSerializer):
+    # Вложенный тест урока (опционально) - используем PrimaryKeyRelatedField, чтобы избежать циклической зависимости на этом уровне
+    # Если вы хотите вложить *весь* объект Test, используйте TestSerializer(read_only=True) как раньше,
+    # но тогда нужно определить TestSerializer *до* этого места или использовать lazy-инициализацию.
+    # В данном случае, для простоты, используем PrimaryKeyRelatedField.
+    # Если вложенность нужна, см. альтернативу ниже.
+    test = serializers.PrimaryKeyRelatedField(queryset=Test.objects.all(), allow_null=True, required=False)
+    # test = TestSerializer(read_only=True) # <--- Альтернатива: вложенная сериализация, но требует осторожного обращения с циклом
+
+    # Вложенный блок (опционально) - PrimaryKeyRelatedField для той же причины
+    block = serializers.PrimaryKeyRelatedField(queryset=Block.objects.all())
+
+    class Meta:
+        model = Lesson
+        fields = "__all__" # Или перечислите явно: ['id', 'summary', 'block', 'test', 'video_link', 'duration', 'position', 'is_published']
+
+
+class BlockSerializer(serializers.ModelSerializer):
+    # Вложенные уроки (опционально) - используем LessonSerializer, но т.к. LessonSerializer уже знает про Block (как FK),
+    # это создаст цикл при полной вложенности. Используем PrimaryKeyRelatedField или SlugRelatedField.
+    # lessons = LessonSerializer(many=True, read_only=True) # <-- Цикл!
+    lessons = serializers.PrimaryKeyRelatedField(many=True, read_only=True, source='lessons.all') # <-- Только IDs уроков
+    # Или, если хотите только ID урока как список строк:
+    # lessons = serializers.SlugRelatedField(many=True, read_only=True, slug_field='id')
+
+    # Вложенный финальный тест (опционально) - PrimaryKeyRelatedField
+    final_test = serializers.PrimaryKeyRelatedField(queryset=Test.objects.all(), allow_null=True, required=False)
+    # final_test = TestSerializer(read_only=True) # <-- Альтернатива: вложенная сериализация
+
+    # Вложенный предмет (опционально) - PrimaryKeyRelatedField
+    subject = serializers.PrimaryKeyRelatedField(queryset=Subject.objects.all())
+    # subject = SubjectSerializer(read_only=True) # <-- Альтернатива: вложенная сериализация
+
+    class Meta:
+        model = Block
+        fields = "__all__" # Или перечислите явно: ['id', 'title', 'subject', 'final_test', 'lessons', 'description', ...]
+
+
 class SubjectSerializer(serializers.ModelSerializer):
+    # Вложенные блоки (опционально) - PrimaryKeyRelatedField для избежания цикла, если BlockSerializer включает Subject
+    # blocks = BlockSerializer(many=True, read_only=True) # <-- Цикл!
+    blocks = serializers.PrimaryKeyRelatedField(many=True, read_only=True, source='blocks.all') # <-- Только IDs блоков
+    # blocks = serializers.SlugRelatedField(many=True, read_only=True, slug_field='id') # <-- Альтернатива
+
     class Meta:
         model = Subject
-        fields = "__all__"
+        fields = "__all__" # Или ['id', 'name', 'blocks']
 
 
 class AnswerSerializer(serializers.ModelSerializer):
@@ -61,18 +116,17 @@ class QuestionSerializer(serializers.ModelSerializer):
 
 class QuestionWithAnswersSerializer(serializers.ModelSerializer):
     answers = AnswerSerializer(many=True, read_only=True)
+    # test = TestSerializer(read_only=True) # Опционально: включить информацию о тесте
 
     class Meta:
         model = Question
-        fields = ["id", "test", "text", "answers"]
+        fields = ["id", "text", "answers"] # Убрали "test", если не нужно
+        # fields = ["id", "text", "test", "answers"] # Если нужно включить тест
 
 
-class TestSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Test
-        fields = "__all__"
-
-
+# --- Обновим TestResultSerializer, чтобы он работал с новым Test ---
+# Текущий TestResultSerializer уже использует test_id, что хорошо.
+# Но если вы хотите получить *вложенную* информацию о тесте, можно добавить:
 class TestResultSerializer(serializers.ModelSerializer):
     # Поля для записи — принимаем user_id / test_id / completed_at как от Android
     user_id      = serializers.UUIDField(write_only=True)
@@ -108,6 +162,19 @@ class TestResultSerializer(serializers.ModelSerializer):
         if not validated_data.get("started_at"):
             validated_data["started_at"] = validated_data["completed_at"]
         return TestResult.objects.create(**validated_data)
+
+class TestResultWithTestDetailsSerializer(serializers.ModelSerializer):
+    user_id = serializers.UUIDField(write_only=True)
+    test_id = serializers.IntegerField(write_only=True)
+    # Вложенная информация о тесте
+    test_details = TestSerializer(source='test', read_only=True)
+
+    class Meta:
+        model = TestResult
+        fields = ["id", "user_id", "test_id", "score", "started_at", "completed_at", "test_details"]
+
+    # Наследуем to_representation и create от TestResultSerializer, если логика одинакова
+    # иначе, переопределите их здесь.
 
 
 # ── ML serializers ──────────────────────────────────

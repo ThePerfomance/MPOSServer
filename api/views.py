@@ -1,17 +1,19 @@
+from django.contrib.auth.hashers import check_password
 from django.db.models import Avg, Count
 from django.shortcuts import get_object_or_404
 from rest_framework import status
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from .models import (
-    User, Group, GroupMember, Subject, Test, Question, Answer, TestResult,
+    User, Group, GroupMember, Subject, Block, Lesson, Test, Question, Answer, TestResult,
     StudentCluster, TestDifficulty, ScorePrediction, Recommendation,
 )
 from .serializers import (
     UserSerializer, GroupSerializer, GroupMemberSerializer, SubjectSerializer,
-    TestSerializer, QuestionSerializer, QuestionWithAnswersSerializer,
-    AnswerSerializer, TestResultSerializer,
+    TestSerializer, BlockSerializer, LessonSerializer, QuestionSerializer, QuestionWithAnswersSerializer,
+    AnswerSerializer, TestResultSerializer, # TestResultWithTestDetailsSerializer
     StudentClusterSerializer, TestDifficultySerializer,
     ScorePredictionSerializer, RecommendationSerializer,
 )
@@ -21,6 +23,32 @@ from ml.engine import cluster_students, segment_tests, predict_score, build_reco
 # ═══════════════════════════════════════════════════════════════════════
 # USERS
 # ═══════════════════════════════════════════════════════════════════════
+@api_view(['POST'])
+@permission_classes([AllowAny]) # Позволяем неавторизованным пользователям вызывать
+def authenticate_user(request):
+    email = request.data.get('email')
+    password = request.data.get('password')
+
+    if not email or not password:
+        return Response({"error": "Email и пароль обязательны"}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        user = User.objects.get(email=email)
+    except User.DoesNotExist:
+        # ВАЖНО: Не сообщаем, существует ли пользователь, чтобы избежать утечки информации
+        # Всегда возвращаем 401, если пароль неверен или пользователь не существует
+        return Response({"error": "Неверный email или пароль"}, status=status.HTTP_401_UNAUTHORIZED)
+
+    # ИСПОЛЬЗУЕМ check_password, а не прямое сравнение!
+    # Django сам знает, как проверить хеш
+    if check_password(password, user.password_hash):
+        # Успешная аутентификация
+        # Вернуть данные пользователя (можно сгенерировать токен, если используете JWT/Session)
+        serializer = UserSerializer(user)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    else:
+        # Пароль неверный
+        return Response({"error": "Неверный email или пароль"}, status=status.HTTP_401_UNAUTHORIZED)
 
 @api_view(["GET", "POST"])
 def users_list(request):
@@ -327,6 +355,155 @@ def _collect_student_stats(students):
             "weighted_difficulty": weighted_diff,
         })
     return stats
+
+# ═══════════════════════════════════════════════════════════════════════
+# BLOCKS (NEW)
+# ═══════════════════════════════════════════════════════════════════════
+
+@api_view(["GET", "POST"])
+def blocks_list(request):
+    if request.method == "GET":
+        blocks = Block.objects.all()
+        # Фильтрация по subject_id, если передан
+        subject_id = request.query_params.get('subject_id', None)
+        if subject_id:
+            blocks = blocks.filter(subject_id=subject_id)
+        serializer = BlockSerializer(blocks, many=True)
+        return Response(serializer.data)
+    elif request.method == "POST":
+        serializer = BlockSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(["GET", "PUT", "DELETE"])
+def block_detail(request, pk):
+    block = get_object_or_404(Block, pk=pk)
+    if request.method == "GET":
+        serializer = BlockSerializer(block)
+        return Response(serializer.data)
+    elif request.method == "PUT":
+        serializer = BlockSerializer(block, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    elif request.method == "DELETE":
+        block.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+@api_view(["GET"])
+def blocks_by_subject(request, subject_id):
+    blocks = Block.objects.filter(subject_id=subject_id).order_by('position')
+    serializer = BlockSerializer(blocks, many=True)
+    return Response(serializer.data)
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# LESSONS (NEW)
+# ═══════════════════════════════════════════════════════════════════════
+
+@api_view(["GET", "POST"])
+def lessons_list(request):
+    if request.method == "GET":
+        lessons = Lesson.objects.all()
+        # Фильтрация по block_id, если передан
+        block_id = request.query_params.get('block_id', None)
+        if block_id:
+            lessons = lessons.filter(block_id=block_id)
+        serializer = LessonSerializer(lessons, many=True)
+        return Response(serializer.data)
+    elif request.method == "POST":
+        serializer = LessonSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(["GET", "PUT", "DELETE"])
+def lesson_detail(request, pk):
+    lesson = get_object_or_404(Lesson, pk=pk)
+    if request.method == "GET":
+        serializer = LessonSerializer(lesson)
+        return Response(serializer.data)
+    elif request.method == "PUT":
+        serializer = LessonSerializer(lesson, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    elif request.method == "DELETE":
+        lesson.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+@api_view(["GET"])
+def lessons_by_block(request, block_id):
+    lessons = Lesson.objects.filter(block_id=block_id).order_by('position')
+    serializer = LessonSerializer(lessons, many=True)
+    return Response(serializer.data)
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# TESTS (UPDATED)
+# ═══════════════════════════════════════════════════════════════════════
+
+@api_view(["GET", "POST"])
+def tests_list(request):
+    if request.method == "GET":
+        tests = Test.objects.all()
+        # Фильтрация по block_id или lesson_id, если переданы
+        lesson_id = request.query_params.get('lesson_id', None)
+        block_id = request.query_params.get('block_id', None)
+        if lesson_id:
+            # Получаем тест по ID урока
+            lesson = get_object_or_404(Lesson, pk=lesson_id)
+            if lesson.test:
+                serializer = TestSerializer([lesson.test], many=True)
+                return Response(serializer.data)
+            else:
+                return Response([], status=status.HTTP_200_OK) # У урока нет теста
+        elif block_id:
+            # Получаем финальный тест по ID блока
+            block = get_object_or_404(Block, pk=block_id)
+            if block.final_test:
+                serializer = TestSerializer([block.final_test], many=True)
+                return Response(serializer.data)
+            else:
+                return Response([], status=status.HTTP_200_OK) # У блока нет финального теста
+        else:
+            # Просто список всех тестов (без фильтрации)
+            serializer = TestSerializer(tests, many=True)
+            return Response(serializer.data)
+
+    elif request.method == "POST":
+        # Создание теста возможно, но привязка к Lesson или Block должна быть отдельным действием
+        # или через вьюхи создания Lesson/Block.
+        serializer = TestSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(["GET"])
+def test_by_lesson(request, lesson_id):
+    lesson = get_object_or_404(Lesson, pk=lesson_id)
+    if lesson.test:
+        serializer = TestSerializer(lesson.test)
+        return Response(serializer.data)
+    else:
+        return Response({"detail": "Lesson has no associated test"}, status=status.HTTP_404_NOT_FOUND)
+
+@api_view(["GET"])
+def final_test_by_block(request, block_id):
+    block = get_object_or_404(Block, pk=block_id)
+    if block.final_test:
+        serializer = TestSerializer(block.final_test)
+        return Response(serializer.data)
+    else:
+        return Response({"detail": "Block has no associated final test"}, status=status.HTTP_404_NOT_FOUND)
 
 
 @api_view(["POST"])
