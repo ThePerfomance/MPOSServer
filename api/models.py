@@ -71,15 +71,16 @@ class Block(models.Model):
 
 class Lesson(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    block = models.ForeignKey(Block, on_delete=models.CASCADE, related_name='lessons')
+    block = models.ForeignKey('Block', on_delete=models.CASCADE, related_name='lessons')
     test = models.OneToOneField(
         'Test', on_delete=models.SET_NULL, null=True, blank=True, related_name='lesson_for'
     )
+    title = models.CharField(max_length=255, blank=True, null=True) # <-- Новое поле
     video_link = models.URLField(blank=True, null=True)
-    video_duration = models.IntegerField(null=True, blank=True) # в секундах
-    summary = models.TextField(blank=True, null=True)
-    duration = models.IntegerField(default=0) # продолжительность урока (например, видео + тест) в секундах
-    position = models.IntegerField(default=0) # Для сортировки уроков в рамках блока
+    video_duration = models.IntegerField(null=True, blank=True)  # в секундах
+    summary = models.TextField(blank=True, null=True) # <-- Опционально: можно оставить, или использовать title как основное имя
+    duration = models.IntegerField(default=0)  # продолжительность урока (например, видео + тест) в секундах
+    position = models.IntegerField(default=0)  # Для сортировки уроков в рамках блока
     is_published = models.BooleanField(default=False)
 
     class Meta:
@@ -87,7 +88,8 @@ class Lesson(models.Model):
         ordering = ['position'] # Сортировка по умолчанию
 
     def __str__(self):
-        return f"Lesson {self.position}: {self.summary or self.block.title}"
+        # Приоритет: title -> summary -> placeholder
+        return self.title or self.summary or f"Lesson {self.position} in {self.block.title}"
 
 
 class Test(models.Model):

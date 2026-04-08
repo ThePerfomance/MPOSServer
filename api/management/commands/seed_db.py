@@ -60,59 +60,137 @@ class Command(BaseCommand):
 
         # ── LESSONS & TESTS ──
         # Block 1: HTML Basics
-        l1 = Lesson.objects.create(block=b1, summary='Введение в HTML', duration=1800, position=0, is_published=True) # 30 мин
-        t1 = Test.objects.create(title='Введение в НTML', duration=1200, is_published=True) # 20 мин
+        l1 = Lesson.objects.create(
+            block=b1,
+            title='Основы HTML',  # <-- Добавлено
+            summary='Изучение основ HTML: теги, атрибуты, структура документа.',
+            duration=1800,
+            position=0,
+            is_published=True
+        )  # 30 мин
+        t1 = Test.objects.create(title='Введение в НTML', duration=1200, is_published=True)
         l1.test = t1
         l1.save()
 
-        l2 = Lesson.objects.create(block=b1, summary='Работа с формами', duration=2400, position=1, is_published=True) # 40 мин
+        l2 = Lesson.objects.create(
+            block=b1,
+            title='Работа с формами в HTML5',  # <-- Добавлено
+            summary='Работа с формами в HTML5: элементы ввода, валидация, отправка данных.',
+            duration=2400,
+            position=1,
+            is_published=True
+        )  # 40 мин
         t2 = Test.objects.create(title='Работа с формами в HTML5', duration=1200, is_published=True)
         l2.test = t2
         l2.save()
 
-        l3 = Lesson.objects.create(block=b1, summary='Семантическая верстка', duration=2100, position=2, is_published=True) # 35 мин
+        l3 = Lesson.objects.create(
+            block=b1,
+            title='Семантическая верстка',  # <-- Добавлено
+            summary='Семантическая верстка: использование тегов article, section, nav, header, footer.',
+            duration=2100,
+            position=2,
+            is_published=True
+        )  # 35 мин
         t3 = Test.objects.create(title='Семантическая верстка страниц в HTML5', duration=1200, is_published=True)
         l3.test = t3
         l3.save()
 
         # Block 2: CSS Fundamentals
-        l4 = Lesson.objects.create(block=b2, summary='Каскадные таблицы стилей', duration=2700, position=0, is_published=True) # 45 мин
+        l4 = Lesson.objects.create(
+            block=b2,
+            title='Каскадные таблицы стилей',  # <-- Добавлено
+            summary='Основы CSS: селекторы, каскад, наследование, свойства оформления текста и фона.',
+            duration=2700,
+            position=0,
+            is_published=True
+        )  # 45 мин
         t4 = Test.objects.create(title='Работа с каскадными таблицами стилей', duration=1200, is_published=True)
         l4.test = t4
         l4.save()
 
-        l5 = Lesson.objects.create(block=b2, summary='Фильтры в CSS', duration=1800, position=1, is_published=True) # 30 мин
+        l5 = Lesson.objects.create(
+            block=b2,
+            title='Фильтры в CSS',  # <-- Добавлено
+            summary='Использование CSS-фильтров: blur, brightness, contrast, grayscale, hue-rotate.',
+            duration=1800,
+            position=1,
+            is_published=True
+        )  # 30 мин
         t5 = Test.objects.create(title='Фильтры в CSS', duration=1200, is_published=True)
         l5.test = t5
         l5.save()
 
-        l6 = Lesson.objects.create(block=b2, summary='Блоковые элементы', duration=2400, position=2, is_published=True) # 40 мин
+        l6 = Lesson.objects.create(
+            block=b2,
+            title='Блоковые элементы',  # <-- Добавлено
+            summary='Блочная модель CSS: margin, padding, border, display, позиционирование.',
+            duration=2400,
+            position=2,
+            is_published=True
+        )  # 40 мин
         t6 = Test.objects.create(title='Блоковые элементы в CSS', duration=1200, is_published=True)
         l6.test = t6
         l6.save()
 
-        l7 = Lesson.objects.create(block=b2, summary='Трансформации и анимации', duration=2700, position=3, is_published=True) # 45 мин
+        l7 = Lesson.objects.create(
+            block=b2,
+            title='Трансформации и анимации',  # <-- Добавлено
+            summary='CSS-трансформации, переходы и анимации: scale, rotate, translate, skew, transition, keyframes.',
+            duration=2700,
+            position=3,
+            is_published=True
+        )  # 45 мин
         t7 = Test.objects.create(title='Трансформации, переходы и анимации', duration=1200, is_published=True)
         l7.test = t7
         l7.save()
 
-        l8 = Lesson.objects.create(block=b2, summary='Адаптивная верстка', duration=3000, position=4, is_published=True) # 50 мин
+        l8 = Lesson.objects.create(
+            block=b2,
+            title='Адаптивная верстка',  # <-- Добавлено
+            summary='Адаптивная верстка: media queries, responsive design, мобильная оптимизация.',
+            duration=3000,
+            position=4,
+            is_published=True
+        )  # 50 мин
         t8 = Test.objects.create(title='Адаптивная верстка', duration=1200, is_published=True)
         l8.test = t8
         l8.save()
 
         # Block 3: Advanced Topics
-        l9 = Lesson.objects.create(block=b3, summary='Flexbox', duration=2400, position=0, is_published=True) # 40 мин
-        t9 = Test.objects.create(title='Создание гибкого макета страницы с помощью Flexbox', duration=1200, is_published=True)
+        l9 = Lesson.objects.create(
+            block=b3,
+            title='Flexbox',  # <-- Добавлено
+            summary='Создание гибких макетов с помощью CSS Flexbox: оси, выравнивание, упорядочивание.',
+            duration=2400,
+            position=0,
+            is_published=True
+        )  # 40 мин
+        t9 = Test.objects.create(title='Создание гибкого макета страницы с помощью Flexbox', duration=1200,
+                                 is_published=True)
         l9.test = t9
         l9.save()
 
-        l10 = Lesson.objects.create(block=b3, summary='Grid Layout', duration=2700, position=1, is_published=True) # 45 мин
+        l10 = Lesson.objects.create(
+            block=b3,
+            title='Grid Layout',  # <-- Добавлено
+            summary='Двумерные сетки с CSS Grid: строки, колонки, области, выравнивание элементов.',
+            duration=2700,
+            position=1,
+            is_published=True
+        )  # 45 мин
         t10 = Test.objects.create(title='Двумерная система сеток Grid Layout', duration=1200, is_published=True)
         l10.test = t10
         l10.save()
 
-        l11 = Lesson.objects.create(block=b3, summary='Переменные в CSS', duration=1800, position=2, is_published=True) # 30 мин
+        l11 = Lesson.objects.create(
+            block=b3,
+            title='Переменные в CSS',  # <-- Добавлено
+            summary='Использование CSS-переменных: объявление, использование, преимущества.',
+            duration=1800,
+            position=2,
+            is_published=True
+        )  # 30 мин
         t11 = Test.objects.create(title='Использование переменных в CSS', duration=1200, is_published=True)
         l11.test = t11
         l11.save()
