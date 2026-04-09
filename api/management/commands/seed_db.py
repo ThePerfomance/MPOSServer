@@ -1,7 +1,7 @@
 # api/management/commands/seed_db.py
 from django.core.management.base import BaseCommand
 from api.models import User, Group, GroupMember, Subject, Block, Lesson, Test, Question, Answer, TestResult
-from django.contrib.auth.hashers import make_password # <--- ИМПОРТИРУЕМ make_password
+from django.contrib.auth.hashers import make_password
 from datetime import datetime, timedelta
 import uuid
 
@@ -23,7 +23,7 @@ class Command(BaseCommand):
         u4 = User.objects.create(firstname='Евгения', lastname='Федорова',  patronymic='Николаевна', email='Evg@example.com',  password_hash=make_password('Evg@example.com'),     role='teacher')
         u5 = User.objects.create(firstname='Нина',    lastname='Алексеева', patronymic='Васильевна', email='Nina@example.com', password_hash=make_password('Nina@example.com'),    role='teacher')
 
-        # ── GROUPS ── (same as before)
+        # ── GROUPS ──
         group_names = [
             '24ИБ(б)БАС-1','24ИБ(б)БАС-2','24ИВТ(б)ВМК','24ИСТ(б)-1','24ИСТ(б)-2',
             '24КБ(с)РЗПО-1','24КБ(с)РЗПО-2','24МКН(б)ЦТ','24ПИ(б)Эк','24ПИнж(б)-1',
@@ -41,19 +41,19 @@ class Command(BaseCommand):
         ]
         groups = {name: Group.objects.create(name=name) for name in group_names}
 
-        # ── GROUP MEMBERS ── (same as before)
+        # ── GROUP MEMBERS ──
         GroupMember.objects.create(user=u1, group=groups['22ПИнж(б)РПиС-2'])
         GroupMember.objects.create(user=u2, group=groups['22ПИнж(б)РПиС-2'])
         GroupMember.objects.create(user=u3, group=groups['22ПИнж(б)РПиС-2'])
         GroupMember.objects.create(user=u4, group=groups['22ИБ(б)БАС-1'])
         GroupMember.objects.create(user=u5, group=groups['22ПИнж(б)РПиС-2'])
 
-        # ── SUBJECTS ── (same as before)
+        # ── SUBJECTS ──
         Subject.objects.create(name='Программирование и алгоритмизация')
         Subject.objects.create(name='Компьютерные сети')
         sw = Subject.objects.create(name='Программирование WEB-приложений')
 
-        # ── BLOCKS ── (Fixed syntax error for b3)
+        # ── BLOCKS ──
         b1 = Block.objects.create(subject=sw, title='HTML Basics', description='Введение в HTML', position=0, is_published=True)
         b2 = Block.objects.create(subject=sw, title='CSS Fundamentals', description='Основы CSS', position=1, is_published=True)
         b3 = Block.objects.create(subject=sw, title='Advanced CSS & Layout', description='Гибкие макеты, сетки, переменные и анимации', position=2, is_published=True)
@@ -62,7 +62,7 @@ class Command(BaseCommand):
         # Block 1: HTML Basics
         l1 = Lesson.objects.create(
             block=b1,
-            title='Основы HTML',  # <-- Добавлено
+            title='Основы HTML',
             summary='Изучение основ HTML: теги, атрибуты, структура документа.',
             duration=1800,
             position=0,
@@ -74,7 +74,7 @@ class Command(BaseCommand):
 
         l2 = Lesson.objects.create(
             block=b1,
-            title='Работа с формами в HTML5',  # <-- Добавлено
+            title='Работа с формами в HTML5',
             summary='Работа с формами в HTML5: элементы ввода, валидация, отправка данных.',
             duration=2400,
             position=1,
@@ -86,7 +86,7 @@ class Command(BaseCommand):
 
         l3 = Lesson.objects.create(
             block=b1,
-            title='Семантическая верстка',  # <-- Добавлено
+            title='Семантическая верстка',
             summary='Семантическая верстка: использование тегов article, section, nav, header, footer.',
             duration=2100,
             position=2,
@@ -99,7 +99,7 @@ class Command(BaseCommand):
         # Block 2: CSS Fundamentals
         l4 = Lesson.objects.create(
             block=b2,
-            title='Каскадные таблицы стилей',  # <-- Добавлено
+            title='Каскадные таблицы стилей',
             summary='Основы CSS: селекторы, каскад, наследование, свойства оформления текста и фона.',
             duration=2700,
             position=0,
@@ -111,7 +111,7 @@ class Command(BaseCommand):
 
         l5 = Lesson.objects.create(
             block=b2,
-            title='Фильтры в CSS',  # <-- Добавлено
+            title='Фильтры в CSS',
             summary='Использование CSS-фильтров: blur, brightness, contrast, grayscale, hue-rotate.',
             duration=1800,
             position=1,
@@ -123,7 +123,7 @@ class Command(BaseCommand):
 
         l6 = Lesson.objects.create(
             block=b2,
-            title='Блоковые элементы',  # <-- Добавлено
+            title='Блоковые элементы',
             summary='Блочная модель CSS: margin, padding, border, display, позиционирование.',
             duration=2400,
             position=2,
@@ -135,7 +135,7 @@ class Command(BaseCommand):
 
         l7 = Lesson.objects.create(
             block=b2,
-            title='Трансформации и анимации',  # <-- Добавлено
+            title='Трансформации и анимации',
             summary='CSS-трансформации, переходы и анимации: scale, rotate, translate, skew, transition, keyframes.',
             duration=2700,
             position=3,
@@ -210,14 +210,12 @@ class Command(BaseCommand):
 
 
         # ── QUESTIONS & ANSWERS ──
-        # Using the same helper function
         def qa(test, text, answers):
             q = Question.objects.create(test=test, text=text)
             for a_text, correct in answers:
                 Answer.objects.create(question=q, text=a_text, is_correct=correct)
 
-        # Reusing old test logic but linking to newly created tests
-        # Example for t1 (linked via l1.test)
+        # Example for t1
         qa(t1,'Элемент … указывает базовый адрес',[
             ('base',True),('head',False),('meta',False),('title',False)])
         qa(t1,'Элемент … структурирует контент на сайте, группирует содержимое в блоки',[
@@ -239,7 +237,7 @@ class Command(BaseCommand):
         qa(t1,'Выберите верное сокращение цвета.',[
             ('#FF00FF - #F0F',True),('#DDA0DD - #DA0D',False),('#D8BFD8 - #DBD;',False),('#E6E6FA - #E6FA',False)])
 
-        # Example for t2 (linked via l2.test)
+        # Example for t2
         qa(t2,'Атрибут … задает тип кнопки для button',[
             ('submit',False),('button',False),('type',True),('form',False)])
         qa(t2,'Атрибут … устанавливает текст по умолчанию',[
@@ -264,8 +262,6 @@ class Command(BaseCommand):
             ('в textarea можно вставлять картинки',False)])
         qa(t2,'Какой символ в синтаксисе регулярных выражений соответствует концу строки?',[
             ('?',False),('*',False),('$',True),('.',False)])
-
-        # ... (Add other tests similarly)
 
         # ── TEST RESULTS ──
         dt_start = datetime(2026, 3, 1, 10, 0, 0)  # фиксированное время начала
