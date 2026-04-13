@@ -9,7 +9,7 @@ from .models import (
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        exclude = ['password_hash']
+        exclude = ['password']
 
 
 class GroupSerializer(serializers.ModelSerializer):

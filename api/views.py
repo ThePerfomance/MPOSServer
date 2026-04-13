@@ -24,32 +24,6 @@ from ml.engine import cluster_students, segment_tests, predict_score, build_reco
 # ═══════════════════════════════════════════════════════════════════════
 # USERS
 # ═══════════════════════════════════════════════════════════════════════
-@api_view(['POST'])
-@permission_classes([AllowAny]) # Позволяем неавторизованным пользователям вызывать
-def authenticate_user(request):
-    email = request.data.get('email')
-    password = request.data.get('password')
-
-    if not email or not password:
-        return Response({"error": "Email и пароль обязательны"}, status=status.HTTP_400_BAD_REQUEST)
-
-    try:
-        user = User.objects.get(email=email)
-    except User.DoesNotExist:
-        # ВАЖНО: Не сообщаем, существует ли пользователь, чтобы избежать утечки информации
-        # Всегда возвращаем 401, если пароль неверен или пользователь не существует
-        return Response({"error": "Неверный email или пароль"}, status=status.HTTP_401_UNAUTHORIZED)
-
-    # ИСПОЛЬЗУЕМ check_password, а не прямое сравнение!
-    # Django сам знает, как проверить хеш
-    if check_password(password, user.password_hash):
-        # Успешная аутентификация
-        # Вернуть данные пользователя (можно сгенерировать токен, если используете JWT/Session)
-        serializer = UserSerializer(user)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-    else:
-        # Пароль неверный
-        return Response({"error": "Неверный email или пароль"}, status=status.HTTP_401_UNAUTHORIZED)
 
 @api_view(["GET", "POST"])
 def users_list(request):
@@ -99,6 +73,7 @@ def results_for_user(request, user_id):
 # ═══════════════════════════════════════════════════════════════════════
 
 @api_view(["GET", "POST"])
+@permission_classes([AllowAny])
 def groups_list(request):
     if request.method == "GET":
         return Response(GroupSerializer(Group.objects.all(), many=True).data)

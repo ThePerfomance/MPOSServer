@@ -14,7 +14,7 @@ urlpatterns = [
     path("users/by-email/<str:email>/", views.user_by_email, name='user-by-email'),
     path("users/<uuid:user_id>/groups/", views.groups_for_user, name='user-groups-for-user'),
     path("users/<uuid:user_id>/results/", views.results_for_user, name='user-results-for-user'),
-    path('auth/login/', views.authenticate_user, name='authenticate_user'),
+    #path('auth/login/', views.authenticate_user, name='authenticate_user'),
 
     # Groups
     path("groups/", views.groups_list, name='groups-list'), # <-- Добавил слэш

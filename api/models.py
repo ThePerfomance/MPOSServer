@@ -1,22 +1,51 @@
 # api/models.py
 import uuid
 from django.db import models
+from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
 from django.contrib.auth.hashers import make_password
 
-class User(models.Model):
+class CustomUserManager(BaseUserManager):
+    def create_user(self, email, password=None, **extra_fields):
+        if not email:
+            raise ValueError('The Email field must be set')
+        email = self.normalize_email(email)
+        user = self.model(email=email, **extra_fields)
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
+
+    def create_superuser(self, email, password=None, **extra_fields):
+        extra_fields.setdefault('is_staff', True)
+        extra_fields.setdefault('is_superuser', True)
+        return self.create_user(email, password, **extra_fields)
+
+class User(AbstractBaseUser, PermissionsMixin): # <-- Наследуемся от AbstractBaseUser и PermissionsMixin
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     firstname = models.CharField(max_length=100)
     lastname = models.CharField(max_length=100)
     patronymic = models.CharField(max_length=100)
-    email = models.EmailField(unique=True)
-    password_hash = models.CharField(max_length=255)
+    email = models.EmailField(unique=True) # <-- Используем email как USERNAME_FIELD
     role = models.CharField(max_length=10, choices=[('student', 'Student'), ('teacher', 'Teacher')])
+
+    is_active = models.BooleanField(default=True) # <-- Обязательно для AbstractBaseUser
+    is_staff = models.BooleanField(default=False) # <-- Для админки
+
+    USERNAME_FIELD = 'email' # <-- Указываем email как поле для входа
+    REQUIRED_FIELDS = ['firstname', 'lastname', 'patronymic', 'role']
+
+    objects = CustomUserManager() # <-- Указываем кастомный менеджер
 
     class Meta:
         db_table = 'users'
 
     def __str__(self):
         return f"{self.firstname} {self.lastname}"
+
+    # Добавим свойство для совместимости, если оно используется
+    @property
+    def password_hash(self):
+        # Только для чтения, если старый код где-то ожидает это имя
+        return self.password
 
 class Group(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
