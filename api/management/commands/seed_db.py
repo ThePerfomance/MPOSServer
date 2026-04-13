@@ -59,9 +59,6 @@ class Command(BaseCommand):
         # ── GROUP MEMBERS ──
         GroupMember.objects.create(user=u1, group=groups['22ПИнж(б)РПиС-2'])
         GroupMember.objects.create(user=u2, group=groups['22ПИнж(б)РПиС-2'])
-        GroupMember.objects.create(user=u3, group=groups['22ПИнж(б)РПиС-2'])
-        GroupMember.objects.create(user=u4, group=groups['22ИБ(б)БАС-1'])
-        GroupMember.objects.create(user=u5, group=groups['22ПИнж(б)РПиС-2'])
 
         # ── SUBJECTS ──
         Subject.objects.create(name='Программирование и алгоритмизация')
@@ -599,8 +596,6 @@ class Command(BaseCommand):
                                   completed_at=dt_start + timedelta(days=2, minutes=9))
         TestResult.objects.create(user=u2, test=t1, score=5, started_at=dt_start + timedelta(days=1),
                                   completed_at=dt_start + timedelta(days=1, minutes=6))
-        TestResult.objects.create(user=u3, test=t3, score=10, started_at=dt_start + timedelta(days=3),
-                                  completed_at=dt_start + timedelta(days=3, minutes=8))
 
         self.stdout.write(self.style.SUCCESS(
             f'OK: Seeded new schema - '
