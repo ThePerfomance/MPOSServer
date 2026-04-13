@@ -65,9 +65,11 @@ class Command(BaseCommand):
             title='Основы HTML',
             summary='Изучение основ HTML: теги, атрибуты, структура документа.',
             duration=1800,
+            video_link='https://rutube.ru/video/f19270376ddbd410699f575f9495a07c/?r=wd',
+            video_duration=910,
             position=0,
             is_published=True
-        )  # 30 мин
+        )
         t1 = Test.objects.create(title='Введение в НTML', duration=1200, is_published=True)
         l1.test = t1
         l1.save()

@@ -72,4 +72,5 @@ REST_FRAMEWORK = {
 }
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-USE_TZ = False
+USE_TZ = True
+TIME_ZONE = 'UTC'
