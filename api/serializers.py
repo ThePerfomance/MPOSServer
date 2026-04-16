@@ -220,14 +220,16 @@ class UserAnswerSerializer(serializers.ModelSerializer):
         model = UserAnswer
         fields = "__all__"
 
-
-class TrainingSessionSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = TrainingSession
-        fields = "__all__"
-
-
 class TrainingQuestionSerializer(serializers.ModelSerializer):
+    question_details = QuestionWithAnswersSerializer(source='question', read_only=True)
+
     class Meta:
         model = TrainingQuestion
-        fields = "__all__"
+        fields = ['id', 'session', 'question_details', 'status', 'position']
+
+class TrainingSessionSerializer(serializers.ModelSerializer):
+    training_questions = TrainingQuestionSerializer(many=True, read_only=True)
+    class Meta:
+        model = TrainingSession
+        fields = ['id', 'user', 'status', 'source_test_result', 'training_questions', 'created_at']
+

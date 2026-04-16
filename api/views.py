@@ -177,16 +177,6 @@ def subject_by_name(request, name):
 # TESTS
 # ═══════════════════════════════════════════════════════════════════════
 
-@api_view(["GET", "POST"])
-def tests_list(request):
-    if request.method == "GET":
-        return Response(TestSerializer(Test.objects.all(), many=True).data)
-    s = TestSerializer(data=request.data)
-    s.is_valid(raise_exception=True)
-    s.save()
-    return Response(s.data, status=status.HTTP_201_CREATED)
-
-
 @api_view(["GET", "PUT", "DELETE"])
 def test_detail(request, pk):
     test = get_object_or_404(Test, pk=pk)
@@ -211,41 +201,41 @@ def questions_for_test(request, test_id):
 # TEST RESULTS
 # ═══════════════════════════════════════════════════════════════════════
 
+# views.py
+
 @api_view(["GET", "POST"])
 def test_results_list(request):
     if request.method == "GET":
         return Response(TestResultSerializer(TestResult.objects.all(), many=True).data)
 
-    # 1. Сохраняем общую попытку (Score, User, Test)
-    serializer = TestResultSerializer(data=request.data)
-    serializer.is_valid(raise_exception=True)
-    test_result = serializer.save()
+    # 1. Сначала проверяем валидность основных данных результата
+    data = request.data.copy()
 
-    # 2. Сохраняем "атомарные" ответы (UserAnswer)
-    # Ожидаем в теле запроса поле "answers": [{"question_id": 1, "chosen_answer_id": 10}, ...]
-    answers_data = request.data.get("answers", [])
-    for item in answers_data:
-        q_id = item.get("question_id")
-        a_id = item.get("chosen_answer_id")
+    # Извлекаем список ответов отдельно, чтобы он не мешал базовому сериализатору
+    answers_data = data.pop("answers", [])
 
-        if q_id:
-            # Получаем объект ответа, чтобы проверить правильность
-            # Если a_id нет (пропущен), считаем ответ неверным
-            is_correct = False
-            ans_obj = None
-            if a_id:
-                ans_obj = Answer.objects.filter(pk=a_id).first()
-                if ans_obj:
-                    is_correct = ans_obj.is_correct
+    s = TestResultSerializer(data=data)
+    if not s.is_valid():
+        return Response(s.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    test_result = s.save()
+
+    # 2. Сохраняем ответы UserAnswer
+    try:
+        for ans in answers_data:
             UserAnswer.objects.create(
                 test_result=test_result,
-                question_id=q_id,
-                chosen_answer=ans_obj,
-                is_correct=is_correct
+                question_id=ans.get("question_id"),
+                chosen_answer_id=ans.get("chosen_answer_id"),
+                # Если Android не шлет флаг, бэкенд должен сам проверить правильность
+                is_correct=ans.get("is_correct", False)
             )
+    except Exception as e:
+        # Если ответы не сохранились, лучше удалить сам результат, чтобы не было дублей при перезаписи
+        test_result.delete()
+        return Response({"error": f"Ошибка при сохранении ответов: {str(e)}"}, status=500)
 
-    return Response(serializer.data, status=status.HTTP_201_CREATED)
+    return Response(s.data, status=status.HTTP_201_CREATED)
 
 
 @api_view(["GET", "PUT", "DELETE"])
@@ -756,7 +746,20 @@ def user_answers_for_result(request, result_id):
 @api_view(["GET", "POST"])
 def training_sessions_list(request):
     if request.method == "GET":
-        return Response(TrainingSessionSerializer(TrainingSession.objects.all(), many=True).data)
+        # Извлекаем user_id из параметров запроса (?user_id=...)
+        user_id = request.query_params.get('user_id')
+
+        if user_id:
+            # Фильтруем сессии только для этого пользователя
+            sessions = TrainingSession.objects.filter(user_id=user_id)
+        else:
+            # Если id не передан, отдаем все (или пустой список для безопасности)
+            sessions = TrainingSession.objects.all()
+
+        serializer = TrainingSessionSerializer(sessions, many=True)
+        return Response(serializer.data)
+
+    # Логика для POST остается прежней
     s = TrainingSessionSerializer(data=request.data)
     s.is_valid(raise_exception=True)
     s.save()
@@ -776,29 +779,44 @@ def training_session_detail(request, pk):
 
 @api_view(["POST"])
 def create_training_from_result(request, result_id):
-    """Создает сессию тренажёра на основе ошибок конкретной попытки."""
-    test_result = get_object_or_404(TestResult, pk=result_id)
 
-    wrong_answers = UserAnswer.objects.filter(test_result=test_result, is_correct=False)
+    test_result = get_object_or_404(TestResult, pk=result_id)
+    wrong_answers = test_result.user_answers.filter(is_correct=False)
+
     if not wrong_answers.exists():
-        return Response({"detail": "Нет ошибок в этой попытке. Тренажёр не требуется."},
+        return Response({"detail": "Все ответы верны. Тренажёр не требуется."},
                         status=status.HTTP_400_BAD_REQUEST)
 
-    session = TrainingSession.objects.create(
+    # 1. Ищем уже существующую активную сессию или создаем новую
+    session, created = TrainingSession.objects.get_or_create(
         user=test_result.user,
         status='active',
-        source_test_result=test_result
+        defaults={'source_test_result': test_result} # Ссылка на тест, если сессия новая
     )
 
-    for i, wa in enumerate(wrong_answers):
-        TrainingQuestion.objects.create(
-            session=session,
-            question=wa.question,
-            position=i,
-            status='pending'
-        )
+    # 2. Получаем ID вопросов, которые уже есть в этой сессии (чтобы не дублировать)
+    existing_question_ids = session.training_questions.values_list('question_id', flat=True)
 
-    return Response(TrainingSessionSerializer(session).data, status=status.HTTP_201_CREATED)
+    # 3. Определяем текущую максимальную позицию в списке (для сортировки)
+    last_position = session.training_questions.count()
+
+    new_questions_added = 0
+    for wa in wrong_answers:
+        # Проверяем, нет ли уже такого вопроса в сессии
+        if wa.question_id not in existing_question_ids:
+            TrainingQuestion.objects.create(
+                session=session,
+                question=wa.question,
+                position=last_position + new_questions_added,
+                status='pending'
+            )
+            new_questions_added += 1
+
+    return Response({
+        "session": TrainingSessionSerializer(session).data,
+        "added_count": new_questions_added,
+        "is_new_session": created
+    }, status=status.HTTP_201_CREATED)
 
 
 @api_view(["POST"])
