@@ -3,7 +3,8 @@
 from rest_framework import serializers
 from .models import (
     User, Group, GroupMember, Subject, Block, Lesson, Test, Question, Answer,
-    TestResult, StudentCluster, TestDifficulty, ScorePrediction, Recommendation
+    TestResult, StudentCluster, TestDifficulty, ScorePrediction, Recommendation,
+    VideoType, Video, UserAnswer, TrainingSession, TrainingQuestion
 )
 
 class UserSerializer(serializers.ModelSerializer):
@@ -200,4 +201,33 @@ class ScorePredictionSerializer(serializers.ModelSerializer):
 class RecommendationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Recommendation
+        fields = "__all__"
+
+class VideoTypeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = VideoType
+        fields = "__all__"
+
+
+class VideoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Video
+        fields = "__all__"
+
+
+class UserAnswerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserAnswer
+        fields = "__all__"
+
+
+class TrainingSessionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TrainingSession
+        fields = "__all__"
+
+
+class TrainingQuestionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TrainingQuestion
         fields = "__all__"

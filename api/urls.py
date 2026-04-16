@@ -61,6 +61,17 @@ urlpatterns = [
     path("answers/", views.answers_list, name='answers-list'),
     path("answers/<int:pk>/", views.answer_detail, name='answer-detail'),
 
+    # Video
+    path("video-types/", views.video_types_list, name='video-types-list'),
+    path("videos/", views.videos_list, name='videos-list'),
+
+    # Trainer / User Answers
+    path("test-results/<uuid:result_id>/user-answers/", views.user_answers_for_result, name='user-answers-for-result'),
+    path("training-sessions/", views.training_sessions_list, name='training-sessions-list'),
+    path("training-sessions/<uuid:pk>/", views.training_session_detail, name='training-session-detail'),
+    path("training-sessions/from-result/<uuid:result_id>/", views.create_training_from_result, name='create-training-from-result'),
+    path("training-questions/<int:pk>/answer/", views.answer_training_question, name='answer-training-question'),
+
     # ML (Potentially Unchanged, depending on implementation details)
     path("ml/cluster-students/", views.ml_cluster_students, name='ml-cluster-students'),
     path("ml/cluster-group/<uuid:group_id>/", views.ml_cluster_group, name='ml-cluster-group'),

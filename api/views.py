@@ -9,14 +9,15 @@ from django.utils import timezone
 
 from .models import (
     User, Group, GroupMember, Subject, Block, Lesson, Test, Question, Answer, TestResult,
-    StudentCluster, TestDifficulty, ScorePrediction, Recommendation,
+    StudentCluster, TestDifficulty, ScorePrediction, Recommendation, VideoType, Video, UserAnswer, TrainingSession, TrainingQuestion
 )
 from .serializers import (
     UserSerializer, GroupSerializer, GroupMemberSerializer, SubjectSerializer,
     TestSerializer, BlockSerializer, LessonSerializer, QuestionSerializer, QuestionWithAnswersSerializer,
     AnswerSerializer, TestResultSerializer, # TestResultWithTestDetailsSerializer
     StudentClusterSerializer, TestDifficultySerializer,
-    ScorePredictionSerializer, RecommendationSerializer,
+    ScorePredictionSerializer, RecommendationSerializer,VideoTypeSerializer, VideoSerializer, UserAnswerSerializer,
+    TrainingSessionSerializer, TrainingQuestionSerializer
 )
 from ml.engine import cluster_students, segment_tests, predict_score, build_recommendations
 
@@ -688,3 +689,112 @@ def ml_test_difficulty(request, test_id):
     """
     diff = get_object_or_404(TestDifficulty, test_id=test_id)
     return Response(TestDifficultySerializer(diff).data)
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# VIDEO & VIDEO TYPES
+# ═══════════════════════════════════════════════════════════════════════
+
+@api_view(["GET", "POST"])
+def video_types_list(request):
+    if request.method == "GET":
+        return Response(VideoTypeSerializer(VideoType.objects.all(), many=True).data)
+    s = VideoTypeSerializer(data=request.data)
+    s.is_valid(raise_exception=True)
+    s.save()
+    return Response(s.data, status=status.HTTP_201_CREATED)
+
+
+@api_view(["GET", "POST"])
+def videos_list(request):
+    if request.method == "GET":
+        return Response(VideoSerializer(Video.objects.all(), many=True).data)
+    s = VideoSerializer(data=request.data)
+    s.is_valid(raise_exception=True)
+    s.save()
+    return Response(s.data, status=status.HTTP_201_CREATED)
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# TRAINER (USER ANSWERS & SESSIONS)
+# ═══════════════════════════════════════════════════════════════════════
+
+@api_view(["GET"])
+def user_answers_for_result(request, result_id):
+    """Возвращает все 'атомарные' ответы пользователя за одну попытку теста."""
+    answers = UserAnswer.objects.filter(test_result_id=result_id)
+    return Response(UserAnswerSerializer(answers, many=True).data)
+
+
+@api_view(["GET", "POST"])
+def training_sessions_list(request):
+    if request.method == "GET":
+        return Response(TrainingSessionSerializer(TrainingSession.objects.all(), many=True).data)
+    s = TrainingSessionSerializer(data=request.data)
+    s.is_valid(raise_exception=True)
+    s.save()
+    return Response(s.data, status=status.HTTP_201_CREATED)
+
+
+@api_view(["GET", "PUT"])
+def training_session_detail(request, pk):
+    session = get_object_or_404(TrainingSession, pk=pk)
+    if request.method == "GET":
+        return Response(TrainingSessionSerializer(session).data)
+    s = TrainingSessionSerializer(session, data=request.data, partial=True)
+    s.is_valid(raise_exception=True)
+    s.save()
+    return Response(s.data)
+
+
+@api_view(["POST"])
+def create_training_from_result(request, result_id):
+    """Создает сессию тренажёра на основе ошибок конкретной попытки."""
+    test_result = get_object_or_404(TestResult, pk=result_id)
+
+    wrong_answers = UserAnswer.objects.filter(test_result=test_result, is_correct=False)
+    if not wrong_answers.exists():
+        return Response({"detail": "Нет ошибок в этой попытке. Тренажёр не требуется."},
+                        status=status.HTTP_400_BAD_REQUEST)
+
+    session = TrainingSession.objects.create(
+        user=test_result.user,
+        status='active',
+        source_test_result=test_result
+    )
+
+    for i, wa in enumerate(wrong_answers):
+        TrainingQuestion.objects.create(
+            session=session,
+            question=wa.question,
+            position=i,
+            status='pending'
+        )
+
+    return Response(TrainingSessionSerializer(session).data, status=status.HTTP_201_CREATED)
+
+
+@api_view(["POST"])
+def answer_training_question(request, pk):
+    """Принимает ответ пользователя внутри тренажёра."""
+    tq = get_object_or_404(TrainingQuestion, pk=pk)
+    chosen_answer_id = request.data.get('chosen_answer_id')
+
+    if not chosen_answer_id:
+        return Response({"detail": "chosen_answer_id обязателен"}, status=status.HTTP_400_BAD_REQUEST)
+
+    answer = get_object_or_404(Answer, pk=chosen_answer_id)
+    tq.chosen_answer = answer
+    tq.is_correct = answer.is_correct
+    tq.status = 'correct' if answer.is_correct else 'wrong'
+    tq.answered_at = timezone.now()
+    tq.save()
+
+    # Если это был последний вопрос, закрываем сессию
+    session = tq.session
+    if not session.training_questions.filter(status='pending').exists():
+        session.status = 'completed'
+        session.completed_at = timezone.now()
+        session.save()
+
+    return Response(TrainingQuestionSerializer(tq).data)

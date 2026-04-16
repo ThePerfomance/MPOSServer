@@ -1,6 +1,6 @@
 # api/management/commands/seed_db.py
 from django.core.management.base import BaseCommand
-from api.models import User, Group, GroupMember, Subject, Block, Lesson, Test, Question, Answer, TestResult
+from api.models import User, Group, GroupMember, Subject, Block, Lesson, Test, Question, Answer, TestResult, VideoType, Video
 from django.contrib.auth.hashers import make_password
 from datetime import datetime, timedelta
 from django.contrib.auth import get_user_model
@@ -72,13 +72,20 @@ class Command(BaseCommand):
 
         # ── LESSONS & TESTS ──
         # Block 1: HTML Basics
+        vt_rutube = VideoType.objects.create(name='Rutube')
+        v1 = Video.objects.create(
+            type=vt_rutube,
+            link='https://rutube.ru/video/f19270376ddbd410699f575f9495a07c/?r=wd',
+            duration=910
+        )
+
+        # 3. Замените создание l1 на этот вариант (обратите внимание на поле video=v1 и удаленные video_link/video_duration):
         l1 = Lesson.objects.create(
             block=b1,
             title='Основы HTML',
             summary='Изучение основ HTML: теги, атрибуты, структура документа.',
             duration=1800,
-            video_link='https://rutube.ru/video/f19270376ddbd410699f575f9495a07c/?r=wd',
-            video_duration=910,
+            video=v1,
             position=0,
             is_published=True
         )
