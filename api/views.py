@@ -215,10 +215,37 @@ def questions_for_test(request, test_id):
 def test_results_list(request):
     if request.method == "GET":
         return Response(TestResultSerializer(TestResult.objects.all(), many=True).data)
-    s = TestResultSerializer(data=request.data)
-    s.is_valid(raise_exception=True)
-    s.save()
-    return Response(s.data, status=status.HTTP_201_CREATED)
+
+    # 1. Сохраняем общую попытку (Score, User, Test)
+    serializer = TestResultSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    test_result = serializer.save()
+
+    # 2. Сохраняем "атомарные" ответы (UserAnswer)
+    # Ожидаем в теле запроса поле "answers": [{"question_id": 1, "chosen_answer_id": 10}, ...]
+    answers_data = request.data.get("answers", [])
+    for item in answers_data:
+        q_id = item.get("question_id")
+        a_id = item.get("chosen_answer_id")
+
+        if q_id:
+            # Получаем объект ответа, чтобы проверить правильность
+            # Если a_id нет (пропущен), считаем ответ неверным
+            is_correct = False
+            ans_obj = None
+            if a_id:
+                ans_obj = Answer.objects.filter(pk=a_id).first()
+                if ans_obj:
+                    is_correct = ans_obj.is_correct
+
+            UserAnswer.objects.create(
+                test_result=test_result,
+                question_id=q_id,
+                chosen_answer=ans_obj,
+                is_correct=is_correct
+            )
+
+    return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 @api_view(["GET", "PUT", "DELETE"])
