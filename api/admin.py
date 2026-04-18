@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.utils.html import format_html # Импорт для генерации HTML-кнопок
 from .models import (
     User, Group, GroupMember, Subject, Block,
     Lesson, Test, Question, Answer, Video, TestResult
@@ -14,7 +15,7 @@ class UserAdmin(admin.ModelAdmin):
 # --- GROUPS ---
 @admin.register(Group)
 class GroupAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name') # В модели Group только name
+    list_display = ('id', 'name')
     search_fields = ('name',)
 
 @admin.register(GroupMember)
@@ -25,7 +26,7 @@ class GroupMemberAdmin(admin.ModelAdmin):
 # --- CONTENT ---
 @admin.register(Subject)
 class SubjectAdmin(admin.ModelAdmin):
-    list_display = ('name',) # В модели Subject именно title
+    list_display = ('name',)
 
 @admin.register(Block)
 class BlockAdmin(admin.ModelAdmin):
@@ -39,13 +40,20 @@ class LessonAdmin(admin.ModelAdmin):
     list_filter = ('block',)
     list_editable = ('position',)
 
+# --- ТРЕНАЖЕРЫ (ВИДЕО) ---
 @admin.register(Video)
 class VideoAdmin(admin.ModelAdmin):
-    # В твоей модели Video только url и type. Связи с Lesson НЕТ.
-    list_display = ('link', 'type', 'duration')
+    # Добавлена колонка для быстрого перехода к плееру
+    list_display = ('link', 'type', 'duration', 'open_video')
     list_filter = ('type',)
 
-# --- TESTS ---
+    def open_video(self, obj):
+        if obj.link:
+            return format_html('<a class="button" href="{}" target="_blank" style="background-color: #417690; color: white; padding: 5px 10px; border-radius: 4px;">Смотреть</a>', obj.link)
+        return "Нет ссылки"
+    open_video.short_description = "Тренажер"
+
+# --- ТЕСТЫ ---
 class AnswerInline(admin.TabularInline):
     model = Answer
     extra = 4
@@ -54,13 +62,22 @@ class AnswerInline(admin.TabularInline):
 class QuestionAdmin(admin.ModelAdmin):
     list_display = ('text', 'test')
     inlines = [AnswerInline]
+    list_filter = ('test',) # Удобно фильтровать вопросы по тестам
 
 @admin.register(Test)
 class TestAdmin(admin.ModelAdmin):
-    # В модели Test только связь с lesson (OneToOneField)
     list_display = ('id', 'title', 'description', 'duration', 'is_published')
 
+# --- РЕЗУЛЬТАТЫ ---
 @admin.register(TestResult)
 class TestResultAdmin(admin.ModelAdmin):
-    list_display = ('user', 'test', 'score', 'completed_at')
+    # Добавлена кнопка для просмотра всех вопросов теста данного пользователя
+    list_display = ('user', 'test', 'score', 'completed_at', 'review_answers')
     readonly_fields = ('started_at', 'completed_at')
+    list_filter = ('test', 'user')
+
+    def review_answers(self, obj):
+        # Эта кнопка ведет в раздел Вопросов, отфильтрованных по текущему тесту
+        url = f"/admin/api/question/?test__id__exact={obj.test.id}"
+        return format_html('<a class="button" href="{}" style="padding: 5px 10px; border: 1px solid #ccc; border-radius: 4px;">Проверить ответы</a>', url)
+    review_answers.short_description = "Анализ ответов"
