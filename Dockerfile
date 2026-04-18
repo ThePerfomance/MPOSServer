@@ -11,3 +11,4 @@ COPY . .
 RUN touch api/management/__init__.py api/management/commands/__init__.py
 
 EXPOSE 8000
+

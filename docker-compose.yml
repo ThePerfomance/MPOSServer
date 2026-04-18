@@ -18,9 +18,11 @@ services:
 
   web:
     build: .
+    # Добавляем команду createsuperuser с флагом --noinput
     command: >
       sh -c "python manage.py makemigrations api &&
              python manage.py migrate &&
+             python manage.py createsuperuser --noinput || true &&
              python manage.py seed_db &&
              python manage.py runserver 0.0.0.0:8000"
     volumes:
@@ -33,7 +35,12 @@ services:
     environment:
       DATABASE_URL: postgres://eduuser:edupassword@db:5432/edudb
       DJANGO_SECRET_KEY: "django-insecure-dev-secret-key-change-in-prod"
-      DEBUG: "True"
+      DJANGO_SUPERUSER_PASSWORD: "admin"
+      DJANGO_SUPERUSER_EMAIL: "admin@mail.ru"
+      DJANGO_SUPERUSER_FIRSTNAME: "Admin"
+      DJANGO_SUPERUSER_LASTNAME: "System"
+      DJANGO_SUPERUSER_PATRONYMIC: "Root"
+      DJANGO_SUPERUSER_ROLE: "teacher"
 
 volumes:
   pgdata:

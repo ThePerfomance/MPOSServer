@@ -12,10 +12,14 @@ DEBUG = os.environ.get("DEBUG", "True") == "True"
 ALLOWED_HOSTS = ["*"]
 
 INSTALLED_APPS = [
+    'jazzmin',
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.messages",
+    'django.contrib.sessions',
+    'django.contrib.staticfiles',
+
     "rest_framework",
     "rest_framework_simplejwt",
     "corsheaders",
@@ -84,7 +88,61 @@ SIMPLE_JWT = {
     # ... другие настройки ...
 }
 
+JAZZMIN_SETTINGS = {
+    "site_title": "Edu Platform Admin",
+    "site_header": "Edu Platform",
+    "site_brand": "Система обучения",
+    "welcome_sign": "Добро пожаловать в админку проекта",
+    "copyright": "Nikita Smolnikov",
+    "search_model": ["api.User"], # Быстрый поиск по пользователям
+    "show_sidebar": True,
+    "navigation_expanded": True,
+    "icons": {
+        "api.user": "fas fa-user",
+        "api.lesson": "fas fa-book-open",
+        "api.video": "fas fa-video",
+    },
+}
+
+# Включаем UI Customizer (панель настроек справа, чтобы поиграться с цветами)
+JAZZMIN_UI_TWEAKS = {
+    # Тема всей админки (выбери одну из: flatly, darkly, slate, solar, yeti)
+    "theme": "flatly",
+
+    # Цветовая схема для кнопок и активных элементов
+    "dark_mode_theme": "darkly",
+
+    # Настройка навигации
+    "navbar_small_text": False,
+    "footer_small_text": False,
+    "body_small_text": False,
+    "brand_small_text": False,
+
+    # Цвет верхней панели (акцент)
+    "navbar": "navbar-dark",
+    "no_navbar_border": True,
+
+    # Стиль кнопок (сделает их более современными и плоскими)
+    "button_classes": {
+        "primary": "btn-primary",
+        "secondary": "btn-secondary",
+        "info": "btn-info",
+        "warning": "btn-warning",
+        "danger": "btn-danger",
+        "success": "btn-success"
+    }
+}
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 USE_TZ = True
 TIME_ZONE = 'UTC'
 AUTH_USER_MODEL = 'api.User'
+
+# Настройки статических файлов (CSS, JavaScript, Images)
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'static'
+
+STATICFILES_DIRS = []
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
