@@ -82,10 +82,6 @@ class GroupMember(models.Model):
 # ═══════════════════════════════════════════════════════════════════════
 
 class VideoType(models.Model):
-    """
-    Тип видео: например, «YouTube», «Vimeo», «Загруженное», «Shorts» и т.п.
-    Позволяет на клиенте правильно выбирать плеер или превью.
-    """
     id   = models.BigAutoField(primary_key=True)
     name = models.CharField(max_length=100, unique=True)
 
@@ -97,23 +93,46 @@ class VideoType(models.Model):
 
 
 class Video(models.Model):
-    """
-    Единица видеоматериала.
-    type  → VideoType (YouTube, Vimeo, …)
-    link  → прямая ссылка или embed-URL
-    duration → длительность в секундах
-    """
-    id       = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    type     = models.ForeignKey(VideoType, on_delete=models.SET_NULL,
-                                 null=True, blank=True, related_name='videos')
-    link     = models.URLField(max_length=2048)
-    duration = models.IntegerField(default=0, help_text='Длительность в секундах')
+    name = models.CharField(
+        max_length=255,
+        verbose_name="Название видео"
+    )
+
+    description = models.TextField(
+        null=True,
+        blank=True,
+        verbose_name="Описание"
+    )
+
+    video_file = models.FileField(
+        upload_to='videos/',
+        null=True,
+        blank=True,
+        verbose_name="Файл видео"
+    )
+
+    # Поле для ссылки (Rutube, YouTube и т.д.)
+    link = models.URLField(
+        max_length=500,
+        null=True,
+        blank=True,
+        verbose_name="Ссылка на видео"
+    )
+
+    type = models.ForeignKey('VideoType', on_delete=models.CASCADE)
+    duration = models.IntegerField(default=0)
+
+    def get_video_url(self):
+        if self.video_file:
+            return self.video_file.url
+        return self.link
 
     class Meta:
         db_table = 'videos'
 
     def __str__(self):
-        return f"Video [{self.type}] {self.link[:60]}"
+        return f"{self.name} ({self.type})"
+
 
 
 # ═══════════════════════════════════════════════════════════════════════

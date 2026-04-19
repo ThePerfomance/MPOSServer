@@ -48,10 +48,26 @@ class TestSerializer(serializers.ModelSerializer):
         model = Test
         fields = ["id", "title", "description", "duration", "is_published"]
 
+
 class VideoSerializer(serializers.ModelSerializer):
+    # Создаем виртуальное поле, которое выберет правильный URL
+    final_link = serializers.SerializerMethodField()
+
     class Meta:
         model = Video
-        fields = "__all__"
+        fields = ['id', 'name', 'description', 'type', 'duration', 'final_link']
+
+    def get_final_link(self, obj):
+        request = self.context.get('request')
+        url = obj.get_video_url()
+
+        if not url:
+            return None
+
+        if obj.video_file and request:
+            return request.build_absolute_uri(url)
+
+        return url
 
 class LessonSerializer(serializers.ModelSerializer):
     test = serializers.PrimaryKeyRelatedField(queryset=Test.objects.all(), allow_null=True, required=False)

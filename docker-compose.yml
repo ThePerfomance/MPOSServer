@@ -8,6 +8,8 @@ services:
       POSTGRES_PASSWORD: edupassword
     volumes:
       - pgdata:/var/lib/postgresql/data
+      - .:/app
+      - ./media:/app/media
     ports:
       - "5432:5432"
     healthcheck:
