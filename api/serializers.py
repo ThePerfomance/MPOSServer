@@ -20,7 +20,6 @@ class GroupSerializer(serializers.ModelSerializer):
 
 
 class GroupMemberSerializer(serializers.ModelSerializer):
-    # Android шлёт user_id / group_id — принимаем их явно
     user_id  = serializers.UUIDField(write_only=True)
     group_id = serializers.UUIDField(write_only=True)
 
@@ -47,56 +46,50 @@ class TestSerializer(serializers.ModelSerializer):
     # Убрали 'subject' из полей
     class Meta:
         model = Test
-        fields = ["id", "title", "description", "duration", "is_published"] # Добавлены новые поля
-        # exclude = ['subject'] # Альтернативный способ исключения поля 'subject'
+        fields = ["id", "title", "description", "duration", "is_published"]
 
-
-# --- Циклическая зависимость: определяем в нужном порядке или используем PrimaryKeyRelatedField ---
-# Сначала определяем TestSerializer, затем LessonSerializer, затем BlockSerializer
+class VideoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Video
+        fields = "__all__"
 
 class LessonSerializer(serializers.ModelSerializer):
-    # Вложенный тест урока (опционально) - используем PrimaryKeyRelatedField, чтобы избежать циклической зависимости на этом уровне
-    # Если вы хотите вложить *весь* объект Test, используйте TestSerializer(read_only=True) как раньше,
-    # но тогда нужно определить TestSerializer *до* этого места или использовать lazy-инициализацию.
-    # В данном случае, для простоты, используем PrimaryKeyRelatedField.
-    # Если вложенность нужна, см. альтернативу ниже.
     test = serializers.PrimaryKeyRelatedField(queryset=Test.objects.all(), allow_null=True, required=False)
-    # test = TestSerializer(read_only=True) # <--- Альтернатива: вложенная сериализация, но требует осторожного обращения с циклом
-
-    # Вложенный блок (опционально) - PrimaryKeyRelatedField для той же причины
     block = serializers.PrimaryKeyRelatedField(queryset=Block.objects.all())
+
+    video = VideoSerializer(read_only=True)
+
+    video_id = serializers.PrimaryKeyRelatedField(
+        queryset=Video.objects.all(),
+        source='video',
+        write_only=True,
+        required=False,
+        allow_null=True
+    )
 
     class Meta:
         model = Lesson
-        fields = "__all__" # Или перечислите явно: ['id', 'summary', 'block', 'test', 'video_link', 'duration', 'position', 'is_published']
+        fields = [
+            'id', 'title','summary','duration', 'position',
+             'is_published', 'block', 'test', 'video', 'video_id',
+        ]
 
 
 class BlockSerializer(serializers.ModelSerializer):
-    # Вложенные уроки (опционально) - используем LessonSerializer, но т.к. LessonSerializer уже знает про Block (как FK),
-    # это создаст цикл при полной вложенности. Используем PrimaryKeyRelatedField или SlugRelatedField.
-    # lessons = LessonSerializer(many=True, read_only=True) # <-- Цикл!
-    lessons = serializers.PrimaryKeyRelatedField(many=True, read_only=True, source='lessons.all') # <-- Только IDs уроков
-    # Или, если хотите только ID урока как список строк:
-    # lessons = serializers.SlugRelatedField(many=True, read_only=True, slug_field='id')
+    lessons = serializers.PrimaryKeyRelatedField(many=True, read_only=True, source='lessons.all')
 
-    # Вложенный финальный тест (опционально) - PrimaryKeyRelatedField
     final_test = serializers.PrimaryKeyRelatedField(queryset=Test.objects.all(), allow_null=True, required=False)
-    # final_test = TestSerializer(read_only=True) # <-- Альтернатива: вложенная сериализация
 
-    # Вложенный предмет (опционально) - PrimaryKeyRelatedField
     subject = serializers.PrimaryKeyRelatedField(queryset=Subject.objects.all())
-    # subject = SubjectSerializer(read_only=True) # <-- Альтернатива: вложенная сериализация
 
     class Meta:
         model = Block
-        fields = "__all__" # Или перечислите явно: ['id', 'title', 'subject', 'final_test', 'lessons', 'description', ...]
+        fields = "__all__"
 
 
 class SubjectSerializer(serializers.ModelSerializer):
-    # Вложенные блоки (опционально) - PrimaryKeyRelatedField для избежания цикла, если BlockSerializer включает Subject
-    # blocks = BlockSerializer(many=True, read_only=True) # <-- Цикл!
-    blocks = serializers.PrimaryKeyRelatedField(many=True, read_only=True, source='blocks.all') # <-- Только IDs блоков
-    # blocks = serializers.SlugRelatedField(many=True, read_only=True, slug_field='id') # <-- Альтернатива
+
+    blocks = serializers.PrimaryKeyRelatedField(many=True, read_only=True, source='blocks.all')
 
     class Meta:
         model = Subject
@@ -117,19 +110,12 @@ class QuestionSerializer(serializers.ModelSerializer):
 
 class QuestionWithAnswersSerializer(serializers.ModelSerializer):
     answers = AnswerSerializer(many=True, read_only=True)
-    # test = TestSerializer(read_only=True) # Опционально: включить информацию о тесте
 
     class Meta:
         model = Question
-        fields = ["id", "text", "answers"] # Убрали "test", если не нужно
-        # fields = ["id", "text", "test", "answers"] # Если нужно включить тест
+        fields = ["id", "text", "answers"]
 
-
-# --- Обновим TestResultSerializer, чтобы он работал с новым Test ---
-# Текущий TestResultSerializer уже использует test_id, что хорошо.
-# Но если вы хотите получить *вложенную* информацию о тесте, можно добавить:
 class TestResultSerializer(serializers.ModelSerializer):
-    # Поля для записи — принимаем user_id / test_id / completed_at как от Android
     user_id      = serializers.UUIDField(write_only=True)
     test_id      = serializers.IntegerField(write_only=True)
     completed_at = serializers.DateTimeField(required=False, allow_null=True, write_only=False)
@@ -139,7 +125,6 @@ class TestResultSerializer(serializers.ModelSerializer):
         fields = ["id", "user_id", "test_id", "score", "started_at", "completed_at"]
 
     def to_representation(self, instance):
-        """Format dates as yyyy-MM-dd'T'HH:mm:ss for Android SimpleDateFormat."""
         def fmt(dt):
             return dt.strftime("%Y-%m-%dT%H:%M:%S") if dt else None
 
@@ -174,9 +159,6 @@ class TestResultWithTestDetailsSerializer(serializers.ModelSerializer):
         model = TestResult
         fields = ["id", "user_id", "test_id", "score", "started_at", "completed_at", "test_details"]
 
-    # Наследуем to_representation и create от TestResultSerializer, если логика одинакова
-    # иначе, переопределите их здесь.
-
 
 # ── ML serializers ──────────────────────────────────
 
@@ -207,13 +189,6 @@ class VideoTypeSerializer(serializers.ModelSerializer):
     class Meta:
         model = VideoType
         fields = "__all__"
-
-
-class VideoSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Video
-        fields = "__all__"
-
 
 class UserAnswerSerializer(serializers.ModelSerializer):
     class Meta:

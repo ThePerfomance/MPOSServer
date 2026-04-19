@@ -16,7 +16,5 @@ urlpatterns = [
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 ]
 
-# ЭТОТ БЛОК КРИТИЧЕСКИ ВАЖЕН:
-# Он говорит Django: "Если мы в режиме отладки, ищи файлы по пути STATIC_URL в папке STATIC_ROOT"
 if settings.DEBUG:
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
