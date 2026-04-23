@@ -220,7 +220,15 @@ class TrainingQuestionSerializer(serializers.ModelSerializer):
 
 class TrainingSessionSerializer(serializers.ModelSerializer):
     training_questions = TrainingQuestionSerializer(many=True, read_only=True)
+    lesson_id = serializers.PrimaryKeyRelatedField(
+        queryset=Lesson.objects.all(),
+        source='lesson',
+        write_only=True,
+        required=False,
+        allow_null=True
+    )
+    
     class Meta:
         model = TrainingSession
-        fields = ['id', 'user', 'status', 'source_test_result', 'training_questions', 'created_at']
+        fields = ['id', 'user', 'lesson', 'lesson_id', 'status', 'source_test_result', 'training_questions', 'created_at']
 
