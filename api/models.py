@@ -329,7 +329,10 @@ class TrainingSession(models.Model):
     Сессия тренажёра — набор вопросов, на которые пользователь ошибся,
     собранных в одну «повторяющую» сессию.
 
-    source_test_result → если сессия сформирована по конкретной попытке.
+    ИЗМЕНЕНИЯ:
+    - Добавлено поле lesson для привязки сессии к конкретному уроку
+    - Сессии теперь группируются по (user + lesson), а не сливаются в одну
+    - source_test_result → если сессия сформирована по конкретной попытке.
                          null = глобальный тренажёр (все ошибки за всё время).
     """
     STATUS_CHOICES = [
@@ -341,6 +344,9 @@ class TrainingSession(models.Model):
     id                 = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user               = models.ForeignKey(User, on_delete=models.CASCADE,
                                            related_name='training_sessions')
+    lesson             = models.ForeignKey(Lesson, on_delete=models.CASCADE,
+                                           null=True, blank=True, related_name='training_sessions',
+                                           help_text='Урок, к которому относится сессия тренажёра')
     status             = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
     source_test_result = models.ForeignKey(TestResult, on_delete=models.SET_NULL,
                                            null=True, blank=True,
@@ -353,9 +359,13 @@ class TrainingSession(models.Model):
     class Meta:
         db_table = 'training_sessions'
         ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['user', 'lesson', 'status']),  # быстрый поиск активных сессий по уроку
+        ]
 
     def __str__(self):
-        return f"Training {self.id} [{self.status}] — {self.user}"
+        lesson_info = f" — Lesson {self.lesson.id}" if self.lesson else ""
+        return f"Training {self.id} [{self.status}] — {self.user}{lesson_info}"
 
 
 class TrainingQuestion(models.Model):

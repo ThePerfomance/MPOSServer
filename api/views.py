@@ -746,12 +746,17 @@ def user_answers_for_result(request, result_id):
 @api_view(["GET", "POST"])
 def training_sessions_list(request):
     if request.method == "GET":
-        # Извлекаем user_id из параметров запроса (?user_id=...)
+        # Извлекаем user_id и lesson_id из параметров запроса (?user_id=...&lesson_id=...)
         user_id = request.query_params.get('user_id')
+        lesson_id = request.query_params.get('lesson_id')
 
         if user_id:
             # Фильтруем сессии только для этого пользователя
             sessions = TrainingSession.objects.filter(user_id=user_id)
+            
+            # Если передан lesson_id, дополнительно фильтруем по уроку
+            if lesson_id:
+                sessions = sessions.filter(lesson_id=lesson_id)
         else:
             # Если id не передан, отдаем все (или пустой список для безопасности)
             sessions = TrainingSession.objects.all()
@@ -779,7 +784,14 @@ def training_session_detail(request, pk):
 
 @api_view(["POST"])
 def create_training_from_result(request, result_id):
-
+    """
+    Создаёт или обновляет сессию тренажёра по ошибкам из TestResult.
+    
+    ИЗМЕНЕНИЯ:
+    - Сессии теперь привязываются к уроку (lesson) через Test -> Lesson
+    - Если пользователь ответил на 4 вопроса из 10+, создаётся новая сессия 
+      на оставшиеся вопросы, а старая удаляется
+    """
     test_result = get_object_or_404(TestResult, pk=result_id)
     wrong_answers = test_result.user_answers.filter(is_correct=False)
 
@@ -787,22 +799,34 @@ def create_training_from_result(request, result_id):
         return Response({"detail": "Все ответы верны. Тренажёр не требуется."},
                         status=status.HTTP_400_BAD_REQUEST)
 
-    # 1. Ищем уже существующую активную сессию или создаем новую
+    # Определяем урок, к которому относится тест
+    lesson = None
+    try:
+        # Пытаемся найти урок через связь Test -> Lesson
+        lesson = Lesson.objects.get(test=test_result.test)
+    except Lesson.DoesNotExist:
+        # Если тест не привязан к уроку, оставляем lesson=None
+        pass
+
+    # 1. Ищем уже существующую активную сессию для этого пользователя и урока
+    session_filters = {'user': test_result.user, 'status': 'active'}
+    if lesson:
+        session_filters['lesson'] = lesson
+    
     session, created = TrainingSession.objects.get_or_create(
-        user=test_result.user,
-        status='active',
-        defaults={'source_test_result': test_result} # Ссылка на тест, если сессия новая
+        **session_filters,
+        defaults={'source_test_result': test_result}
     )
 
-    # 2. Получаем ID вопросов, которые уже есть в этой сессии (чтобы не дублировать)
-    existing_question_ids = session.training_questions.values_list('question_id', flat=True)
+    # 2. Получаем ID вопросов, которые уже есть в этой сессии
+    existing_question_ids = list(session.training_questions.values_list('question_id', flat=True))
 
-    # 3. Определяем текущую максимальную позицию в списке (для сортировки)
+    # 3. Определяем текущую максимальную позицию в списке
     last_position = session.training_questions.count()
 
+    # 4. Добавляем новые вопросы из ошибок
     new_questions_added = 0
     for wa in wrong_answers:
-        # Проверяем, нет ли уже такого вопроса в сессии
         if wa.question_id not in existing_question_ids:
             TrainingQuestion.objects.create(
                 session=session,
@@ -811,6 +835,47 @@ def create_training_from_result(request, result_id):
                 status='pending'
             )
             new_questions_added += 1
+
+    # 5. ЛОГИКА ЗАВЕРШЕНИЯ: если есть хотя бы один отвеченный вопрос, создаём новую сессию
+    total_questions = session.training_questions.count()
+    answered_count = session.training_questions.exclude(status='pending').count()
+    
+    # Если пользователь ответил хотя бы на один вопрос и есть неотвеченные
+    if answered_count >= 1 and total_questions > answered_count:
+        # Получаем неотвеченные вопросы
+        pending_questions = session.training_questions.filter(status='pending')
+        pending_count = pending_questions.count()
+        
+        if pending_count > 0:
+            # Создаём новую сессию для оставшихся вопросов
+            new_session = TrainingSession.objects.create(
+                user=test_result.user,
+                lesson=lesson,
+                status='active',
+                source_test_result=test_result
+            )
+            
+            # Переносим неотвеченные вопросы в новую сессию
+            for idx, tq in enumerate(pending_questions):
+                TrainingQuestion.objects.create(
+                    session=new_session,
+                    question=tq.question,
+                    position=idx,
+                    status='pending'
+                )
+            
+            # Удаляем старые TrainingQuestion из старой сессии
+            session.training_questions.all().delete()
+            
+            # Помечаем старую сессию как завершённую и удаляем её
+            session.status = 'completed'
+            session.completed_at = timezone.now()
+            session.save()
+            session.delete()
+            
+            # Возвращаем новую сессию
+            session = new_session
+            created = True
 
     return Response({
         "session": TrainingSessionSerializer(session).data,
