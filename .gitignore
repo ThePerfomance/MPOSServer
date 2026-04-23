@@ -1,45 +1,4 @@
 ```
-# Python
 __pycache__/
 *.pyc
-*.pyo
-*.pyd
-*.py~
-
-# Django
-*.log
-local_settings.py
-db.sqlite3
-media/
-
-# Dependencies
-.venv/
-venv/
-env/
-requirements.txt.bak
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Environment
-.env
-.env.local
-.env.*
-
-# Coverage
-.coverage
-coverage/
-htmlcov/
-
-# Build
-dist/
-build/
-*.egg-info/
 ```
