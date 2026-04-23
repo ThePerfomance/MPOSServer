@@ -126,14 +126,23 @@ class BlockAdmin(admin.ModelAdmin):
 
 @admin.register(VideoType)
 class VideoTypeAdmin(admin.ModelAdmin):
-    """Типы видео (Лекция, Практика, Rutube, YouTube)."""
+    """
+    Управление типами видео (например: 'Лекция', 'Практика', 'Вебинар').
+    Позволяет классифицировать видеоматериалы для удобного поиска.
+    """
     list_display = ('name', 'videos_count')
     search_fields = ('name',)
     ordering = ('name',)
     
     def videos_count(self, obj):
-        return obj.videos.count()
-    videos_count.short_description = "Видео"
+        """
+        Подсчитывает количество видео данного типа.
+        ИСПРАВЛЕНИЕ: Используем явный фильтр вместо obj.videos.count(), 
+        так как related_name может быть не задан или отличаться.
+        """
+        return Video.objects.filter(type=obj).count()
+    
+    videos_count.short_description = "Количество видео"
     verbose_name = "Тип видео"
     verbose_name_plural = "Типы видео"
 
