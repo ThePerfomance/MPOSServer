@@ -842,8 +842,16 @@ def create_training_from_result(request, result_id):
     
     # Если пользователь ответил хотя бы на один вопрос и есть неотвеченные
     if answered_count >= 1 and total_questions > answered_count:
-        # Получаем неотвеченные вопросы
-        pending_questions = session.training_questions.filter(status='pending')
+        # Получаем ID вопросов, на которые даны правильные ответы в текущей сессии
+        correct_question_ids = list(
+            session.training_questions.filter(is_correct=True).values_list('question_id', flat=True)
+        )
+        
+        # Фильтруем pending вопросы: исключаем те, на которые уже были даны правильные ответы
+        pending_questions = session.training_questions.filter(
+            status='pending'
+        ).exclude(question_id__in=correct_question_ids)
+        
         pending_count = pending_questions.count()
         
         if pending_count > 0:
@@ -855,7 +863,7 @@ def create_training_from_result(request, result_id):
                 source_test_result=test_result
             )
             
-            # Переносим неотвеченные вопросы в новую сессию
+            # Переносим неотвеченные вопросы (исключая уже правильно отвеченные) в новую сессию
             for idx, tq in enumerate(pending_questions):
                 TrainingQuestion.objects.create(
                     session=new_session,
