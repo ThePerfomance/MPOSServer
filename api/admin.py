@@ -61,8 +61,8 @@ class TrainingQuestionInline(admin.TabularInline):
 @admin.register(User)
 class UserAdmin(admin.ModelAdmin):
     """Управление пользователями платформы."""
-    list_display = ('email', 'lastname', 'firstname', 'role', 'is_active')
-    list_filter = ('role', 'is_active')
+    list_display = ('email', 'lastname', 'firstname', 'role', 'is_active', 'is_staff')
+    list_filter = ('role', 'is_active', 'is_staff')
     search_fields = ('email', 'lastname', 'firstname')
     ordering = ('lastname', 'firstname')
     fieldsets = (
@@ -72,9 +72,17 @@ class UserAdmin(admin.ModelAdmin):
     verbose_name = "Пользователь"
     verbose_name_plural = "Пользователи"
     
+    def has_add_permission(self, request):
+        # Админы и преподаватели могут добавлять пользователей
+        return has_teacher_permission(request.user)
+    
     def has_change_permission(self, request, obj=None):
-        # Только админы могут менять пользователей
-        return has_admin_permission(request.user)
+        # Админы могут менять всех, преподаватели - только студентов
+        if has_admin_permission(request.user):
+            return True
+        if request.user.role == 'teacher' and obj:
+            return obj.role != 'admin'  # Преподаватель не может менять админов
+        return has_teacher_permission(request.user)
     
     def has_delete_permission(self, request, obj=None):
         return has_admin_permission(request.user)
@@ -82,7 +90,7 @@ class UserAdmin(admin.ModelAdmin):
 
 @admin.register(Group)
 class GroupAdmin(admin.ModelAdmin):
-    """Управление учебными группами."""
+    """Управление учебными группами. Доступно для просмотра всем преподавателям и админам."""
     list_display = ('name', 'members_count')
     search_fields = ('name',)
     
@@ -91,6 +99,17 @@ class GroupAdmin(admin.ModelAdmin):
     members_count.short_description = "Участников"
     verbose_name = "Группа"
     verbose_name_plural = "Группы"
+    
+    def has_view_permission(self, request, obj=None):
+        # Преподаватели и админы могут видеть группы
+        return has_teacher_permission(request.user)
+    
+    def has_change_permission(self, request, obj=None):
+        # Только админы могут изменять группы
+        return has_admin_permission(request.user)
+    
+    def has_delete_permission(self, request, obj=None):
+        return has_admin_permission(request.user)
 
 
 @admin.register(GroupMember)
@@ -165,7 +184,7 @@ class VideoTypeAdmin(admin.ModelAdmin):
     """
     Управление типами видео (например: 'Лекция', 'Практика', 'Вебинар').
     Позволяет классифицировать видеоматериалы для удобного поиска.
-    Доступно только администраторам.
+    Доступно администраторам и преподавателям (только просмотр).
     """
     list_display = ('name', 'videos_count')
     search_fields = ('name',)
@@ -174,8 +193,6 @@ class VideoTypeAdmin(admin.ModelAdmin):
     def videos_count(self, obj):
         """
         Подсчитывает количество видео данного типа.
-        ИСПРАВЛЕНИЕ: Используем явный фильтр вместо obj.videos.count(), 
-        так как related_name может быть не задан или отличаться.
         """
         return Video.objects.filter(type=obj).count()
     
@@ -184,10 +201,11 @@ class VideoTypeAdmin(admin.ModelAdmin):
     verbose_name_plural = "Типы видео"
     
     def has_view_permission(self, request, obj=None):
-        # Только админы могут видеть типы видео
-        return has_admin_permission(request.user)
+        # Админы и преподаватели могут видеть типы видео
+        return has_teacher_permission(request.user)
     
     def has_change_permission(self, request, obj=None):
+        # Только админы могут изменять типы видео
         return has_admin_permission(request.user)
     
     def has_delete_permission(self, request, obj=None):
@@ -196,7 +214,7 @@ class VideoTypeAdmin(admin.ModelAdmin):
 
 @admin.register(Video)
 class VideoAdmin(admin.ModelAdmin):
-    """Управление видеоматериалами (загрузка файла или ссылка)."""
+    """Управление видеоматериалами (загрузка файла или ссылка). Доступно преподавателям и админам."""
     list_display = ('name', 'type', 'duration', 'link_preview', 'open_video', 'file_or_link')
     list_filter = ('type',)
     search_fields = ('name', 'description', 'link')
@@ -228,13 +246,15 @@ class VideoAdmin(admin.ModelAdmin):
     verbose_name_plural = "Видеоматериалы"
     
     def has_view_permission(self, request, obj=None):
-        # Только админы могут видеть видео
-        return has_admin_permission(request.user)
+        # Преподаватели и админы могут видеть видео
+        return has_teacher_permission(request.user)
     
     def has_change_permission(self, request, obj=None):
-        return has_admin_permission(request.user)
+        # Преподаватели и админы могут изменять видео
+        return has_teacher_permission(request.user)
     
     def has_delete_permission(self, request, obj=None):
+        # Только админы могут удалять видео
         return has_admin_permission(request.user)
 
 

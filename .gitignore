@@ -5,8 +5,32 @@ __pycache__/
 *.pyo
 *.pyd
 
-# Django
-*.pot
-*.po
-MANIFEST.in
+# Environment
+.venv/
+venv/
+env/
+
+# Logs
+*.log
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*.tmp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Coverage
+.coverage
+coverage/
+htmlcov/
+
+# Build
+dist/
+build/
+*.egg-info/
 ```
