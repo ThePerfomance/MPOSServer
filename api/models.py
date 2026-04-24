@@ -30,7 +30,10 @@ class User(AbstractBaseUser, PermissionsMixin):
     lastname   = models.CharField(max_length=100)
     patronymic = models.CharField(max_length=100)
     email      = models.EmailField(unique=True)
-    role       = models.CharField(max_length=10, choices=[('student', 'Student'), ('teacher', 'Teacher')])
+    role       = models.CharField(
+        max_length=10, 
+        choices=[('student', 'Студент'), ('teacher', 'Преподаватель'), ('admin', 'Администратор')]
+    )
     is_active  = models.BooleanField(default=True)
     is_staff   = models.BooleanField(default=False)
 
@@ -42,11 +45,19 @@ class User(AbstractBaseUser, PermissionsMixin):
         db_table = 'users'
 
     def __str__(self):
-        return f"{self.firstname} {self.lastname}"
+        return f"{self.firstname} {self.lastname} ({self.get_role_display()})"
 
     @property
     def password_hash(self):
         return self.password
+
+    def has_teacher_permission(self):
+        """Проверка прав преподавателя"""
+        return self.role in ['teacher', 'admin']
+
+    def has_admin_permission(self):
+        """Проверка прав администратора"""
+        return self.role == 'admin'
 
 
 # ═══════════════════════════════════════════════════════════════════════
