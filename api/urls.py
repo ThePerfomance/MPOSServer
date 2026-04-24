@@ -72,14 +72,19 @@ urlpatterns = [
     path("training-sessions/from-result/<uuid:result_id>/", views.create_training_from_result, name='create-training-from-result'),
     path("training-questions/<int:pk>/answer/", views.answer_training_question, name='answer-training-question'),
 
-    # ML (Potentially Unchanged, depending on implementation details)
-    path("ml/cluster-students/", views.ml_cluster_students, name='ml-cluster-students'),
-    path("ml/cluster-group/<uuid:group_id>/", views.ml_cluster_group, name='ml-cluster-group'),
-    path("ml/segment-tests/", views.ml_segment_tests, name='ml-segment-tests'),
-    path("ml/predict-result/", views.ml_predict_result, name='ml-predict-result'),
-    path("ml/recommendations/<uuid:user_id>/", views.ml_recommendations, name='ml-recommendations'),
-    path("ml/clusters/<uuid:user_id>/", views.ml_student_cluster, name='ml-student-cluster'),
-    path("ml/test-difficulty/<int:test_id>/", views.ml_test_difficulty, name='ml-test-difficulty'),
+    # ML - СТАРЫЕ ENDPOINTS (отключены, но сохранены для сравнения)
+    # path("ml/cluster-students/", views.ml_cluster_students, name='ml-cluster-students'),
+    # path("ml/cluster-group/<uuid:group_id>/", views.ml_cluster_group, name='ml-cluster-group'),
+    # path("ml/segment-tests/", views.ml_segment_tests, name='ml-segment-tests'),
+    # path("ml/predict-result/", views.ml_predict_result, name='ml-predict-result'),
+    # path("ml/recommendations/<uuid:user_id>/", views.ml_recommendations, name='ml-recommendations'),
+    # path("ml/clusters/<uuid:user_id>/", views.ml_student_cluster, name='ml-student-cluster'),
+    # path("ml/test-difficulty/<int:test_id>/", views.ml_test_difficulty, name='ml-test-difficulty'),
+    
+    # ML - НОВЫЕ ENDPOINTS ДЛЯ ДИПЛОМА (персонализированные рекомендации)
+    path("ml/analyze-weak-topics/<uuid:user_id>/", views.ml_analyze_weak_topics, name='ml-analyze-weak-topics'),
+    path("ml/personalized-recommendations/<uuid:user_id>/", views.ml_personalized_recommendations, name='ml-personalized-recommendations'),
+    path("ml/learning-path/<uuid:user_id>/", views.ml_learning_path, name='ml-learning-path'),
 ]
 
 # Уберите определение index и внешний urlpatterns из этого файла

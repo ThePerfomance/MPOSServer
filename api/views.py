@@ -19,7 +19,12 @@ from .serializers import (
     ScorePredictionSerializer, RecommendationSerializer,VideoTypeSerializer, VideoSerializer, UserAnswerSerializer,
     TrainingSessionSerializer, TrainingQuestionSerializer
 )
-from ml.engine import cluster_students, segment_tests, predict_score, build_recommendations
+from ml.engine import (
+    analyze_weak_topics,
+    generate_personalized_recommendations,
+    analyze_progress_over_time,
+    build_learning_path
+)
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -646,66 +651,372 @@ def ml_predict_result(request):
     return Response(ScorePredictionSerializer(obj).data)
 
 
-@api_view(["GET"])
-def ml_recommendations(request, user_id):
+# ═══════════════════════════════════════════════════════════════════════
+# ML ENDPOINTS - ПЕРСОНАЛИЗИРОВАННЫЕ РЕКОМЕНДАЦИИ (НОВАЯ ВЕРСИЯ ДЛЯ ДИПЛОМА)
+# ═══════════════════════════════════════════════════════════════════════
+
+@api_view(["POST"])
+def ml_analyze_weak_topics(request, user_id):
     """
-    GET /ml/recommendations/<user_id>
-    Возвращает персонализированные рекомендации для студента.
-    Требует предварительного запуска /ml/cluster-students и /ml/segment-tests.
+    POST /ml/analyze-weak-topics/<user_id>/
+    
+    Анализирует ответы пользователя и определяет слабые темы.
+    
+    Body (опционально):
+    {
+        "limit_days": 30  // Анализировать только последние N дней (по умолчанию все)
+    }
+    
+    Возвращает:
+    {
+        "weak_topics": [...],
+        "topic_details": {...},
+        "overall_stats": {...}
+    }
     """
     user = get_object_or_404(User, pk=user_id)
-
-    try:
-        cluster = StudentCluster.objects.get(user=user)
-    except StudentCluster.DoesNotExist:
-        return Response({"error": "Сначала выполните /ml/cluster-students"}, status=400)
-
-    difficulties = TestDifficulty.objects.all()
-    if not difficulties.exists():
-        return Response({"error": "Сначала выполните /ml/segment-tests"}, status=400)
-
-    tests_with_diff = [
-        {"test_id": td.test_id, "difficulty": td.difficulty} for td in difficulties
+    
+    # Получаем все ответы пользователя
+    user_answers_qs = UserAnswer.objects.filter(
+        test_result__user=user
+    ).select_related('test_result', 'question').order_by('-answered_at')
+    
+    limit_days = request.data.get('limit_days')
+    if limit_days:
+        from datetime import timedelta
+        cutoff_date = timezone.now() - timedelta(days=int(limit_days))
+        user_answers_qs = user_answers_qs.filter(answered_at__gte=cutoff_date)
+    
+    # Преобразуем в список словарей
+    user_answers = [
+        {
+            "question_id": ua.question_id,
+            "is_correct": ua.is_correct,
+            "answered_at": ua.answered_at.isoformat() if ua.answered_at else None,
+            "test_id": ua.test_result.test_id if ua.test_result else None,
+        }
+        for ua in user_answers_qs
     ]
-    recs = build_recommendations(cluster.cluster_label, tests_with_diff)  # cluster_label теперь хранит rank (S/A/B/C/D)
+    
+    # Получаем информацию о вопросах
+    question_ids = set(ua["question_id"] for ua in user_answers if ua["question_id"])
+    questions_qs = Question.objects.filter(id__in=question_ids)
+    
+    questions_map = {}
+    for q in questions_qs:
+        # Определяем тему вопроса через тест → урок → блок → предмет
+        topic = "Общая тема"
+        try:
+            lesson = Lesson.objects.filter(test=q.test_id).first()
+            if lesson:
+                block = lesson.block
+                topic = block.title  # Используем название блока как тему
+        except:
+            pass
+        
+        questions_map[q.id] = {
+            "topic": topic,
+            "block_id": str(lesson.block_id) if lesson else None,
+            "lesson_id": str(lesson.id) if lesson else None,
+            "recommendation_link": q.recommendation_link,
+            "recommendation_video_link": q.recommendation_video_link,
+        }
+    
+    # Анализируем слабые темы
+    result = analyze_weak_topics(user_answers, questions_map)
+    
+    return Response(result)
 
-    # Сохраняем рекомендации в БД
+
+@api_view(["GET"])
+def ml_personalized_recommendations(request, user_id):
+    """
+    GET /ml/personalized-recommendations/<user_id>/
+    
+    Генерирует персонализированные рекомендации с ссылками на материалы.
+    
+    Query params:
+    - limit_days: анализировать ответы за последние N дней
+    - max_recommendations: максимальное количество рекомендаций (по умолчанию 10)
+    
+    Возвращает:
+    {
+        "user_id": str,
+        "recommendations": [
+            {
+                "topic": str,
+                "priority": int,
+                "recommendation_text": str,
+                "resources": [
+                    {"type": "lesson", "title": str, "url": str},
+                    {"type": "video", "title": str, "url": str},
+                    ...
+                ],
+                "practice_questions": [int, ...]
+            },
+            ...
+        ],
+        "progress_analysis": {...}
+    }
+    """
+    user = get_object_or_404(User, pk=user_id)
+    
+    limit_days = request.query_params.get('limit_days', None)
+    max_recs = int(request.query_params.get('max_recommendations', 10))
+    
+    # 1. Получаем ответы пользователя
+    user_answers_qs = UserAnswer.objects.filter(
+        test_result__user=user
+    ).select_related('test_result', 'question').order_by('-answered_at')
+    
+    if limit_days:
+        from datetime import timedelta
+        cutoff_date = timezone.now() - timedelta(days=int(limit_days))
+        user_answers_qs = user_answers_qs.filter(answered_at__gte=cutoff_date)
+    
+    user_answers = [
+        {
+            "question_id": ua.question_id,
+            "is_correct": ua.is_correct,
+            "answered_at": ua.answered_at.isoformat() if ua.answered_at else None,
+            "test_id": ua.test_result.test_id if ua.test_result else None,
+        }
+        for ua in user_answers_qs
+    ]
+    
+    # 2. Получаем информацию о вопросах
+    question_ids = set(ua["question_id"] for ua in user_answers if ua["question_id"])
+    questions_qs = Question.objects.filter(id__in=question_ids)
+    
+    questions_map = {}
+    for q in questions_qs:
+        topic = "Общая тема"
+        lesson = Lesson.objects.filter(test=q.test_id).first()
+        if lesson:
+            topic = lesson.block.title
+        
+        questions_map[q.id] = {
+            "topic": topic,
+            "block_id": str(lesson.block_id) if lesson else None,
+            "lesson_id": str(lesson.id) if lesson else None,
+            "recommendation_link": q.recommendation_link,
+            "recommendation_video_link": q.recommendation_video_link,
+        }
+    
+    # 3. Анализируем слабые темы
+    weak_topics_analysis = analyze_weak_topics(user_answers, questions_map)
+    
+    # 4. Получаем данные для рекомендаций
+    lessons_map = {}
+    for lesson in Lesson.objects.select_related('video').all():
+        lessons_map[str(lesson.id)] = {
+            "title": lesson.title or "",
+            "summary": lesson.summary or "",
+            "block_id": str(lesson.block_id),
+            "video_id": str(lesson.video_id) if lesson.video_id else None,
+        }
+    
+    videos_map = {}
+    for video in Video.objects.all():
+        videos_map[str(video.id)] = {
+            "title": video.name,
+            "link": video.link or "",
+            "type": video.type.name if video.type else "",
+        }
+    
+    blocks_map = {}
+    for block in Block.objects.all():
+        blocks_map[str(block.id)] = {
+            "title": block.title,
+            "subject_id": str(block.subject_id),
+        }
+    
+    # 5. Генерируем рекомендации
+    recommendations = generate_personalized_recommendations(
+        weak_topics_analysis,
+        lessons_map,
+        videos_map,
+        blocks_map,
+        max_recommendations=max_recs
+    )
+    
+    # 6. Анализируем прогресс
+    progress_analysis = analyze_progress_over_time(user_answers)
+    
+    # 7. Сохраняем рекомендации в БД
     Recommendation.objects.filter(user=user).delete()
-    saved = []
-    for r in recs:
-        obj = Recommendation.objects.create(
+    for rec in recommendations:
+        Recommendation.objects.create(
             user=user,
-            test_id=r["test_id"],
-            text=r["text"],
-            priority=r["priority"],
+            text=f"{rec['recommendation_text']} ({rec['topic']})",
+            priority=rec['priority'],
         )
-        saved.append(RecommendationSerializer(obj).data)
-
+    
     return Response({
         "user_id": str(user_id),
-        "cluster_label": cluster.cluster_label,
-        "recommendations": saved,
+        "recommendations": recommendations,
+        "overall_stats": weak_topics_analysis.get("overall_stats", {}),
+        "progress_analysis": progress_analysis,
     })
 
 
 @api_view(["GET"])
-def ml_student_cluster(request, user_id):
+def ml_learning_path(request, user_id):
     """
-    GET /ml/clusters/<user_id>
-    Возвращает кластер конкретного студента.
+    GET /ml/learning-path/<user_id>/
+    
+    Строит индивидуальную траекторию обучения.
+    
+    Query params:
+    - limit_days: анализировать ответы за последние N дней
+    - max_steps: максимальное количество шагов (по умолчанию 5)
+    
+    Возвращает:
+    {
+        "user_id": str,
+        "learning_path": [
+            {
+                "step": int,
+                "action": "study" | "practice" | "watch",
+                "topic": str,
+                "resource": {...},
+                "estimated_time_minutes": int
+            },
+            ...
+        ],
+        "total_estimated_time": int
+    }
     """
-    cluster = get_object_or_404(StudentCluster, user_id=user_id)
-    return Response(StudentClusterSerializer(cluster).data)
+    user = get_object_or_404(User, pk=user_id)
+    
+    limit_days = request.query_params.get('limit_days', None)
+    max_steps = int(request.query_params.get('max_steps', 5))
+    
+    # 1. Получаем ответы пользователя
+    user_answers_qs = UserAnswer.objects.filter(
+        test_result__user=user
+    ).select_related('test_result', 'question').order_by('-answered_at')
+    
+    if limit_days:
+        from datetime import timedelta
+        cutoff_date = timezone.now() - timedelta(days=int(limit_days))
+        user_answers_qs = user_answers_qs.filter(answered_at__gte=cutoff_date)
+    
+    user_answers = [
+        {
+            "question_id": ua.question_id,
+            "is_correct": ua.is_correct,
+            "answered_at": ua.answered_at.isoformat() if ua.answered_at else None,
+            "test_id": ua.test_result.test_id if ua.test_result else None,
+        }
+        for ua in user_answers_qs
+    ]
+    
+    # 2. Получаем информацию о вопросах
+    question_ids = set(ua["question_id"] for ua in user_answers if ua["question_id"])
+    questions_qs = Question.objects.filter(id__in=question_ids)
+    
+    questions_map = {}
+    for q in questions_qs:
+        topic = "Общая тема"
+        lesson = Lesson.objects.filter(test=q.test_id).first()
+        if lesson:
+            topic = lesson.block.title
+        
+        questions_map[q.id] = {
+            "topic": topic,
+            "block_id": str(lesson.block_id) if lesson else None,
+            "lesson_id": str(lesson.id) if lesson else None,
+            "recommendation_link": q.recommendation_link,
+            "recommendation_video_link": q.recommendation_video_link,
+        }
+    
+    # 3. Анализируем слабые темы
+    weak_topics_analysis = analyze_weak_topics(user_answers, questions_map)
+    
+    # 4. Получаем данные для рекомендаций
+    lessons_map = {}
+    for lesson in Lesson.objects.select_related('video').all():
+        lessons_map[str(lesson.id)] = {
+            "title": lesson.title or "",
+            "summary": lesson.summary or "",
+            "block_id": str(lesson.block_id),
+            "video_id": str(lesson.video_id) if lesson.video_id else None,
+        }
+    
+    videos_map = {}
+    for video in Video.objects.all():
+        videos_map[str(video.id)] = {
+            "title": video.name,
+            "link": video.link or "",
+            "type": video.type.name if video.type else "",
+        }
+    
+    blocks_map = {}
+    for block in Block.objects.all():
+        blocks_map[str(block.id)] = {
+            "title": block.title,
+            "subject_id": str(block.subject_id),
+        }
+    
+    # 5. Генерируем рекомендации
+    recommendations = generate_personalized_recommendations(
+        weak_topics_analysis,
+        lessons_map,
+        videos_map,
+        blocks_map,
+        max_recommendations=max_steps
+    )
+    
+    # 6. Строим структуру блоков
+    blocks_structure = {
+        "blocks": [
+            {
+                "id": str(b.id),
+                "title": b.title,
+                "subject": str(b.subject_id),
+                "position": b.position,
+            }
+            for b in Block.objects.all()
+        ],
+        "lessons_by_block": {},
+    }
+    
+    for block in Block.objects.all():
+        block_id = str(block.id)
+        lessons = Lesson.objects.filter(block=block).order_by('position')
+        blocks_structure["lessons_by_block"][block_id] = [
+            {
+                "id": str(l.id),
+                "title": l.title or "",
+                "position": l.position,
+            }
+            for l in lessons
+        ]
+    
+    # 7. Строим траекторию обучения
+    learning_path = build_learning_path(
+        weak_topics_analysis,
+        recommendations,
+        blocks_structure
+    )
+    
+    total_time = sum(step.get("estimated_time_minutes", 0) for step in learning_path)
+    
+    return Response({
+        "user_id": str(user_id),
+        "learning_path": learning_path,
+        "total_estimated_time_minutes": total_time,
+    })
 
 
-@api_view(["GET"])
-def ml_test_difficulty(request, test_id):
-    """
-    GET /ml/test-difficulty/<test_id>
-    Возвращает уровень сложности конкретного теста.
-    """
-    diff = get_object_or_404(TestDifficulty, test_id=test_id)
-    return Response(TestDifficultySerializer(diff).data)
+# ═══════════════════════════════════════════════════════════════════════
+# СТАРЫЕ ML ENDPOINTS (ОТКЛЮЧЕНЫ, НО СОХРАНЕНЫ ДЛЯ СРАВНЕНИЯ)
+# ═══════════════════════════════════════════════════════════════════════
+
+# @api_view(["GET"])
+# def ml_recommendations_old(request, user_id):
+#     ...
 
 
 # ═══════════════════════════════════════════════════════════════════════
