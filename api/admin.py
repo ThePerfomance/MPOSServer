@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.utils.html import format_html
+from django.contrib.auth.hashers import make_password
 from .models import (
     User, Group, GroupMember, Subject, Block,
     Lesson, Test, Question, Answer, Video, TestResult, VideoType, UserAnswer,
@@ -10,6 +11,16 @@ from .models import (
 admin.site.site_header = "Учебная платформа — Администрирование"
 admin.site.site_title = "Админ-панель"
 admin.site.index_title = "Управление контентом и пользователями"
+
+
+def has_admin_permission(user):
+    """Проверка прав администратора"""
+    return hasattr(user, 'role') and user.role == 'admin'
+
+
+def has_teacher_permission(user):
+    """Проверка прав преподавателя или администратора"""
+    return hasattr(user, 'role') and user.role in ['teacher', 'admin']
 
 
 class UserAnswerInline(admin.TabularInline):
@@ -60,6 +71,13 @@ class UserAdmin(admin.ModelAdmin):
     )
     verbose_name = "Пользователь"
     verbose_name_plural = "Пользователи"
+    
+    def has_change_permission(self, request, obj=None):
+        # Только админы могут менять пользователей
+        return has_admin_permission(request.user)
+    
+    def has_delete_permission(self, request, obj=None):
+        return has_admin_permission(request.user)
 
 
 @admin.register(Group)
@@ -87,7 +105,7 @@ class GroupMemberAdmin(admin.ModelAdmin):
 
 @admin.register(Subject)
 class SubjectAdmin(admin.ModelAdmin):
-    """Управление учебными предметами."""
+    """Управление учебными предметами. Доступно преподавателям и админам."""
     list_display = ('name', 'blocks_count', 'lessons_count')
     search_fields = ('name',)
     ordering = ('name',)
@@ -101,11 +119,20 @@ class SubjectAdmin(admin.ModelAdmin):
     lessons_count.short_description = "Уроков"
     verbose_name = "Предмет"
     verbose_name_plural = "Предметы"
+    
+    def has_view_permission(self, request, obj=None):
+        return has_teacher_permission(request.user)
+    
+    def has_change_permission(self, request, obj=None):
+        return has_teacher_permission(request.user)
+    
+    def has_delete_permission(self, request, obj=None):
+        return has_admin_permission(request.user)
 
 
 @admin.register(Block)
 class BlockAdmin(admin.ModelAdmin):
-    """Управление тематическими блоками внутри предмета."""
+    """Управление тематическими блоками внутри предмета. Доступно преподавателям и админам."""
     list_display = ('title', 'subject', 'position', 'lessons_count', 'is_published')
     list_filter = ('subject', 'is_published')
     list_editable = ('position', 'is_published')
@@ -122,6 +149,15 @@ class BlockAdmin(admin.ModelAdmin):
     lessons_count.short_description = "Уроков"
     verbose_name = "Тематический блок"
     verbose_name_plural = "Тематические блоки"
+    
+    def has_view_permission(self, request, obj=None):
+        return has_teacher_permission(request.user)
+    
+    def has_change_permission(self, request, obj=None):
+        return has_teacher_permission(request.user)
+    
+    def has_delete_permission(self, request, obj=None):
+        return has_admin_permission(request.user)
 
 
 @admin.register(VideoType)
@@ -129,6 +165,7 @@ class VideoTypeAdmin(admin.ModelAdmin):
     """
     Управление типами видео (например: 'Лекция', 'Практика', 'Вебинар').
     Позволяет классифицировать видеоматериалы для удобного поиска.
+    Доступно только администраторам.
     """
     list_display = ('name', 'videos_count')
     search_fields = ('name',)
@@ -145,6 +182,16 @@ class VideoTypeAdmin(admin.ModelAdmin):
     videos_count.short_description = "Количество видео"
     verbose_name = "Тип видео"
     verbose_name_plural = "Типы видео"
+    
+    def has_view_permission(self, request, obj=None):
+        # Только админы могут видеть типы видео
+        return has_admin_permission(request.user)
+    
+    def has_change_permission(self, request, obj=None):
+        return has_admin_permission(request.user)
+    
+    def has_delete_permission(self, request, obj=None):
+        return has_admin_permission(request.user)
 
 
 @admin.register(Video)
@@ -179,11 +226,21 @@ class VideoAdmin(admin.ModelAdmin):
     file_or_link.short_description = "Источник"
     verbose_name = "Видео"
     verbose_name_plural = "Видеоматериалы"
+    
+    def has_view_permission(self, request, obj=None):
+        # Только админы могут видеть видео
+        return has_admin_permission(request.user)
+    
+    def has_change_permission(self, request, obj=None):
+        return has_admin_permission(request.user)
+    
+    def has_delete_permission(self, request, obj=None):
+        return has_admin_permission(request.user)
 
 
 @admin.register(Lesson)
 class LessonAdmin(admin.ModelAdmin):
-    """Управление уроками (видео, тест, краткое содержание)."""
+    """Управление уроками (видео, тест, краткое содержание). Доступно преподавателям и админам."""
     list_display = ('title', 'block', 'position', 'duration', 'video_details', 'is_published')
     list_filter = ('block', 'block__subject', 'is_published')
     list_editable = ('position', 'duration', 'is_published')
@@ -206,11 +263,20 @@ class LessonAdmin(admin.ModelAdmin):
     video_details.short_description = "Параметры видео"
     verbose_name = "Урок"
     verbose_name_plural = "Уроки"
+    
+    def has_view_permission(self, request, obj=None):
+        return has_teacher_permission(request.user)
+    
+    def has_change_permission(self, request, obj=None):
+        return has_teacher_permission(request.user)
+    
+    def has_delete_permission(self, request, obj=None):
+        return has_admin_permission(request.user)
 
 
 @admin.register(Test)
 class TestAdmin(admin.ModelAdmin):
-    """Управление тестами (прикреплённые к урокам или итоговые для блоков)."""
+    """Управление тестами (прикреплённые к урокам или итоговые для блоков). Доступно преподавателям и админам."""
     list_display = ('title', 'duration', 'questions_count', 'is_published', 'used_in')
     list_filter = ('is_published',)
     list_editable = ('is_published',)
@@ -235,11 +301,20 @@ class TestAdmin(admin.ModelAdmin):
     used_in.short_description = "Используется в"
     verbose_name = "Тест"
     verbose_name_plural = "Тесты"
+    
+    def has_view_permission(self, request, obj=None):
+        return has_teacher_permission(request.user)
+    
+    def has_change_permission(self, request, obj=None):
+        return has_teacher_permission(request.user)
+    
+    def has_delete_permission(self, request, obj=None):
+        return has_admin_permission(request.user)
 
 
 @admin.register(Question)
 class QuestionAdmin(admin.ModelAdmin):
-    """Управление вопросами тестов (с вариантами ответов и рекомендациями)."""
+    """Управление вопросами тестов (с вариантами ответов и рекомендациями). Доступно преподавателям и админам."""
     list_display = ('text_preview', 'test', 'has_recommendations')
     list_filter = ('test', 'test__is_published')
     search_fields = ('text',)
@@ -259,6 +334,15 @@ class QuestionAdmin(admin.ModelAdmin):
     has_recommendations.short_description = "Рекомендации"
     verbose_name = "Вопрос"
     verbose_name_plural = "Вопросы"
+    
+    def has_view_permission(self, request, obj=None):
+        return has_teacher_permission(request.user)
+    
+    def has_change_permission(self, request, obj=None):
+        return has_teacher_permission(request.user)
+    
+    def has_delete_permission(self, request, obj=None):
+        return has_admin_permission(request.user)
 
 
 @admin.register(TestResult)

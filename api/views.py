@@ -210,6 +210,11 @@ def questions_for_test(request, test_id):
 
 @api_view(["GET", "POST"])
 def test_results_list(request):
+    """
+    Список результатов тестирования.
+    POST: Создание нового результата теста с ответами пользователя.
+          После сохранения ответов автоматически запускается ML-анализ слабых тем.
+    """
     if request.method == "GET":
         return Response(TestResultSerializer(TestResult.objects.all(), many=True).data)
 
@@ -228,17 +233,47 @@ def test_results_list(request):
     # 2. Сохраняем ответы UserAnswer
     try:
         for ans in answers_data:
+            # Если флаг is_correct не передан, определяем его автоматически
+            is_correct = ans.get("is_correct")
+            if is_correct is None:
+                question_id = ans.get("question_id")
+                chosen_answer_id = ans.get("chosen_answer_id")
+                if question_id and chosen_answer_id:
+                    correct_answer = Answer.objects.filter(question_id=question_id, is_correct=True).first()
+                    is_correct = (correct_answer and correct_answer.id == chosen_answer_id)
+                else:
+                    is_correct = False
+            
             UserAnswer.objects.create(
                 test_result=test_result,
                 question_id=ans.get("question_id"),
                 chosen_answer_id=ans.get("chosen_answer_id"),
-                # Если Android не шлет флаг, бэкенд должен сам проверить правильность
-                is_correct=ans.get("is_correct", False)
+                is_correct=is_correct
             )
     except Exception as e:
         # Если ответы не сохранились, лучше удалить сам результат, чтобы не было дублей при перезаписи
         test_result.delete()
         return Response({"error": f"Ошибка при сохранении ответов: {str(e)}"}, status=500)
+
+    # 3. Запускаем ML-анализ слабых тем сразу после прохождения теста
+    try:
+        from ml.engine import analyze_weak_topics, generate_personalized_recommendations
+        
+        user_id = str(test_result.user.id) if test_result.user else None
+        if user_id:
+            # Анализируем слабые темы
+            weak_topics = analyze_weak_topics(user_id)
+            
+            # Генерируем персонализированные рекомендации
+            recommendations = generate_personalized_recommendations(user_id)
+            
+            # Логируем для отладки
+            print(f"[ML] Анализ выполнен для пользователя {user_id}")
+            print(f"[ML] Слабые темы: {weak_topics}")
+            print(f"[ML] Рекомендации: {len(recommendations)} шт.")
+    except Exception as e:
+        # ML-ошибка не должна ломать основной поток
+        print(f"[ML] Ошибка при анализе: {str(e)}")
 
     return Response(s.data, status=status.HTTP_201_CREATED)
 
