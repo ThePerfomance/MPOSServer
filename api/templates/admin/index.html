@@ -1,211 +1,493 @@
-{% extends "admin/index.html" %}
-{% load i18n static jazzmin %}
+{% extends "admin/base_site.html" %}
+{% load i18n static log %}
+
+{% block title %}Дашборд — {{ site_title|default:"Система обучения" }}{% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --pr:#2563EB;--pr-d:#1D4ED8;--pr-l:#EFF6FF;
+  --teal:#0EA5E9;--teal-l:#F0F9FF;
+  --amber:#F59E0B;--amber-l:#FFFBEB;
+  --green:#10B981;--green-l:#ECFDF5;
+  --violet:#8B5CF6;--violet-l:#F5F3FF;
+  --rose:#F43F5E;--rose-l:#FFF1F2;
+  --surface:#F1F5F9;--card:#FFFFFF;--border:#E2E8F0;
+  --t1:#0F172A;--t2:#475569;--t3:#94A3B8;
+  --sh1:0 1px 3px rgba(15,23,42,.07),0 1px 2px rgba(15,23,42,.04);
+  --sh2:0 4px 16px rgba(15,23,42,.09),0 2px 6px rgba(15,23,42,.04);
+  --r:14px;--r2:8px;
+  --font:'Onest',sans-serif;--mono:'JetBrains Mono',monospace;
+}
+#content{background:var(--surface)!important;padding:0!important;font-family:var(--font)!important}
+#content-main{padding:0!important}
+h1#site-name,.breadcrumbs{display:none}
+*{box-sizing:border-box}
+
+/* Layout */
+.dw{max-width:1380px;margin:0 auto;padding:28px 26px 60px}
+
+/* Hero */
+.hero{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;gap:16px;flex-wrap:wrap}
+.hero-l{display:flex;align-items:center;gap:16px}
+.av{width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,var(--pr),var(--teal));
+  display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;color:#fff;
+  box-shadow:0 6px 20px rgba(37,99,235,.3);flex-shrink:0}
+.hero-sub{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--pr);margin-bottom:3px}
+.hero-name{font-size:21px;font-weight:700;color:var(--t1);line-height:1.2}
+.clock{font-size:13px;color:var(--t2);background:var(--card);border:1px solid var(--border);
+  border-radius:30px;padding:8px 18px;box-shadow:var(--sh1);display:flex;align-items:center;gap:8px;font-family:var(--mono)}
+.clock i{color:var(--pr)}
+
+/* Section label */
+.slabel{font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--t3);
+  margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.slabel::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* Stats */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+.sc{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:22px 20px 18px;
+  box-shadow:var(--sh1);position:relative;overflow:hidden;text-decoration:none!important;
+  transition:transform .2s,box-shadow .2s;display:block}
+.sc:hover{transform:translateY(-3px);box-shadow:var(--sh2)}
+.sc::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:var(--r) var(--r) 0 0}
+.sc.bl::before{background:linear-gradient(90deg,#2563EB,#60A5FA)}
+.sc.tl::before{background:linear-gradient(90deg,#0EA5E9,#38BDF8)}
+.sc.am::before{background:linear-gradient(90deg,#F59E0B,#FCD34D)}
+.sc.gn::before{background:linear-gradient(90deg,#10B981,#6EE7B7)}
+.sico{width:40px;height:40px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;margin-bottom:14px}
+.sc.bl .sico{background:var(--pr-l);color:var(--pr)}
+.sc.tl .sico{background:var(--teal-l);color:var(--teal)}
+.sc.am .sico{background:var(--amber-l);color:var(--amber)}
+.sc.gn .sico{background:var(--green-l);color:var(--green)}
+.sval{font-size:34px;font-weight:700;color:var(--t1);line-height:1;font-family:var(--mono);letter-spacing:-.02em;margin-bottom:4px}
+.slb{font-size:13px;color:var(--t2);font-weight:500}
+
+/* Progress */
+.prog-row{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px}
+.prog-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r2);padding:14px 16px;box-shadow:var(--sh1)}
+.prog-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.prog-label{font-size:12px;font-weight:600;color:var(--t2)}
+.prog-num{font-size:13px;font-weight:700;color:var(--t1);font-family:var(--mono)}
+.prog-bar{height:5px;background:#F1F5F9;border-radius:3px;overflow:hidden}
+.prog-fill{height:100%;border-radius:3px}
+.pf-bl{background:linear-gradient(90deg,var(--pr),var(--teal))}
+.pf-am{background:linear-gradient(90deg,var(--amber),#FCD34D)}
+.pf-gn{background:linear-gradient(90deg,var(--green),#6EE7B7)}
+
+/* Main grid */
+.mg{display:grid;grid-template-columns:1fr 358px;gap:20px}
+
+/* Panel */
+.panel{background:var(--card);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--sh1);overflow:hidden;margin-bottom:20px}
+.panel:last-child{margin-bottom:0}
+.ph{display:flex;align-items:center;gap:10px;padding:15px 20px;border-bottom:1px solid var(--border)}
+.phi{width:30px;height:30px;border-radius:var(--r2);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.pht{font-size:14px;font-weight:600;color:var(--t1)}
+.phs{font-size:12px;color:var(--t3);margin-left:auto;font-family:var(--mono)}
+.pb{padding:20px}
+
+/* Constructor */
+.con-panel .phi{background:var(--pr-l);color:var(--pr)}
+.flow{display:flex;align-items:flex-start;gap:0;overflow-x:auto;padding-bottom:6px;margin-bottom:20px}
+.fstep{display:flex;flex-direction:column;align-items:center;gap:8px;flex-shrink:0}
+.fbtn{display:inline-flex;align-items:center;gap:7px;padding:9px 17px;border-radius:30px;
+  font-size:13px;font-weight:700;text-decoration:none!important;transition:all .18s;
+  white-space:nowrap;border:none}
+.fbtn:hover{transform:translateY(-2px);box-shadow:var(--sh2)}
+.fbtn.s1{background:var(--pr)     !important;color:#fff!important}
+.fbtn.s2{background:var(--teal)   !important;color:#fff!important}
+.fbtn.s3{background:var(--amber)  !important;color:#fff!important}
+.fbtn.s4{background:var(--violet) !important;color:#fff!important}
+.fbtn.s5{background:var(--green)  !important;color:#fff!important}
+.fbtn *{color:#fff!important}
+.fnum{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--t3);font-family:var(--mono)}
+.farr{font-size:13px;color:var(--border);margin:0 6px;padding-bottom:22px;flex-shrink:0}
+.vsec{background:var(--surface);border:1px dashed var(--border);border-radius:var(--r2);
+  padding:14px 18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.vslb{font-size:11px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.09em;
+  white-space:nowrap;display:flex;align-items:center;gap:6px;flex-shrink:0}
+.vbtns{display:flex;gap:10px;flex-wrap:wrap}
+.vbtn{display:inline-flex;align-items:center;gap:7px;padding:8px 16px;border-radius:30px;
+  font-size:12px;font-weight:700;text-decoration:none!important;transition:all .18s;border:1px solid var(--border)}
+.vbtn.vt{background:#fff!important;color:var(--t1)!important}
+.vbtn.vt:hover{border-color:var(--pr);color:var(--pr)!important}
+.vbtn.va{background:var(--pr)!important;color:#fff!important;border-color:var(--pr)!important}
+.vbtn.va *{color:#fff!important}
+
+/* Content tree */
+.tree-panel .phi{background:var(--violet-l);color:var(--violet)}
+.sj-item{border-bottom:1px solid #F1F5F9}
+.sj-item:last-child{border-bottom:none}
+.sj-head{display:flex;align-items:center;gap:10px;padding:13px 20px;cursor:pointer;transition:background .15s;user-select:none}
+.sj-head:hover{background:#FAFBFF}
+.sj-ico{width:28px;height:28px;border-radius:6px;background:var(--pr-l);color:var(--pr);
+  display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0}
+.sj-name{font-size:13px;font-weight:600;color:var(--t1);flex:1}
+.sj-meta{font-size:11px;color:var(--t3);font-family:var(--mono);margin-right:6px}
+.edit-badge{font-size:10px;color:var(--pr)!important;text-decoration:none!important;
+  background:var(--pr-l);padding:3px 8px;border-radius:20px;font-weight:600;margin-right:6px}
+.sj-arr{font-size:10px;color:var(--t3);transition:transform .2s}
+.sj-head.open .sj-arr{transform:rotate(90deg)}
+.sj-body{display:none;background:#FAFBFF;padding:0 20px 14px 58px}
+.sj-body.show{display:block}
+.bl-item{margin-bottom:12px}
+.bl-name{font-size:12px;font-weight:600;color:var(--t2);margin-bottom:6px;
+  display:flex;align-items:center;gap:6px}
+.bl-name i{color:var(--teal);font-size:10px}
+.bl-edit{font-size:10px;color:var(--t3)!important;text-decoration:none!important;
+  background:#F1F5F9;padding:2px 7px;border-radius:20px;font-weight:600;margin-left:auto}
+.ll{list-style:none;margin:0;padding:0}
+.ll li{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--t2);
+  padding:5px 0;border-bottom:1px dashed #EEF2F7}
+.ll li:last-child{border-bottom:none}
+.ll a{color:var(--t1);text-decoration:none;flex:1}
+.ll a:hover{color:var(--pr)}
+.pub{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:600;
+  padding:2px 7px;border-radius:30px;margin-left:auto;white-space:nowrap}
+.pub.y{background:var(--green-l);color:#065F46}
+.pub.n{background:#F8FAFC;color:var(--t3)}
+.tree-empty{text-align:center;padding:32px;color:var(--t3);font-size:13px}
+.tree-empty i{font-size:28px;margin-bottom:8px;display:block;color:var(--border)}
+
+/* Results */
+.res-panel .phi{background:var(--green-l);color:var(--green)}
+.rt{width:100%;border-collapse:collapse}
+.rt th{font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;
+  letter-spacing:.08em;padding:0 12px 10px;text-align:left;border-bottom:1px solid var(--border)}
+.rt td{padding:11px 12px;font-size:13px;color:var(--t1);border-bottom:1px solid #F1F5F9;vertical-align:middle}
+.rt tr:last-child td{border-bottom:none}
+.rt tr:hover td{background:#FAFBFF}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:30px;
+  font-size:12px;font-weight:700;font-family:var(--mono)}
+.badge.gd{background:var(--green-l);color:#065F46}
+.badge.ok{background:var(--amber-l);color:#92400E}
+.badge.bd{background:var(--rose-l);color:#9F1239}
+.all-link{display:block;text-align:center;padding:11px;font-size:12px;font-weight:600;
+  color:var(--pr);text-decoration:none;border-top:1px solid var(--border);letter-spacing:.04em;transition:background .15s}
+.all-link:hover{background:var(--pr-l)}
+.empty-box{text-align:center;padding:28px;color:var(--t3);font-size:13px}
+.empty-box i{font-size:26px;margin-bottom:8px;display:block;color:var(--border)}
+
+/* Right col */
+.rc{display:flex;flex-direction:column}
+.navl{list-style:none;margin:0;padding:0}
+.navl li{border-bottom:1px solid #F1F5F9}
+.navl li:last-child{border-bottom:none}
+.navl a{display:flex;align-items:center;gap:10px;padding:11px 20px;
+  text-decoration:none!important;color:var(--t1)!important;font-size:13px;font-weight:500;transition:all .15s}
+.navl a:hover{background:#FAFBFF;color:var(--pr)!important}
+.navl a:hover .ni{color:var(--pr)}
+.ni{width:26px;height:26px;background:var(--surface);border-radius:6px;
+  display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--t2);transition:color .15s;flex-shrink:0}
+.na{margin-left:auto;color:var(--border);font-size:10px}
+.nav-panel .phi{background:var(--violet-l);color:var(--violet)}
+.stu-panel .phi{background:var(--amber-l);color:var(--amber)}
+.stu-list{list-style:none;margin:0;padding:0}
+.stu-li{display:flex;align-items:center;gap:10px;padding:10px 20px;border-bottom:1px solid #F1F5F9}
+.stu-li:last-child{border-bottom:none}
+.stu-av{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--pr),var(--teal));
+  display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0}
+.stu-name{font-size:13px;font-weight:500;color:var(--t1)}
+.stu-email{font-size:11px;color:var(--t3);font-family:var(--mono)}
+.act-panel .phi{background:var(--amber-l);color:#B45309}
+.actl{list-style:none;margin:0;padding:0}
+.acti{display:flex;align-items:flex-start;gap:10px;padding:11px 20px;border-bottom:1px solid #F1F5F9}
+.acti:last-child{border-bottom:none}
+.adot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:5px}
+.acti-t{font-size:12px;color:var(--t1);line-height:1.5}
+.acti-t a{color:var(--pr)!important;text-decoration:none}
+.acti-t a:hover{text-decoration:underline}
+.acti-d{font-size:11px;color:var(--t3);font-family:var(--mono);margin-top:2px}
+
+@keyframes fu{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.sc{animation:fu .4s ease both}
+.sc:nth-child(1){animation-delay:.05s}.sc:nth-child(2){animation-delay:.1s}
+.sc:nth-child(3){animation-delay:.15s}.sc:nth-child(4){animation-delay:.2s}
+.panel{animation:fu .4s ease .2s both}
+
+@media(max-width:1120px){.mg{grid-template-columns:1fr}.rc{display:grid;grid-template-columns:1fr 1fr}}
+@media(max-width:700px){.stats{grid-template-columns:repeat(2,1fr)}.prog-row{grid-template-columns:repeat(2,1fr)}.rc{grid-template-columns:1fr}.dw{padding:16px 12px 40px}}
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="row">
-    <!-- Статистика -->
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title"><i class="fas fa-chart-line"></i> Обзор системы</h3>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    {% if perms.api.view_subject %}
-                    <div class="col-md-3 col-sm-6">
-                        <div class="info-box bg-success">
-                            <span class="info-box-icon"><i class="fas fa-book"></i></span>
-                            <div class="info-box-content">
-                                <span class="info-box-text">Предметов</span>
-                                <span class="info-box-number">{{ subject_count|default:0 }}</span>
-                            </div>
-                        </div>
-                    </div>
-                    {% endif %}
-                    
-                    {% if perms.api.view_test %}
-                    <div class="col-md-3 col-sm-6">
-                        <div class="info-box bg-info">
-                            <span class="info-box-icon"><i class="fas fa-clipboard-check"></i></span>
-                            <div class="info-box-content">
-                                <span class="info-box-text">Тестов</span>
-                                <span class="info-box-number">{{ test_count|default:0 }}</span>
-                            </div>
-                        </div>
-                    </div>
-                    {% endif %}
-                    
-                    {% if perms.api.view_user %}
-                    <div class="col-md-3 col-sm-6">
-                        <div class="info-box bg-warning">
-                            <span class="info-box-icon"><i class="fas fa-user-graduate"></i></span>
-                            <div class="info-box-content">
-                                <span class="info-box-text">Студентов</span>
-                                <span class="info-box-number">{{ student_count|default:0 }}</span>
-                            </div>
-                        </div>
-                    </div>
-                    {% endif %}
-                    
-                    {% if perms.api.view_testresult %}
-                    <div class="col-md-3 col-sm-6">
-                        <div class="info-box bg-primary">
-                            <span class="info-box-icon"><i class="fas fa-chart-bar"></i></span>
-                            <div class="info-box-content">
-                                <span class="info-box-text">Результатов</span>
-                                <span class="info-box-number">{{ result_count|default:0 }}</span>
-                            </div>
-                        </div>
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
+<div class="dw">
+
+{# HERO #}
+<div class="hero">
+  <div class="hero-l">
+    <div class="av">{% if request.user.firstname %}{{ request.user.firstname|first|upper }}{% else %}{{ request.user.email|first|upper }}{% endif %}</div>
+    <div>
+      <div class="hero-sub">{% if request.user.role == 'admin' %}Администратор{% else %}Преподаватель{% endif %}</div>
+      <div class="hero-name">{% if request.user.firstname %}{{ request.user.firstname }} {{ request.user.lastname }}{% else %}{{ request.user.email }}{% endif %}</div>
     </div>
+  </div>
+  <div class="clock"><i class="fas fa-calendar-alt"></i><span id="dd">—</span></div>
 </div>
 
-<!-- Конструктор курса -->
-{% if user.role == 'teacher' or user.is_superuser %}
-<div class="row mt-4">
-    <div class="col-12">
-        <div class="card card-primary">
-            <div class="card-header">
-                <h3 class="card-title"><i class="fas fa-sitemap"></i> Конструктор курса</h3>
-            </div>
-            <div class="card-body">
-                <div class="alert alert-info">
-                    <i class="fas fa-info-circle"></i> 
-                    <strong>Порядок создания:</strong> 
-                    Предмет → Тематический блок → Урок → Тест → Вопросы
-                </div>
-                
-                <div class="row text-center">
-                    <div class="col-md-2 col-sm-4 mb-3">
-                        <a href="{% url 'admin:api_subject_add' %}" class="btn btn-lg btn-success btn-block">
-                            <i class="fas fa-plus"></i><br>
-                            <small>Предмет</small>
-                        </a>
-                    </div>
-                    <div class="col-md-2 col-sm-4 mb-3">
-                        <i class="fas fa-arrow-right text-muted mt-4"></i>
-                    </div>
-                    <div class="col-md-2 col-sm-4 mb-3">
-                        <a href="{% url 'admin:api_block_add' %}" class="btn btn-lg btn-info btn-block">
-                            <i class="fas fa-plus"></i><br>
-                            <small>Блок</small>
-                        </a>
-                    </div>
-                    <div class="col-md-2 col-sm-4 mb-3">
-                        <i class="fas fa-arrow-right text-muted mt-4"></i>
-                    </div>
-                    <div class="col-md-2 col-sm-4 mb-3">
-                        <a href="{% url 'admin:api_lesson_add' %}" class="btn btn-lg btn-warning btn-block">
-                            <i class="fas fa-plus"></i><br>
-                            <small>Урок</small>
-                        </a>
-                    </div>
-                    <div class="col-md-2 col-sm-4 mb-3">
-                        <i class="fas fa-arrow-right text-muted mt-4"></i>
-                    </div>
-                    <div class="col-md-2 col-sm-4 mb-3">
-                        <a href="{% url 'admin:api_test_add' %}" class="btn btn-lg btn-primary btn-block">
-                            <i class="fas fa-plus"></i><br>
-                            <small>Тест</small>
-                        </a>
-                    </div>
-                </div>
-                
-                <div class="row text-center mt-3">
-                    <div class="col-md-4 offset-md-4 col-sm-6 offset-sm-3">
-                        <a href="{% url 'admin:api_question_add' %}" class="btn btn-lg btn-danger btn-block">
-                            <i class="fas fa-question-circle"></i><br>
-                            <small>Вопросы к тесту</small>
-                        </a>
-                    </div>
-                </div>
-                
-                <hr>
-                
-                <h5><i class="fas fa-video"></i> Видеоматериалы</h5>
-                <div class="row mt-3">
-                    <div class="col-md-6">
-                        <a href="{% url 'admin:api_videotype_add' %}" class="btn btn-secondary btn-block">
-                            <i class="fas fa-tags"></i> Тип видео
-                        </a>
-                    </div>
-                    <div class="col-md-6">
-                        <a href="{% url 'admin:api_video_add' %}" class="btn btn-secondary btn-block">
-                            <i class="fas fa-video"></i> Добавить видео
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+{# STATS #}
+<div class="slabel">Общая статистика</div>
+<div class="stats">
+  <a href="{% url 'admin:api_subject_changelist' %}" class="sc bl">
+    <div class="sico"><i class="fas fa-book-open"></i></div>
+    <div class="sval">{{ subjects_count|default:"0" }}</div>
+    <div class="slb">Предметов</div>
+  </a>
+  <a href="{% url 'admin:api_test_changelist' %}" class="sc tl">
+    <div class="sico"><i class="fas fa-clipboard-check"></i></div>
+    <div class="sval">{{ tests_count|default:"0" }}</div>
+    <div class="slb">Тестов</div>
+  </a>
+  <a href="{% url 'admin:api_user_changelist' %}" class="sc am">
+    <div class="sico"><i class="fas fa-user-graduate"></i></div>
+    <div class="sval">{{ students_count|default:"0" }}</div>
+    <div class="slb">Студентов</div>
+  </a>
+  <a href="{% url 'admin:api_testresult_changelist' %}" class="sc gn">
+    <div class="sico"><i class="fas fa-chart-line"></i></div>
+    <div class="sval">{{ results_count|default:"0" }}</div>
+    <div class="slb">Результатов</div>
+  </a>
 </div>
-{% endif %}
 
-<!-- Последние результаты тестов -->
-{% if user.role == 'teacher' or user.is_superuser %}
-<div class="row mt-4">
-    <div class="col-12">
-        <div class="card card-success">
-            <div class="card-header">
-                <h3 class="card-title"><i class="fas fa-clock"></i> Последние результаты тестирования</h3>
-            </div>
-            <div class="card-body table-responsive p-0">
-                <table class="table table-striped table-hover">
-                    <thead>
-                        <tr>
-                            <th>Студент</th>
-                            <th>Тест</th>
-                            <th>Результат</th>
-                            <th>Дата</th>
-                            <th>Статус</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for result in recent_results %}
-                        <tr>
-                            <td>{{ result.user.get_full_name|default:result.user.email }}</td>
-                            <td>{{ result.test.title }}</td>
-                            <td>
-                                {% if result.score >= 80 %}
-                                    <span class="badge badge-success">{{ result.score }}%</span>
-                                {% elif result.score >= 50 %}
-                                    <span class="badge badge-warning">{{ result.score }}%</span>
-                                {% else %}
-                                    <span class="badge badge-danger">{{ result.score }}%</span>
-                                {% endif %}
-                            </td>
-                            <td>{{ result.completed_at|date:"d.m.Y H:i" }}</td>
-                            <td>
-                                {% if result.score >= 80 %}
-                                    <i class="fas fa-check-circle text-success"></i> Отлично
-                                {% elif result.score >= 50 %}
-                                    <i class="fas fa-exclamation-circle text-warning"></i> Нормально
-                                {% else %}
-                                    <i class="fas fa-times-circle text-danger"></i> Требуется работа
-                                {% endif %}
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="5" class="text-center text-muted">Пока нет результатов тестирования</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            <div class="card-footer">
-                <a href="{% url 'admin:api_testresult_changelist' %}" class="btn btn-sm btn-outline-primary">
-                    Все результаты <i class="fas fa-arrow-right"></i>
-                </a>
-            </div>
-        </div>
+{# PROGRESS #}
+<div class="slabel">Наполненность платформы</div>
+<div class="prog-row">
+  <div class="prog-card">
+    <div class="prog-head">
+      <span class="prog-label"><i class="fas fa-layer-group" style="color:var(--pr);margin-right:5px"></i> Блоков</span>
+      <span class="prog-num">{{ blocks_count|default:"0" }}</span>
     </div>
+    <div class="prog-bar"><div class="prog-fill pf-bl" style="width:{% if blocks_count and subjects_count %}{% widthratio blocks_count subjects_count 100 %}{% else %}0{% endif %}%"></div></div>
+  </div>
+  <div class="prog-card">
+    <div class="prog-head">
+      <span class="prog-label"><i class="fas fa-chalkboard-teacher" style="color:var(--amber);margin-right:5px"></i> Уроков</span>
+      <span class="prog-num">{{ lessons_count|default:"0" }}</span>
+    </div>
+    <div class="prog-bar"><div class="prog-fill pf-am" style="width:{% if lessons_count and blocks_count %}{% widthratio lessons_count blocks_count 100 %}{% else %}0{% endif %}%"></div></div>
+  </div>
+  <div class="prog-card">
+    <div class="prog-head">
+      <span class="prog-label"><i class="fas fa-video" style="color:var(--green);margin-right:5px"></i> Видеоматериалов</span>
+      <span class="prog-num">{{ videos_count|default:"0" }}</span>
+    </div>
+    <div class="prog-bar"><div class="prog-fill pf-gn" style="width:{% if videos_count and lessons_count %}{% widthratio videos_count lessons_count 100 %}{% else %}0{% endif %}%"></div></div>
+  </div>
 </div>
-{% endif %}
 
-{{ block.super }}
+{# MAIN GRID #}
+<div class="slabel">Рабочее пространство</div>
+<div class="mg">
+
+  {# LEFT #}
+  <div>
+    {# Constructor #}
+    <div class="panel con-panel">
+      <div class="ph">
+        <div class="phi"><i class="fas fa-layer-group"></i></div>
+        <div class="pht">Конструктор курса</div>
+        <div class="phs">5 шагов к готовому курсу</div>
+      </div>
+      <div class="pb">
+        <div class="flow">
+          <div class="fstep"><a href="{% url 'admin:api_subject_add' %}" class="fbtn s1"><i class="fas fa-plus"></i> Предмет</a><span class="fnum">Шаг 1</span></div>
+          <div class="farr"><i class="fas fa-chevron-right"></i></div>
+          <div class="fstep"><a href="{% url 'admin:api_block_add' %}" class="fbtn s2"><i class="fas fa-plus"></i> Блок</a><span class="fnum">Шаг 2</span></div>
+          <div class="farr"><i class="fas fa-chevron-right"></i></div>
+          <div class="fstep"><a href="{% url 'admin:api_lesson_add' %}" class="fbtn s3"><i class="fas fa-plus"></i> Урок</a><span class="fnum">Шаг 3</span></div>
+          <div class="farr"><i class="fas fa-chevron-right"></i></div>
+          <div class="fstep"><a href="{% url 'admin:api_test_add' %}" class="fbtn s4"><i class="fas fa-plus"></i> Тест</a><span class="fnum">Шаг 4</span></div>
+          <div class="farr"><i class="fas fa-chevron-right"></i></div>
+          <div class="fstep"><a href="{% url 'admin:api_question_add' %}" class="fbtn s5"><i class="fas fa-plus"></i> Вопросы</a><span class="fnum">Шаг 5</span></div>
+        </div>
+        <div class="vsec">
+          <div class="vslb"><i class="fas fa-film"></i> Видеоматериалы</div>
+          <div class="vbtns">
+            <a href="{% url 'admin:api_videotype_changelist' %}" class="vbtn vt"><i class="fas fa-tag"></i> Типы видео</a>
+            <a href="{% url 'admin:api_video_add' %}" class="vbtn va"><i class="fas fa-plus"></i> Добавить видео</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {# Content tree #}
+    <div class="panel tree-panel">
+      <div class="ph">
+        <div class="phi"><i class="fas fa-sitemap"></i></div>
+        <div class="pht">Содержание курсов</div>
+        <div class="phs">Все предметы → блоки → уроки</div>
+      </div>
+      {% if subjects_tree %}
+        {% for subj in subjects_tree %}
+        <div class="sj-item">
+          <div class="sj-head" onclick="toggleSj(this)">
+            <div class="sj-ico"><i class="fas fa-book"></i></div>
+            <div class="sj-name">{{ subj.name }}</div>
+            <span class="sj-meta">{{ subj.blocks.count }} бл.</span>
+            <a href="{% url 'admin:api_subject_change' subj.pk %}" class="edit-badge" onclick="event.stopPropagation()"><i class="fas fa-pen"></i></a>
+            <i class="fas fa-chevron-right sj-arr"></i>
+          </div>
+          <div class="sj-body">
+            {% for bl in subj.blocks.all %}
+            <div class="bl-item">
+              <div class="bl-name">
+                <i class="fas fa-layer-group"></i>{{ bl.title }}
+                <a href="{% url 'admin:api_block_change' bl.pk %}" class="bl-edit"><i class="fas fa-pen"></i></a>
+              </div>
+              <ul class="ll">
+                {% for lesson in bl.lessons.all %}
+                <li>
+                  <i class="fas fa-circle" style="font-size:5px;color:var(--t3);flex-shrink:0"></i>
+                  <a href="{% url 'admin:api_lesson_change' lesson.pk %}">{{ lesson.title }}</a>
+                  {% if lesson.video %}<i class="fas fa-video" style="color:var(--teal);font-size:10px" title="Есть видео"></i>{% endif %}
+                  {% if lesson.test %}<i class="fas fa-clipboard-check" style="color:var(--violet);font-size:10px" title="Есть тест"></i>{% endif %}
+                  <span class="pub {% if lesson.is_published %}y{% else %}n{% endif %}">{% if lesson.is_published %}✓ Опубл.{% else %}Черновик{% endif %}</span>
+                </li>
+                {% empty %}
+                <li style="color:var(--t3);font-style:italic">
+                  <i class="fas fa-plus-circle" style="flex-shrink:0"></i>
+                  <a href="{% url 'admin:api_lesson_add' %}" style="color:var(--pr)">Добавить урок</a>
+                </li>
+                {% endfor %}
+              </ul>
+            </div>
+            {% empty %}
+            <p style="color:var(--t3);font-size:12px;margin:0">
+              Нет блоков — <a href="{% url 'admin:api_block_add' %}" style="color:var(--pr)">добавить блок</a>
+            </p>
+            {% endfor %}
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="tree-empty">
+          <i class="fas fa-folder-open"></i>
+          Предметов пока нет — <a href="{% url 'admin:api_subject_add' %}" style="color:var(--pr);font-weight:600">создать первый</a>
+        </div>
+      {% endif %}
+    </div>
+
+    {# Results #}
+    <div class="panel res-panel">
+      <div class="ph">
+        <div class="phi"><i class="fas fa-chart-bar"></i></div>
+        <div class="pht">Последние результаты тестирования</div>
+      </div>
+      {% if recent_results %}
+      <div style="overflow-x:auto">
+        <table class="rt">
+          <thead><tr><th>Студент</th><th>Тест</th><th>Результат</th><th>Дата</th></tr></thead>
+          <tbody>
+            {% for r in recent_results %}
+            <tr>
+              <td style="font-weight:500">{{ r.user.firstname|default:"" }} {{ r.user.lastname|default:r.user.email }}</td>
+              <td style="color:var(--t2)">{{ r.test.title|truncatechars:30 }}</td>
+              <td>
+                {% if r.score >= 80 %}<span class="badge gd">● {{ r.score }}%</span>
+                {% elif r.score >= 50 %}<span class="badge ok">● {{ r.score }}%</span>
+                {% else %}<span class="badge bd">● {{ r.score }}%</span>{% endif %}
+              </td>
+              <td style="color:var(--t3);font-family:var(--mono);font-size:12px">{{ r.completed_at|date:"d.m.y H:i" }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="empty-box"><i class="fas fa-inbox"></i>Результатов пока нет</div>
+      {% endif %}
+      <a href="{% url 'admin:api_testresult_changelist' %}" class="all-link">Все результаты <i class="fas fa-arrow-right" style="font-size:10px;margin-left:3px"></i></a>
+    </div>
+  </div>
+
+  {# RIGHT #}
+  <div class="rc">
+    {# Quick nav #}
+    <div class="panel nav-panel">
+      <div class="ph"><div class="phi"><i class="fas fa-compass"></i></div><div class="pht">Быстрый доступ</div></div>
+      <ul class="navl">
+        <li><a href="{% url 'admin:api_subject_changelist' %}"><span class="ni"><i class="fas fa-book"></i></span>Предметы<span class="na"><i class="fas fa-chevron-right"></i></span></a></li>
+        <li><a href="{% url 'admin:api_block_changelist' %}"><span class="ni"><i class="fas fa-layer-group"></i></span>Тематические блоки<span class="na"><i class="fas fa-chevron-right"></i></span></a></li>
+        <li><a href="{% url 'admin:api_lesson_changelist' %}"><span class="ni"><i class="fas fa-chalkboard-teacher"></i></span>Уроки<span class="na"><i class="fas fa-chevron-right"></i></span></a></li>
+        <li><a href="{% url 'admin:api_test_changelist' %}"><span class="ni"><i class="fas fa-clipboard-check"></i></span>Тесты<span class="na"><i class="fas fa-chevron-right"></i></span></a></li>
+        <li><a href="{% url 'admin:api_question_changelist' %}"><span class="ni"><i class="fas fa-question-circle"></i></span>Вопросы<span class="na"><i class="fas fa-chevron-right"></i></span></a></li>
+        <li><a href="{% url 'admin:api_video_changelist' %}"><span class="ni"><i class="fas fa-video"></i></span>Видеоматериалы<span class="na"><i class="fas fa-chevron-right"></i></span></a></li>
+        <li><a href="{% url 'admin:api_group_changelist' %}"><span class="ni"><i class="fas fa-users"></i></span>Группы<span class="na"><i class="fas fa-chevron-right"></i></span></a></li>
+        {% if request.user.role == 'admin' %}
+        <li><a href="{% url 'admin:api_user_changelist' %}"><span class="ni"><i class="fas fa-user-cog"></i></span>Пользователи<span class="na"><i class="fas fa-chevron-right"></i></span></a></li>
+        {% endif %}
+      </ul>
+    </div>
+
+    {# Students #}
+    <div class="panel stu-panel">
+      <div class="ph"><div class="phi"><i class="fas fa-user-graduate"></i></div><div class="pht">Последние студенты</div></div>
+      {% if recent_students %}
+      <ul class="stu-list">
+        {% for s in recent_students %}
+        <li class="stu-li">
+          <div class="stu-av">{{ s.firstname|first|upper|default:s.email|first|upper }}</div>
+          <div>
+            <div class="stu-name">{{ s.firstname }} {{ s.lastname|default:"" }}</div>
+            <div class="stu-email">{{ s.email }}</div>
+          </div>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <div class="empty-box" style="padding:18px"><i class="fas fa-user-plus"></i>Студентов пока нет</div>
+      {% endif %}
+    </div>
+
+    {# Actions #}
+    <div class="panel act-panel">
+      <div class="ph"><div class="phi"><i class="fas fa-history"></i></div><div class="pht">Последние действия</div></div>
+      {% get_admin_log 8 as admin_log for_user user %}
+      <ul class="actl">
+        {% if admin_log %}
+          {% for e in admin_log %}
+          <li class="acti">
+            <div class="adot" style="background:{% if e.is_addition %}var(--green){% elif e.is_change %}var(--pr){% else %}var(--rose){% endif %}"></div>
+            <div>
+              <div class="acti-t">
+                {% if e.is_deletion %}{{ e.object_repr }}
+                {% else %}<a href="{{ e.get_admin_url }}">{{ e.object_repr }}</a>{% endif %}
+                <span style="color:var(--t3)">— {{ e.content_type.name }}</span>
+              </div>
+              <div class="acti-d">{{ e.action_time|timesince }} назад</div>
+            </div>
+          </li>
+          {% endfor %}
+        {% else %}
+          <li class="acti"><div style="color:var(--t3);font-size:13px;width:100%;text-align:center;padding:14px 0">Нет недавних действий</div></li>
+        {% endif %}
+      </ul>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+(function(){
+  const el=document.getElementById('dd');
+  if(!el)return;
+  function upd(){
+    const n=new Date();
+    const d=['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];
+    const m=['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
+    el.textContent=`${d[n.getDay()]}, ${n.getDate()} ${m[n.getMonth()]} — ${String(n.getHours()).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}`;
+  }
+  upd();setInterval(upd,30000);
+})();
+function toggleSj(h){
+  h.classList.toggle('open');
+  h.nextElementSibling.classList.toggle('show');
+}
+</script>
 {% endblock %}

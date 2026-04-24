@@ -1,6 +1,9 @@
 from django.contrib import admin
 from django.utils.html import format_html
 from django.contrib.auth.hashers import make_password
+from django.contrib.admin import AdminSite as _AdminSite
+import logging
+from django.conf import settings
 from .models import (
     User, Group, GroupMember, Subject, Block,
     Lesson, Test, Question, Answer, Video, TestResult, VideoType, UserAnswer,
@@ -11,7 +14,8 @@ from .models import (
 admin.site.site_header = "Учебная платформа — Администрирование"
 admin.site.site_title = "Админ-панель"
 admin.site.index_title = "Управление контентом и пользователями"
-
+_orig_index = _AdminSite.index
+logger = logging.getLogger(__name__)
 
 def has_admin_permission(user):
     """Проверка прав администратора"""
@@ -455,3 +459,39 @@ class TrainingQuestionAdmin(admin.ModelAdmin):
     question_text.short_description = "Вопрос"
     verbose_name = "Вопрос тренажёра"
     verbose_name_plural = "Вопросы тренажёра"
+
+
+def _custom_index(self, request, extra_context=None):
+    extra_context = extra_context or {}
+    try:
+        from .models import Subject, Test, User, TestResult, Block, Lesson, Video
+
+        extra_context['subjects_count'] = Subject.objects.count()
+        extra_context['tests_count'] = Test.objects.count()
+        extra_context['students_count'] = User.objects.filter(role='student').count()
+        extra_context['results_count'] = TestResult.objects.count()
+        extra_context['blocks_count'] = Block.objects.count()
+        extra_context['lessons_count'] = Lesson.objects.count()
+        extra_context['videos_count'] = Video.objects.count()
+
+        extra_context['recent_results'] = (
+            TestResult.objects.select_related('user', 'test')
+            .order_by('-completed_at')[:8]
+        )
+
+        extra_context['subjects_tree'] = (
+            Subject.objects.prefetch_related('blocks__lessons__video', 'blocks__final_test').all()
+        )
+
+        extra_context['recent_students'] = (
+            User.objects.filter(role='student').order_by('-id')[:6]
+        )
+    except Exception as e:
+        if settings.DEBUG:
+            raise  # В разработке покажем трейсбек
+        logger.error("Ошибка при формировании контекста админ-дашборда: %s", e)
+        # Можно добавить fallback-контекст или оставить пустым
+
+    return _orig_index(self, request, extra_context=extra_context)
+
+_AdminSite.index = _custom_index

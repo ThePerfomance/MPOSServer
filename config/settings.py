@@ -37,11 +37,11 @@ MIDDLEWARE = [
 CORS_ALLOW_ALL_ORIGINS = True
 ROOT_URLCONF = "config.urls"
 
-TEMPLATES = [ # <-- Добавлено для admin
+TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [], # Укажите здесь пути к вашим кастомным шаблонам, если есть
-        'APP_DIRS': True, # Искать шаблоны в директориях приложений
+        'DIRS': [BASE_DIR / 'api' / 'templates'],
+        'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
                 'django.template.context_processors.debug',
