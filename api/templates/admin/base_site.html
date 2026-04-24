@@ -1,0 +1,51 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static jazzmin %}
+
+{% block extrahead %}
+{{ block.super }}
+<style>
+    /* Скрываем пустые секции и Groups из auth */
+    .app-auth.model-group { display: none !important; }
+    
+    /* Улучшаем карточки на главной */
+    .card-header { font-weight: bold; }
+    
+    /* Цвета для ролей */
+    .role-admin { color: #dc3545; font-weight: bold; }
+    .role-teacher { color: #28a745; font-weight: bold; }
+    .role-student { color: #007bff; }
+</style>
+{% endblock %}
+
+{% block branding %}
+<h1 id="site-name">
+    <a href="{% url 'admin:index' %}">
+        <i class="fas fa-graduation-cap"></i> 
+        {% trans 'Обучающая система — Панель управления' %}
+    </a>
+</h1>
+{% endblock %}
+
+{% block welcome-msg %}
+    {% if user.role == 'admin' %}
+        <span class="role-admin"><i class="fas fa-shield-alt"></i> Администратор</span>
+    {% elif user.role == 'teacher' %}
+        <span class="role-teacher"><i class="fas fa-chalkboard-teacher"></i> Преподаватель</span>
+    {% else %}
+        <span><i class="fas fa-user"></i> {{ user.get_full_name|default:user.username }}</span>
+    {% endif %}
+{% endblock %}
+
+{% block nav-global %}
+{% if user.is_staff %}
+    <a href="{% url 'admin:api_subject_changelist' %}" class="nav-link">
+        <i class="fas fa-book"></i> Предметы
+    </a>
+    <a href="{% url 'admin:api_test_changelist' %}" class="nav-link">
+        <i class="fas fa-clipboard-check"></i> Тесты
+    </a>
+    <a href="{% url 'admin:api_testresult_changelist' %}" class="nav-link">
+        <i class="fas fa-chart-line"></i> Результаты
+    </a>
+{% endif %}
+{% endblock %}
