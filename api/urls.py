@@ -9,7 +9,8 @@ urlpatterns = [
     # path("", views.index), # <-- Лучше убрать или сделать внутреннюю точку входа
 
     # Users
-    path("users/", views.users_list, name='users-list'), # <-- Добавил слэши
+    path("users/", views.users_list, name='users-list'),
+    path("users/register/", views.user_register, name='user-register'),
     path("users/<uuid:pk>/", views.user_detail, name='user-detail'),
     path("users/by-email/<str:email>/", views.user_by_email, name='user-by-email'),
     path("users/<uuid:user_id>/groups/", views.groups_for_user, name='user-groups-for-user'),

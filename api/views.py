@@ -12,7 +12,7 @@ from .models import (
     StudentCluster, TestDifficulty, ScorePrediction, Recommendation, VideoType, Video, UserAnswer, TrainingSession, TrainingQuestion
 )
 from .serializers import (
-    UserSerializer, GroupSerializer, GroupMemberSerializer, SubjectSerializer,
+    UserSerializer, UserRegistrationSerializer, GroupSerializer, GroupMemberSerializer, SubjectSerializer,
     TestSerializer, BlockSerializer, LessonSerializer, QuestionSerializer, QuestionWithAnswersSerializer,
     AnswerSerializer, TestResultSerializer, # TestResultWithTestDetailsSerializer
     StudentClusterSerializer, TestDifficultySerializer,
@@ -32,6 +32,7 @@ from ml.engine import (
 # ═══════════════════════════════════════════════════════════════════════
 
 @api_view(["GET", "POST"])
+@permission_classes([AllowAny])
 def users_list(request):
     if request.method == "GET":
         return Response(UserSerializer(User.objects.all(), many=True).data)
@@ -39,6 +40,44 @@ def users_list(request):
     s.is_valid(raise_exception=True)
     s.save()
     return Response(s.data, status=status.HTTP_201_CREATED)
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def user_register(request):
+    """
+    Регистрация нового пользователя из мобильного приложения.
+
+    Требуемые поля:
+    - email: уникальный email пользователя
+    - password: пароль (минимум 4 символа)
+    - firstname: имя
+    - lastname: фамилия
+    - patronymic: отчество
+    - role: роль ('student' или 'teacher')
+
+    Возвращает данные созданного пользователя без пароля.
+    """
+    serializer = UserRegistrationSerializer(data=request.data)
+
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    user = serializer.save()
+
+    response_data = {
+        'id': str(user.id),
+        'email': user.email,
+        'firstname': user.firstname,
+        'lastname': user.lastname,
+        'patronymic': user.patronymic,
+        'role': user.role,
+        'is_active': user.is_active,
+    }
+
+    return Response({
+        'message': 'Пользователь успешно зарегистрирован',
+        'user': response_data
+    }, status=status.HTTP_201_CREATED)
 
 
 @api_view(["GET", "PUT", "DELETE"])
@@ -56,6 +95,7 @@ def user_detail(request, pk):
 
 
 @api_view(["GET"])
+@permission_classes([AllowAny])
 def user_by_email(request, email):
     user = get_object_or_404(User, email=email)
     return Response(UserSerializer(user).data)
@@ -538,153 +578,6 @@ def final_test_by_block(request, block_id):
         return Response(serializer.data)
     else:
         return Response({"detail": "Block has no associated final test"}, status=status.HTTP_404_NOT_FOUND)
-
-
-@api_view(["POST"])
-def ml_cluster_students(request):
-    """
-    POST /ml/cluster-students
-    Кластеризует всех студентов (5 признаков + PCA + KMeans).
-    Тело запроса (опционально): {"n_clusters": 5}
-    """
-    n_clusters = int(request.data.get("n_clusters", 5))
-    students = User.objects.filter(role="student")
-    stats = _collect_student_stats(students)
-    result = cluster_students(stats, n_clusters=n_clusters)
-
-    saved = []
-    for c in result["clusters"]:
-        obj, _ = StudentCluster.objects.update_or_create(
-            user_id=c["user_id"],
-            defaults={
-                "cluster_id":    c["cluster_id"],
-                "cluster_label": c["rank"],
-                "avg_score":     c["avg_score"],
-                "tests_taken":   c["tests_taken"],
-            },
-        )
-        saved.append(StudentClusterSerializer(obj).data)
-
-    return Response({
-        "clusters":   saved,
-        "pca_points": result["pca_points"],
-        "metrics":    result["metrics"],
-    })
-
-
-@api_view(["POST"])
-def ml_cluster_group(request, group_id):
-    """
-    POST /ml/cluster-group/<group_id>
-    Кластеризует студентов конкретной группы.
-    Возвращает ранги S/A/B/C/D, PCA-точки и метрики — всё что нужно Android.
-    """
-    group = get_object_or_404(Group, pk=group_id)
-    members = GroupMember.objects.filter(group=group).values_list("user_id", flat=True)
-    students = User.objects.filter(id__in=members, role="student")
-
-    if not students.exists():
-        return Response({"error": "Нет студентов в группе"}, status=400)
-
-    n_clusters = int(request.data.get("n_clusters", 5))
-    stats = _collect_student_stats(students)
-    result = cluster_students(stats, n_clusters=n_clusters)
-
-    # Сохраняем кластеры в БД
-    for c in result["clusters"]:
-        StudentCluster.objects.update_or_create(
-            user_id=c["user_id"],
-            defaults={
-                "cluster_id":    c["cluster_id"],
-                "cluster_label": c["rank"],
-                "avg_score":     c["avg_score"],
-                "tests_taken":   c["tests_taken"],
-            },
-        )
-
-    # Обогащаем pca_points именами студентов
-    user_map = {s["user_id"]: s for s in stats}
-    for p in result["pca_points"]:
-        s = user_map.get(p["user_id"], {})
-        p["firstname"] = s.get("firstname", "")
-        p["lastname"]  = s.get("lastname", "")
-
-    return Response({
-        "group_id":   str(group_id),
-        "group_name": group.name,
-        "clusters":   result["clusters"],
-        "pca_points": result["pca_points"],
-        "metrics":    result["metrics"],
-    })
-
-
-@api_view(["POST"])
-def ml_segment_tests(request):
-    """
-    POST /ml/segment-tests
-    Сегментирует все тесты по уровню сложности на основе средних баллов.
-    Сохраняет результаты в TestDifficulty.
-    """
-    tests = Test.objects.all()
-    stats = []
-    for test in tests:
-        qs = TestResult.objects.filter(test=test)
-        agg = qs.aggregate(avg=Avg("score"), cnt=Count("id"))
-        if agg["cnt"]:
-            stats.append({
-                "test_id": test.id,
-                "avg_score": float(agg["avg"] or 0),
-                "attempt_count": int(agg["cnt"]),
-            })
-
-    segmented = segment_tests(stats)
-
-    saved = []
-    for seg in segmented:
-        obj, _ = TestDifficulty.objects.update_or_create(
-            test_id=seg["test_id"],
-            defaults={
-                "difficulty": seg["difficulty"],
-                "avg_score_all": seg["avg_score"],
-            },
-        )
-        saved.append(TestDifficultySerializer(obj).data)
-
-    return Response({"test_difficulties": saved})
-
-
-@api_view(["POST"])
-def ml_predict_result(request):
-    """
-    POST /ml/predict-result
-    Прогнозирует балл студента для указанного теста.
-    Тело: {"user_id": "<uuid>", "test_id": <int>}
-    """
-    user_id = request.data.get("user_id")
-    test_id = request.data.get("test_id")
-    if not user_id or not test_id:
-        return Response({"error": "user_id and test_id are required"}, status=400)
-
-    user = get_object_or_404(User, pk=user_id)
-    test = get_object_or_404(Test, pk=test_id)
-
-    # История результатов студента с агрегированными средними по тестам
-    history_qs = TestResult.objects.filter(user=user).select_related("test")
-    history = []
-    for r in history_qs:
-        test_avg = TestResult.objects.filter(test=r.test).aggregate(avg=Avg("score"))["avg"] or 0
-        history.append({"score": r.score, "test_avg": float(test_avg)})
-
-    target_avg = TestResult.objects.filter(test=test).aggregate(avg=Avg("score"))["avg"] or 50.0
-    predicted = predict_score(history, float(target_avg))
-
-    obj, _ = ScorePrediction.objects.update_or_create(
-        user=user,
-        test=test,
-        defaults={"predicted_score": predicted},
-    )
-    return Response(ScorePredictionSerializer(obj).data)
-
 
 # ═══════════════════════════════════════════════════════════════════════
 # ML ENDPOINTS - ПЕРСОНАЛИЗИРОВАННЫЕ РЕКОМЕНДАЦИИ (НОВАЯ ВЕРСИЯ ДЛЯ ДИПЛОМА)

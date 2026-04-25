@@ -8,9 +8,58 @@ from .models import (
 )
 
 class UserSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(write_only=True, required=False)
     class Meta:
         model = User
         exclude = ['password']
+
+    def create(self, validated_data):
+        password = validated_data.pop('password', None)
+        user = super().create(validated_data)
+        if password:
+            user.set_password(password)
+            user.save()
+        return user
+
+class UserRegistrationSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(
+        write_only=True,
+        required=True,
+        min_length=4,
+        style={'input_type': 'password'},
+        help_text='Пароль должен содержать минимум 4 символа'
+    )
+
+    class Meta:
+        model = User
+        fields = [
+            'email', 'password',
+            'firstname', 'lastname', 'patronymic', 'role'
+        ]
+
+    def validate_email(self, value):
+        if User.objects.filter(email=value).exists():
+            raise serializers.ValidationError('Пользователь с таким email уже существует')
+        return value
+
+    def validate_role(self, value):
+        """Проверка допустимой роли"""
+        allowed_roles = ['student', 'teacher']
+        if value not in allowed_roles:
+            raise serializers.ValidationError(
+                f'Роль должна быть одной из: {", ".join(allowed_roles)}. '
+                'Администраторы создаются только через админ-панель.'
+            )
+        return value
+
+    def create(self, validated_data):
+        password = validated_data.pop('password')
+
+        user = User.objects.create(**validated_data)
+        user.set_password(password)
+        user.save()
+
+        return user
 
 
 class GroupSerializer(serializers.ModelSerializer):
