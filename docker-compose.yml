@@ -26,11 +26,11 @@ services:
              python manage.py migrate &&
              python manage.py createsuperuser --noinput || true &&
              python manage.py seed_db &&
-             python manage.py runserver 0.0.0.0:8000"
+             python manage.py runserver 0.0.0.0:7600"
     volumes:
       - .:/app
     ports:
-      - "8000:8000"
+      - "7600:7600"
     depends_on:
       db:
         condition: service_healthy
