@@ -8,7 +8,6 @@ from .models import (
 )
 
 class UserSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True, required=False)
     class Meta:
         model = User
         exclude = ['password']

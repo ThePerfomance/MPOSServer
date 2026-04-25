@@ -82,60 +82,192 @@ REST_FRAMEWORK = {
     ],
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
 }
+
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60), # Время жизни access токена
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),   # Время жизни refresh токена
-    # ... другие настройки ...
+    "ACCESS_TOKEN_LIFETIME":  timedelta(minutes=60),
+    "REFRESH_TOKEN_LIFETIME":  timedelta(days=7),
 }
 
+# ══════════════════════════════════════════════════════════════════════════════
+# JAZZMIN — основные настройки
+# ══════════════════════════════════════════════════════════════════════════════
 JAZZMIN_SETTINGS = {
-    "site_title": "Edu Platform Admin",
-    "site_header": "Edu Platform",
-    "site_brand": "Система обучения",
-    "welcome_sign": "Добро пожаловать в админку проекта",
-    "copyright": "Nikita Smolnikov",
-    "search_model": ["api.User"], # Быстрый поиск по пользователям
-    "show_sidebar": True,
-    "navigation_expanded": True,
+    # ── Брендинг ─────────────────────────────────────────────────────────────
+    "site_title":    "Edu Platform",
+    "site_header":   "Учебная платформа",
+    "site_brand":    "EduSystem",
+    "site_logo":     None,                 # путь к logo, если есть: "img/logo.png"
+    "welcome_sign":  "Добро пожаловать в панель управления",
+    "copyright":     "Nikita Smolnikov",
+
+    # ── Поиск ────────────────────────────────────────────────────────────────
+    "search_model": ["api.User"],
+
+    # ── Скрываем встроенное приложение auth.
+    # У нас собственные api.User и api.Group — встроенная вкладка
+    # "Authentication and Authorization" с пустым Groups больше не нужна.
+    "hide_apps":   ["auth"],
+    "hide_models": [],
+
+    # ── Верхнее меню (topmenu) — сгруппировано по разделам ───────────────────
+    # children создаёт выпадающее меню при клике на раздел
+    "topmenu_links": [
+        {
+            "name": "🏠 Главная",
+            "url":  "admin:index",
+        },
+        {
+            "name": "📚 Обучение",
+            "children": [
+                {"name": "📖 Предметы",   "url": "admin:api_subject_changelist"},
+                {"name": "📦 Блоки",       "url": "admin:api_block_changelist"},
+                {"name": "🎬 Уроки",       "url": "admin:api_lesson_changelist"},
+                {"name": "📝 Тесты",       "url": "admin:api_test_changelist"},
+                {"name": "❓ Вопросы",     "url": "admin:api_question_changelist"},
+                {"name": "✅ Ответы",      "url": "admin:api_answer_changelist"},
+            ],
+        },
+        {
+            "name": "👥 Пользователи",
+            "children": [
+                {"name": "👤 Пользователи",    "url": "admin:api_user_changelist"},
+                {"name": "🏫 Группы",          "url": "admin:api_group_changelist"},
+                {"name": "➕ Участники групп", "url": "admin:api_groupmember_changelist"},
+            ],
+        },
+        {
+            "name": "🎥 Видео",
+            "children": [
+                {"name": "🎞 Видеоматериалы", "url": "admin:api_video_changelist"},
+                {"name": "🏷 Типы видео",     "url": "admin:api_videotype_changelist"},
+            ],
+        },
+        {
+            "name": "📊 Статистика",
+            "children": [
+                {"name": "🏆 Результаты тестов",     "url": "admin:api_testresult_changelist"},
+                {"name": "✏️ Ответы пользователей",  "url": "admin:api_useranswer_changelist"},
+                {"name": "🏋 Сессии тренажёра",      "url": "admin:api_trainingsession_changelist"},
+                {"name": "🔀 Вопросы тренажёра",     "url": "admin:api_trainingquestion_changelist"},
+            ],
+        },
+    ],
+
+    # ── Порядок моделей в боковой панели ─────────────────────────────────────
+    # Порядок строго соответствует логической иерархии разделов
+    "order_with_respect_to": [
+        # Обучение
+        "api.subject",
+        "api.block",
+        "api.lesson",
+        "api.test",
+        "api.question",
+        "api.answer",
+        # Пользователи
+        "api.user",
+        "api.group",
+        "api.groupmember",
+        # Видео
+        "api.video",
+        "api.videotype",
+        # Статистика
+        "api.testresult",
+        "api.useranswer",
+        "api.trainingsession",
+        "api.trainingquestion",
+    ],
+
+    # ── Иконки (Font Awesome 5) ───────────────────────────────────────────────
     "icons": {
-        "api.user": "fas fa-user",
-        "api.lesson": "fas fa-book-open",
-        "api.video": "fas fa-video",
+        # Приложение
+        "api": "fas fa-graduation-cap",
+        # Обучение
+        "api.subject":         "fas fa-book",
+        "api.block":           "fas fa-cube",
+        "api.lesson":          "fas fa-film",
+        "api.test":            "fas fa-clipboard-check",
+        "api.question":        "fas fa-question-circle",
+        "api.answer":          "fas fa-check-square",
+        # Пользователи
+        "api.user":            "fas fa-user",
+        "api.group":           "fas fa-users",
+        "api.groupmember":     "fas fa-user-plus",
+        # Видео
+        "api.video":           "fas fa-video",
+        "api.videotype":       "fas fa-tags",
+        # Статистика
+        "api.testresult":      "fas fa-chart-bar",
+        "api.useranswer":      "fas fa-pen",
+        "api.trainingsession": "fas fa-dumbbell",
+        "api.trainingquestion":"fas fa-tasks",
     },
+    "default_icon_parents":  "fas fa-chevron-circle-right",
+    "default_icon_children": "fas fa-circle",
+
+    # ── Sidebar / навигация ───────────────────────────────────────────────────
+    "show_sidebar":          True,
+    "navigation_expanded":   True,
+    "related_modal_active":  True,     # открывать FK-связи в модальном окне
+
+    # ── Пользовательское меню (иконка профиля в правом верхнем углу) ─────────
+    "usermenu_links": [
+        {"name": "Главная страница сайта", "url": "/", "new_window": True, "icon": "fas fa-home"},
+    ],
+
+    # ── Быстрый поиск ────────────────────────────────────────────────────────
+    "show_ui_builder": False,   # отключаем кнопку «UI Builder» в продакшене
+                                # (включите True, чтобы поиграть с темой)
 }
 
-# Включаем UI Customizer (панель настроек справа, чтобы поиграться с цветами)
+# ══════════════════════════════════════════════════════════════════════════════
+# JAZZMIN — визуальные настройки (UI Tweaks)
+# ══════════════════════════════════════════════════════════════════════════════
 JAZZMIN_UI_TWEAKS = {
-    # Тема всей админки (выбери одну из: flatly, darkly, slate, solar, yeti)
-    "theme": "flatly",
+    # Тема Bootstrap (flatly — чистая и деловая, хорошо читается)
+    "theme":           "flatly",
+    "dark_mode_theme": "darkly",   # тема для тёмного режима
 
-    # Цветовая схема для кнопок и активных элементов
-    "dark_mode_theme": "darkly",
-
-    # Настройка навигации
+    # Размер текста
     "navbar_small_text": False,
     "footer_small_text": False,
-    "body_small_text": False,
-    "brand_small_text": False,
+    "body_small_text":   False,
+    "brand_small_text":  False,
 
-    # Цвет верхней панели (акцент)
-    "navbar": "navbar-dark",
-    "no_navbar_border": True,
+    # Верхняя навигационная полоса
+    "navbar":           "navbar-white navbar-light",   # светлый стиль
+    "no_navbar_border": False,
+    "navbar_fixed":     True,   # фиксируем navbar при прокрутке
 
-    # Стиль кнопок (сделает их более современными и плоскими)
+    # Боковая панель
+    "sidebar":          "sidebar-dark-primary",
+    "sidebar_fixed":    True,
+    "sidebar_nav_small_text":    False,
+    "sidebar_disable_expand":    False,
+    "sidebar_nav_child_indent":  True,
+    "sidebar_nav_compact_style": False,
+    "sidebar_nav_legacy_style":  False,
+    "sidebar_nav_flat_style":    False,
+
+    # Стили кнопок
     "button_classes": {
-        "primary": "btn-primary",
-        "secondary": "btn-secondary",
-        "info": "btn-info",
-        "warning": "btn-warning",
-        "danger": "btn-danger",
-        "success": "btn-success"
-    }
+        "primary":   "btn-primary",
+        "secondary": "btn-outline-secondary",
+        "info":      "btn-info",
+        "warning":   "btn-warning",
+        "danger":    "btn-danger",
+        "success":   "btn-success",
+    },
+
+    # Стили actions
+    "actions_sticky_top": True,    # панель действий фиксируется сверху
 }
 
+# ══════════════════════════════════════════════════════════════════════════════
+# Прочие настройки Django
+# ══════════════════════════════════════════════════════════════════════════════
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-USE_TZ = True
-TIME_ZONE = 'UTC'
+USE_TZ     = True
+TIME_ZONE  = 'UTC'
 AUTH_USER_MODEL = 'api.User'
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -143,27 +275,20 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
         'OPTIONS': {
             'user_attributes': ['email', 'firstname', 'lastname', 'patronymic'],
-        }
+        },
     },
     {
         'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-        'OPTIONS': {
-            'min_length': 8,
-        }
+        'OPTIONS': {'min_length': 8},
     },
-    {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-    },
+    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
-# Настройки статических файлов (CSS, JavaScript, Images)
-STATIC_URL = '/static/'
+# Статика и медиа
+STATIC_URL  = '/static/'
 STATIC_ROOT = BASE_DIR / 'static'
-
 STATICFILES_DIRS = []
 
-MEDIA_URL = '/media/'
+MEDIA_URL  = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
