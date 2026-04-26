@@ -25,17 +25,18 @@ class CustomUserManager(BaseUserManager):
 
 
 class User(AbstractBaseUser, PermissionsMixin):
-    id         = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    firstname  = models.CharField(max_length=100)
-    lastname   = models.CharField(max_length=100)
-    patronymic = models.CharField(max_length=100)
-    email      = models.EmailField(unique=True)
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    firstname = models.CharField("Имя", max_length=100)
+    lastname = models.CharField("Фамилия", max_length=100)
+    patronymic = models.CharField("Отчество", max_length=100)
+    email = models.EmailField("Email адрес", unique=True)
     role       = models.CharField(
-        max_length=10, 
+        "Роль",
+        max_length=10,
         choices=[('student', 'Студент'), ('teacher', 'Преподаватель'), ('admin', 'Администратор')]
     )
-    is_active  = models.BooleanField(default=True)
-    is_staff   = models.BooleanField(default=False)
+    is_active = models.BooleanField("Активен", default=True, help_text="Активация аккаунта пользователя")
+    is_staff = models.BooleanField("Статус персонала", default=False, help_text="Является ли пользователь персоналом")
 
     USERNAME_FIELD  = 'email'
     REQUIRED_FIELDS = ['firstname', 'lastname', 'patronymic', 'role']
@@ -67,11 +68,13 @@ class User(AbstractBaseUser, PermissionsMixin):
 # ═══════════════════════════════════════════════════════════════════════
 
 class Group(models.Model):
-    id   = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    name = models.CharField(max_length=100, unique=True)
+    id   = models.UUIDField("ИД Группы",primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField("Название группы",max_length=100, unique=True)
 
     class Meta:
         db_table = 'groups'
+        verbose_name = 'Группа'
+        verbose_name_plural = 'Группы'
 
     def __str__(self):
         return self.name
@@ -82,24 +85,40 @@ class GroupMember(models.Model):
     user  = models.ForeignKey(User,  on_delete=models.CASCADE, related_name='group_memberships')
     group = models.ForeignKey(Group, on_delete=models.CASCADE, related_name='members')
 
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='memberships',
+        verbose_name="Пользователь"
+    )
+    group = models.ForeignKey(
+        Group,
+        on_delete=models.CASCADE,
+        related_name='members',
+        verbose_name="Группа"
+    )
     class Meta:
         db_table       = 'group_members'
         unique_together = ('user', 'group')
+        verbose_name = 'Участник группы'
+        verbose_name_plural = 'Участники групп'
 
     def __str__(self):
         return f"{self.user} in {self.group}"
 
 
 # ═══════════════════════════════════════════════════════════════════════
-# VIDEO  (NEW)
+# VIDEO
 # ═══════════════════════════════════════════════════════════════════════
 
 class VideoType(models.Model):
-    id   = models.BigAutoField(primary_key=True)
-    name = models.CharField(max_length=100, unique=True)
+    id   = models.BigAutoField("ИД типа видео",primary_key=True)
+    name = models.CharField("Название типа видео",max_length=100, unique=True)
 
     class Meta:
         db_table = 'video_types'
+        verbose_name = 'Тип видео'
+        verbose_name_plural = 'Типы видео'
 
     def __str__(self):
         return self.name
@@ -124,7 +143,6 @@ class Video(models.Model):
         verbose_name="Файл видео"
     )
 
-    # Поле для ссылки (Rutube, YouTube и т.д.)
     link = models.URLField(
         max_length=500,
         null=True,
@@ -142,6 +160,8 @@ class Video(models.Model):
 
     class Meta:
         db_table = 'videos'
+        verbose_name = 'Видео'
+        verbose_name_plural = 'Видео'
 
     def __str__(self):
         return f"{self.name} ({self.type})"
@@ -154,7 +174,7 @@ class Video(models.Model):
 
 class Subject(models.Model):
     id   = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    name = models.CharField(max_length=255, unique=True)
+    name = models.CharField("Название предмета", max_length=255)
 
     class Meta:
         db_table = 'subjects'
@@ -166,16 +186,16 @@ class Subject(models.Model):
 
 
 class Block(models.Model):
-    id             = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    subject        = models.ForeignKey(Subject, on_delete=models.CASCADE, related_name='blocks')
-    title          = models.CharField(max_length=255)
+    id             = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, verbose_name="ИД блока")
+    subject        = models.ForeignKey(Subject, on_delete=models.CASCADE, related_name='blocks', help_text='Предмет, в котором находится блок', verbose_name="Предмет")
+    title          = models.CharField(max_length=255, verbose_name="Заголовок блока")
     final_test     = models.OneToOneField(
-        'Test', on_delete=models.SET_NULL, null=True, blank=True, related_name='final_block_of'
+        'Test', on_delete=models.SET_NULL, null=True, blank=True, related_name='final_block_of',help_text='Финальный тест в конце блока ', verbose_name="Финальный тест блока"
     )
-    lessons_count  = models.IntegerField(default=0)
-    description    = models.TextField(blank=True, null=True)
-    position       = models.IntegerField(default=0)
-    is_published   = models.BooleanField(default=False)
+    lessons_count  = models.IntegerField(default=0, verbose_name="Кол-во уроков в блоке")
+    description    = models.TextField(blank=True, null=True, verbose_name="Описание блока")
+    position       = models.IntegerField(default=0, help_text='Влияет на порядок обьектов ',verbose_name="Позиция блока в уроке")
+    is_published   = models.BooleanField(default=False, help_text='Видимость для пользователей ', verbose_name="Опубликовано?")
 
     class Meta:
         db_table = 'blocks'
@@ -188,21 +208,21 @@ class Block(models.Model):
 
 
 class Lesson(models.Model):
-    id           = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    block        = models.ForeignKey(Block, on_delete=models.CASCADE, related_name='lessons')
+    id           = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, verbose_name="ИД Урока")
+    block        = models.ForeignKey(Block, on_delete=models.CASCADE, related_name='lessons', help_text='Блок в котором находится урок ', verbose_name="Блок")
     test         = models.OneToOneField(
-        'Test', on_delete=models.SET_NULL, null=True, blank=True, related_name='lesson_for'
+        'Test', on_delete=models.SET_NULL, null=True, blank=True, related_name='lesson_for', help_text='Тест в уроке ',verbose_name="Тест"
     )
     # ── видео ──
     video        = models.ForeignKey(
         Video, on_delete=models.SET_NULL, null=True, blank=True, related_name='lessons',
-        help_text='Видеоматериал урока'
+        help_text='Видеоматериал урока', verbose_name="Связанное видео"
     )
-    title        = models.CharField(max_length=255, blank=True, null=True)
-    summary      = models.CharField(max_length=1000, blank=True, null=True)   # ← был TextField, теперь max 1000
-    duration     = models.IntegerField(default=0, help_text='Суммарная длительность урока в секундах')
-    position     = models.IntegerField(default=0)
-    is_published = models.BooleanField(default=False)
+    title        = models.CharField(max_length=255, blank=True, null=True, verbose_name="Заголовок")
+    summary      = models.CharField(max_length=1000, blank=True, null=True, verbose_name="Саммари урока")
+    duration     = models.IntegerField(default=0, help_text='Суммарная длительность урока в секундах', verbose_name="Длительность")
+    position     = models.IntegerField(default=0, help_text='Влияет на порядок обьектов ', verbose_name="Позиция урока")
+    is_published = models.BooleanField(default=False, help_text='Видимость для пользователей ', verbose_name="Опубликовано?")
 
     class Meta:
         db_table = 'lessons'
@@ -219,11 +239,11 @@ class Lesson(models.Model):
 # ═══════════════════════════════════════════════════════════════════════
 
 class Test(models.Model):
-    id           = models.BigAutoField(primary_key=True)
-    title        = models.CharField(max_length=255)
-    description  = models.TextField(blank=True, null=True)
-    duration     = models.IntegerField(default=0, help_text='Таймер теста в секундах (0 = без ограничений)')
-    is_published = models.BooleanField(default=False)
+    id           = models.BigAutoField(primary_key=True, verbose_name="ИД Теста")
+    title        = models.CharField(max_length=255, help_text='Название', verbose_name="Заголовок теста")
+    description  = models.TextField(blank=True, null=True, verbose_name="Описание теста")
+    duration     = models.IntegerField(default=0, help_text='Таймер теста в секундах (0 = без ограничений)', verbose_name="Длительность теста в сек")
+    is_published = models.BooleanField(default=False, help_text='Видимость для пользователей ', verbose_name="Опубликовано?")
 
     class Meta:
         db_table = 'tests'
@@ -236,15 +256,17 @@ class Test(models.Model):
 
 class Question(models.Model):
     id                       = models.BigAutoField(primary_key=True)
-    text                     = models.TextField()
-    test                     = models.ForeignKey(Test, on_delete=models.CASCADE, related_name='questions')
+    text                     = models.TextField(verbose_name="Текст вопроса")
+    test                     = models.ForeignKey(Test, on_delete=models.CASCADE, related_name='questions', verbose_name="Связанный тест")
     recommendation_link      = models.URLField(
         max_length=2048, null=True, blank=True,
-        help_text='Ссылка на текстовой материал для повторения по этому вопросу'
+        help_text='Материал для повторения по этому вопросу'
+        , verbose_name="Ссылка на текстовую рекомендацию"
     )
     recommendation_video_link = models.URLField(
         max_length=2048, null=True, blank=True,
-        help_text='Ссылка на видео для повторения по этому вопросу'
+        help_text='Материал для повторения по этому вопросу'
+        , verbose_name="Ссылка на видео ресурс"
     )
 
     class Meta:
@@ -258,13 +280,15 @@ class Question(models.Model):
 
 class Answer(models.Model):
     id         = models.BigAutoField(primary_key=True)
-    text       = models.TextField()
-    is_correct = models.BooleanField()
+    text       = models.TextField(verbose_name="Текст ответа")
+    is_correct = models.BooleanField(verbose_name="Правильно?")
     question   = models.ForeignKey(Question, on_delete=models.CASCADE,
-                                   related_name='answers', null=True, blank=True)
+                                   related_name='answers', null=True, blank=True, verbose_name="Связанный вопрос")
 
     class Meta:
         db_table = 'answers'
+        verbose_name = "Ответ"
+        verbose_name_plural = 'Ответы'
 
     def __str__(self):
         return f"Answer for Q{self.question_id}: {'✓' if self.is_correct else '✗'}"
@@ -275,38 +299,39 @@ class Answer(models.Model):
 # ═══════════════════════════════════════════════════════════════════════
 
 class TestResult(models.Model):
-    id           = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    score        = models.IntegerField()
-    started_at   = models.DateTimeField()
-    completed_at = models.DateTimeField(auto_now_add=True)
+    id           = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, verbose_name="ИД Результата")
+    score        = models.IntegerField(verbose_name="Оценка")
+    started_at   = models.DateTimeField(verbose_name="Начало в")
+    completed_at = models.DateTimeField(auto_now_add=True, verbose_name="Конец в")
     user         = models.ForeignKey(User, on_delete=models.CASCADE,
-                                     related_name='results', null=True, blank=True)
+                                     related_name='results', null=True, blank=True, verbose_name="Пользователь")
     test         = models.ForeignKey(Test, on_delete=models.CASCADE,
-                                     related_name='results', null=True, blank=True)
+                                     related_name='results', null=True, blank=True, verbose_name="Тест")
 
     class Meta:
         db_table = 'test_results'
+        verbose_name = "Результаты тестирования"
+        verbose_name_plural = 'Результаты тестирований'
 
     def __str__(self):
         return f"{self.user} — {self.test} — {self.score}"
 
 
 # ═══════════════════════════════════════════════════════════════════════
-# TRAINER  (NEW)
-# Сущности для тренажёра, который формируется из неправильных ответов
+# TRAINER
 # ═══════════════════════════════════════════════════════════════════════
 
 class UserAnswer(models.Model):
 
-    id             = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id             = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, verbose_name="ИД ответа пользователя")
     test_result    = models.ForeignKey(TestResult, on_delete=models.CASCADE,
-                                       related_name='user_answers')
+                                       related_name='user_answers', verbose_name="ИД результата тестирования")
     question       = models.ForeignKey(Question, on_delete=models.CASCADE,
-                                       related_name='user_answers')
+                                       related_name='user_answers', verbose_name="Вопрос")
     chosen_answer  = models.ForeignKey(Answer, on_delete=models.SET_NULL,
-                                       null=True, blank=True, related_name='chosen_in')
-    is_correct     = models.BooleanField(default=False)
-    answered_at    = models.DateTimeField(auto_now_add=True)
+                                       null=True, blank=True, related_name='chosen_in', verbose_name="Выбранный ответ")
+    is_correct     = models.BooleanField(default=False, verbose_name="Правильность")
+    answered_at    = models.DateTimeField(auto_now_add=True, verbose_name="Отвечено в")
 
     class Meta:
         db_table       = 'user_answers'
@@ -314,6 +339,8 @@ class UserAnswer(models.Model):
         indexes         = [
             models.Index(fields=['test_result', 'is_correct']),  # быстрый поиск ошибок попытки
         ]
+        verbose_name = "Ответ пользователя"
+        verbose_name_plural = 'Ответы пользователей'
 
     def __str__(self):
         mark = '✓' if self.is_correct else '✗'
@@ -328,20 +355,20 @@ class TrainingSession(models.Model):
         ('completed',  'Завершена'),
     ]
 
-    id                 = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id                 = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, verbose_name="ИД Сессии тренажера")
     user               = models.ForeignKey(User, on_delete=models.CASCADE,
-                                           related_name='training_sessions')
+                                           related_name='training_sessions', verbose_name="Пользователь")
     lesson             = models.ForeignKey(Lesson, on_delete=models.CASCADE,
                                            null=True, blank=True, related_name='training_sessions',
-                                           help_text='Урок, к которому относится сессия тренажёра')
-    status             = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
+                                           help_text='Урок, к которому относится сессия тренажёра', verbose_name="Урок")
+    status             = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending', verbose_name="Статус")
     source_test_result = models.ForeignKey(TestResult, on_delete=models.SET_NULL,
                                            null=True, blank=True,
                                            related_name='training_sessions',
                                            help_text='Попытка, по ошибкам которой создана сессия. '
-                                                     'null = глобальный тренажёр')
-    created_at         = models.DateTimeField(auto_now_add=True)
-    completed_at       = models.DateTimeField(null=True, blank=True)
+                                                     'null = глобальный тренажёр', verbose_name="Попытка теста")
+    created_at         = models.DateTimeField(auto_now_add=True, verbose_name="Создана в")
+    completed_at       = models.DateTimeField(null=True, blank=True, verbose_name="Пройдена в")
 
     class Meta:
         db_table = 'training_sessions'
@@ -349,6 +376,8 @@ class TrainingSession(models.Model):
         indexes = [
             models.Index(fields=['user', 'lesson', 'status']),  # быстрый поиск активных сессий по уроку
         ]
+        verbose_name = "Сессия тренажера"
+        verbose_name_plural = "Сессии тренажера"
 
     def __str__(self):
         lesson_info = f" — Lesson {self.lesson.id}" if self.lesson else ""
@@ -364,23 +393,25 @@ class TrainingQuestion(models.Model):
         ('skipped',  'Пропущен'),
     ]
 
-    id             = models.BigAutoField(primary_key=True)
+    id             = models.BigAutoField(primary_key=True, verbose_name="ИД Вопрсоа тренажера")
     session        = models.ForeignKey(TrainingSession, on_delete=models.CASCADE,
-                                       related_name='training_questions')
+                                       related_name='training_questions', verbose_name="Сессия")
     question       = models.ForeignKey(Question, on_delete=models.CASCADE,
-                                       related_name='training_questions')
+                                       related_name='training_questions', verbose_name="Вопрос")
     chosen_answer  = models.ForeignKey(Answer, on_delete=models.SET_NULL,
                                        null=True, blank=True,
-                                       related_name='chosen_in_training')
-    is_correct     = models.BooleanField(null=True, blank=True)   # null = ещё не отвечено
-    position       = models.IntegerField(default=0)
-    status         = models.CharField(max_length=8, choices=STATUS_CHOICES, default='pending')
-    answered_at    = models.DateTimeField(null=True, blank=True)
+                                       related_name='chosen_in_training', verbose_name="Выбранный ответ")
+    is_correct     = models.BooleanField(null=True, blank=True, verbose_name="Правильность")   # null = ещё не отвечено
+    position       = models.IntegerField(default=0, verbose_name="Позиция")
+    status         = models.CharField(max_length=8, choices=STATUS_CHOICES, default='pending', verbose_name="Статус прохождения")
+    answered_at    = models.DateTimeField(null=True, blank=True, verbose_name="Отвечено в")
 
     class Meta:
         db_table       = 'training_questions'
         unique_together = ('session', 'question')
         ordering        = ['position']
+        verbose_name = "Вопрос тренажера"
+        verbose_name_plural = "Вопросы тренажера"
 
     def __str__(self):
         return f"Session {self.session_id} | Q{self.question_id} [{self.status}]"
