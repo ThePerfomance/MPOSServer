@@ -92,6 +92,7 @@ SIMPLE_JWT = {
 # ══════════════════════════════════════════════════════════════════════════════
 # JAZZMIN — основные настройки
 # ══════════════════════════════════════════════════════════════════════════════
+
 JAZZMIN_SETTINGS = {
     # ── Брендинг ─────────────────────────────────────────────────────────────
     "site_title":    "Edu Platform",
@@ -104,14 +105,9 @@ JAZZMIN_SETTINGS = {
     # ── Поиск ────────────────────────────────────────────────────────────────
     "search_model": ["api.User"],
 
-    # ── Скрываем встроенное приложение auth.
-    # У нас собственные api.User и api.Group — встроенная вкладка
-    # "Authentication and Authorization" с пустым Groups больше не нужна.
     "hide_apps":   ["auth"],
     "hide_models": [],
 
-    # ── Верхнее меню (topmenu) — сгруппировано по разделам ───────────────────
-    # children создаёт выпадающее меню при клике на раздел
     "topmenu_links": [
         {
             "name": "🏠 Главная",
@@ -224,7 +220,7 @@ JAZZMIN_SETTINGS = {
 # JAZZMIN — визуальные настройки (UI Tweaks)
 # ══════════════════════════════════════════════════════════════════════════════
 JAZZMIN_UI_TWEAKS = {
-    # Тема Bootstrap (flatly — чистая и деловая, хорошо читается)
+    # Тема Bootstrap
     "theme":           "flatly",
     "dark_mode_theme": "darkly",   # тема для тёмного режима
 
@@ -266,6 +262,7 @@ JAZZMIN_UI_TWEAKS = {
 # ══════════════════════════════════════════════════════════════════════════════
 # Прочие настройки Django
 # ══════════════════════════════════════════════════════════════════════════════
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 USE_TZ     = True
 TIME_ZONE  = 'UTC'
@@ -285,6 +282,8 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
+
+LANGUAGE_CODE = 'ru-ru'
 
 # Статика и медиа
 STATIC_URL  = '/static/'

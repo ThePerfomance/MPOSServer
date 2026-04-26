@@ -43,6 +43,8 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     class Meta:
         db_table = 'users'
+        verbose_name = 'Пользователь'
+        verbose_name_plural = 'Пользователи'
 
     def __str__(self):
         return f"{self.firstname} {self.lastname} ({self.get_role_display()})"
@@ -156,6 +158,8 @@ class Subject(models.Model):
 
     class Meta:
         db_table = 'subjects'
+        verbose_name = 'Предмет'
+        verbose_name_plural = 'Предметы'
 
     def __str__(self):
         return self.name
@@ -176,17 +180,14 @@ class Block(models.Model):
     class Meta:
         db_table = 'blocks'
         ordering = ['position']
+        verbose_name = 'Блок'
+        verbose_name_plural = 'Блоки'
 
     def __str__(self):
         return f"{self.title} ({self.subject.name})"
 
 
 class Lesson(models.Model):
-    """
-    ИЗМЕНЕНИЯ:
-    - video_link и video_duration заменены на video (FK → Video)
-    - summary ограничен 1000 символами
-    """
     id           = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     block        = models.ForeignKey(Block, on_delete=models.CASCADE, related_name='lessons')
     test         = models.OneToOneField(
@@ -206,6 +207,8 @@ class Lesson(models.Model):
     class Meta:
         db_table = 'lessons'
         ordering = ['position']
+        verbose_name = 'Урок'
+        verbose_name_plural = 'Уроки'
 
     def __str__(self):
         return self.title or self.summary or f"Lesson {self.position} in {self.block.title}"
@@ -224,18 +227,14 @@ class Test(models.Model):
 
     class Meta:
         db_table = 'tests'
+        verbose_name = 'Тест'
+        verbose_name_plural = 'Тесты'
 
     def __str__(self):
         return self.title
 
 
 class Question(models.Model):
-    """
-    ИЗМЕНЕНИЯ:
-    - добавлено recommendation_link       — ссылка на материал для повторения
-    - добавлено recommendation_video_link — ссылка на видео для повторения
-    Оба поля null/blank, так как не каждый вопрос требует подсказки.
-    """
     id                       = models.BigAutoField(primary_key=True)
     text                     = models.TextField()
     test                     = models.ForeignKey(Test, on_delete=models.CASCADE, related_name='questions')
@@ -250,6 +249,8 @@ class Question(models.Model):
 
     class Meta:
         db_table = 'questions'
+        verbose_name = 'Вопрос'
+        verbose_name_plural = 'Вопросы'
 
     def __str__(self):
         return self.text[:50] + "..."
@@ -296,23 +297,7 @@ class TestResult(models.Model):
 # ═══════════════════════════════════════════════════════════════════════
 
 class UserAnswer(models.Model):
-    """
-    Фиксирует конкретный ответ пользователя на конкретный вопрос
-    в рамках попытки (TestResult).
 
-    Зачем нужно:
-    - TestResult хранит только итоговый балл.
-    - UserAnswer хранит «поатомно» каждый выбор пользователя,
-      что позволяет знать, на какие вопросы он ответил неверно,
-      и строить из них тренажёр.
-
-    Поля:
-    - test_result   → в рамках какой попытки
-    - question      → на какой вопрос
-    - chosen_answer → какой вариант выбран (null = пропущен / истёк таймер)
-    - is_correct    → кеш правильности (чтобы не делать JOIN при выборке ошибок)
-    - answered_at   → когда был дан ответ
-    """
     id             = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     test_result    = models.ForeignKey(TestResult, on_delete=models.CASCADE,
                                        related_name='user_answers')
@@ -336,16 +321,7 @@ class UserAnswer(models.Model):
 
 
 class TrainingSession(models.Model):
-    """
-    Сессия тренажёра — набор вопросов, на которые пользователь ошибся,
-    собранных в одну «повторяющую» сессию.
 
-    ИЗМЕНЕНИЯ:
-    - Добавлено поле lesson для привязки сессии к конкретному уроку
-    - Сессии теперь группируются по (user + lesson), а не сливаются в одну
-    - source_test_result → если сессия сформирована по конкретной попытке.
-                         null = глобальный тренажёр (все ошибки за всё время).
-    """
     STATUS_CHOICES = [
         ('pending',    'Не начата'),
         ('active',     'В процессе'),
@@ -380,17 +356,7 @@ class TrainingSession(models.Model):
 
 
 class TrainingQuestion(models.Model):
-    """
-    Конкретный вопрос внутри сессии тренажёра.
 
-    - question        → исходный вопрос из теста
-    - chosen_answer   → ответ, данный В ТРЕНАЖЁРЕ (null пока не отвечено)
-    - is_correct      → правильно ли ответил в тренажёре
-    - position        → порядок показа
-    - status          → состояние вопроса в тренажёре
-
-    Связка session + question уникальна (вопрос не дублируется в одной сессии).
-    """
     STATUS_CHOICES = [
         ('pending',  'Ожидает ответа'),
         ('correct',  'Ответ верный'),
@@ -454,6 +420,8 @@ class StudentCluster(models.Model):
 
     class Meta:
         db_table = 'student_clusters'
+        verbose_name = 'Кластер студента'
+        verbose_name_plural = 'Кластеры студентов'
 
     def __str__(self):
         return f"{self.user} — Cluster {self.cluster_id} ({self.cluster_label})"
@@ -471,6 +439,8 @@ class Recommendation(models.Model):
     class Meta:
         db_table = 'recommendations'
         ordering = ['-priority', '-created_at']
+        verbose_name = 'Рекомендация'
+        verbose_name_plural = 'Рекомендации'
 
     def __str__(self):
         return f"Rec for {self.user} — Prio: {self.priority}"
