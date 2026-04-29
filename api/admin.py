@@ -679,12 +679,6 @@ def _custom_index(self, request, extra_context=None):
 
 
 def _custom_app_index(self, request, app_label, extra_context=None):
-    """
-    ИСКЛЮЧЕНИЕ 404 ОШИБКИ:
-    Когда в меню Jazzmin или хлебных крошках кликают на 'Api', Django пытается
-    открыть стандартный список моделей, что приводит к 404. Мы просто перехватываем
-    этот клик и отправляем пользователя на наш красивый кастомный дашборд (Главную).
-    """
     if app_label == 'api':
         return redirect('admin:index')
     return _orig_app_index(self, request, app_label, extra_context)
