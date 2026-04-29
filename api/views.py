@@ -1,6 +1,7 @@
 from django.contrib.auth.hashers import check_password
 from django.db.models import Avg, Count
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, render, redirect
+from django.urls import reverse
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
@@ -19,6 +20,7 @@ from .serializers import (
     ScorePredictionSerializer, RecommendationSerializer,VideoTypeSerializer, VideoSerializer, UserAnswerSerializer,
     TrainingSessionSerializer, TrainingQuestionSerializer
 )
+from .forms import SubjectForm, BlockForm, LessonForm, VideoForm, TestForm, BlockFormSet, LessonFormSet
 from ml.engine import (
     analyze_weak_topics,
     generate_personalized_recommendations,
@@ -768,134 +770,6 @@ def ml_personalized_recommendations(request, user_id):
         max_recommendations=max_recs
     )
     
-    # 6. Анализируем прогресс
-    progress_analysis = analyze_progress_over_time(user_answers)
-    
-    # 7. Сохраняем рекомендации в БД
-    Recommendation.objects.filter(user=user).delete()
-    for rec in recommendations:
-        Recommendation.objects.create(
-            user=user,
-            text=f"{rec['recommendation_text']} ({rec['topic']})",
-            priority=rec['priority'],
-        )
-    
-    return Response({
-        "user_id": str(user_id),
-        "recommendations": recommendations,
-        "overall_stats": weak_topics_analysis.get("overall_stats", {}),
-        "progress_analysis": progress_analysis,
-    })
-
-
-@api_view(["GET"])
-def ml_learning_path(request, user_id):
-    """
-    GET /ml/learning-path/<user_id>/
-    
-    Строит индивидуальную траекторию обучения.
-    
-    Query params:
-    - limit_days: анализировать ответы за последние N дней
-    - max_steps: максимальное количество шагов (по умолчанию 5)
-    
-    Возвращает:
-    {
-        "user_id": str,
-        "learning_path": [
-            {
-                "step": int,
-                "action": "study" | "practice" | "watch",
-                "topic": str,
-                "resource": {...},
-                "estimated_time_minutes": int
-            },
-            ...
-        ],
-        "total_estimated_time": int
-    }
-    """
-    user = get_object_or_404(User, pk=user_id)
-    
-    limit_days = request.query_params.get('limit_days', None)
-    max_steps = int(request.query_params.get('max_steps', 5))
-    
-    # 1. Получаем ответы пользователя
-    user_answers_qs = UserAnswer.objects.filter(
-        test_result__user=user
-    ).select_related('test_result', 'question').order_by('-answered_at')
-    
-    if limit_days:
-        from datetime import timedelta
-        cutoff_date = timezone.now() - timedelta(days=int(limit_days))
-        user_answers_qs = user_answers_qs.filter(answered_at__gte=cutoff_date)
-    
-    user_answers = [
-        {
-            "question_id": ua.question_id,
-            "is_correct": ua.is_correct,
-            "answered_at": ua.answered_at.isoformat() if ua.answered_at else None,
-            "test_id": ua.test_result.test_id if ua.test_result else None,
-        }
-        for ua in user_answers_qs
-    ]
-    
-    # 2. Получаем информацию о вопросах
-    question_ids = set(ua["question_id"] for ua in user_answers if ua["question_id"])
-    questions_qs = Question.objects.filter(id__in=question_ids)
-    
-    questions_map = {}
-    for q in questions_qs:
-        topic = "Общая тема"
-        lesson = Lesson.objects.filter(test=q.test_id).first()
-        if lesson:
-            topic = lesson.block.title
-        
-        questions_map[q.id] = {
-            "topic": topic,
-            "block_id": str(lesson.block_id) if lesson else None,
-            "lesson_id": str(lesson.id) if lesson else None,
-            "recommendation_link": q.recommendation_link,
-            "recommendation_video_link": q.recommendation_video_link,
-        }
-    
-    # 3. Анализируем слабые темы
-    weak_topics_analysis = analyze_weak_topics(user_answers, questions_map)
-    
-    # 4. Получаем данные для рекомендаций
-    lessons_map = {}
-    for lesson in Lesson.objects.select_related('video').all():
-        lessons_map[str(lesson.id)] = {
-            "title": lesson.title or "",
-            "summary": lesson.summary or "",
-            "block_id": str(lesson.block_id),
-            "video_id": str(lesson.video_id) if lesson.video_id else None,
-        }
-    
-    videos_map = {}
-    for video in Video.objects.all():
-        videos_map[str(video.id)] = {
-            "title": video.name,
-            "link": video.link or "",
-            "type": video.type.name if video.type else "",
-        }
-    
-    blocks_map = {}
-    for block in Block.objects.all():
-        blocks_map[str(block.id)] = {
-            "title": block.title,
-            "subject_id": str(block.subject_id),
-        }
-    
-    # 5. Генерируем рекомендации
-    recommendations = generate_personalized_recommendations(
-        weak_topics_analysis,
-        lessons_map,
-        videos_map,
-        blocks_map,
-        max_recommendations=max_steps
-    )
-    
     # 6. Строим структуру блоков
     blocks_structure = {
         "blocks": [
@@ -1155,3 +1029,166 @@ def answer_training_question(request, pk):
         session.save()
 
     return Response(TrainingQuestionSerializer(tq).data)
+
+# ═══════════════════════════════════════════════════════════════════════
+# COURSE CONSTRUCTOR VIEW
+# ═══════════════════════════════════════════════════════════════════════
+
+def course_constructor_view(request):
+    current_step = int(request.GET.get('step', 1))
+    subject_id = request.GET.get('subject_id')
+    block_id = request.GET.get('block_id')
+    lesson_id = request.GET.get('lesson_id')
+
+    selected_items = {}
+    subject = None
+    block = None
+    lesson = None
+
+    if subject_id:
+        subject = get_object_or_404(Subject, id=subject_id)
+        selected_items[str(subject.id)] = subject.name
+    if block_id:
+        block = get_object_or_404(Block, id=block_id)
+        selected_items[str(block.id)] = block.title
+    if lesson_id:
+        lesson = get_object_or_404(Lesson, id=lesson_id)
+        selected_items[str(lesson.id)] = lesson.title
+
+    context = {
+        'current_step': current_step,
+        'subject_id': subject_id,
+        'block_id': block_id,
+        'lesson_id': lesson_id,
+        'selected_items': selected_items,
+    }
+    
+    base_url = reverse('api:course-constructor')
+
+    if current_step == 1:
+        if request.method == 'POST':
+            form = SubjectForm(request.POST)
+            if form.is_valid():
+                subject = form.save()
+                query_string = f'?step=2&subject_id={subject.id}'
+                return redirect(base_url + query_string)
+        else:
+            form = SubjectForm()
+        context['form'] = form
+        context['subjects'] = Subject.objects.all()
+
+    elif current_step == 2:
+        if not subject_id:
+            return redirect(base_url + '?step=1')
+        
+        if request.method == 'POST':
+            formset = BlockFormSet(request.POST, prefix='blocks')
+            if formset.is_valid():
+                first_block_id = None
+                for form in formset:
+                    if form.has_changed(): # Only save forms that have data
+                        block_instance = form.save(commit=False)
+                        block_instance.subject = subject
+                        block_instance.save()
+                        if not first_block_id:
+                            first_block_id = block_instance.id
+                
+                if first_block_id: # If at least one block was created, move to step 3 with its ID
+                    query_string = f'?step=3&subject_id={subject.id}&block_id={first_block_id}'
+                    return redirect(base_url + query_string)
+                else: # If no blocks were created, stay on step 2
+                    query_string = f'?step=2&subject_id={subject.id}'
+                    return redirect(base_url + query_string)
+            else:
+                # If formset is not valid, re-render with errors
+                context['formset'] = formset
+        else:
+            formset = BlockFormSet(prefix='blocks')
+        context['formset'] = formset
+        context['blocks'] = Block.objects.filter(subject=subject)
+
+    elif current_step == 3:
+        if not block_id:
+            query_string = f'?step=2&subject_id={subject_id}'
+            return redirect(base_url + query_string)
+        
+        if request.method == 'POST':
+            formset = LessonFormSet(request.POST, prefix='lessons')
+            if formset.is_valid():
+                first_lesson_id = None
+                for form in formset:
+                    if form.has_changed(): # Only save forms that have data
+                        lesson_instance = form.save(commit=False)
+                        lesson_instance.block = block
+                        lesson_instance.save()
+                        if not first_lesson_id:
+                            first_lesson_id = lesson_instance.id
+                
+                if first_lesson_id: # If at least one lesson was created, move to step 4 with its ID
+                    query_string = f'?step=4&subject_id={subject.id}&block_id={block.id}&lesson_id={first_lesson_id}'
+                    return redirect(base_url + query_string)
+                else: # If no lessons were created, stay on step 3
+                    query_string = f'?step=3&subject_id={subject.id}&block_id={block.id}'
+                    return redirect(base_url + query_string)
+            else:
+                # If formset is not valid, re-render with errors
+                context['formset'] = formset
+        else:
+            formset = LessonFormSet(prefix='lessons')
+        context['formset'] = formset
+        context['lessons'] = Lesson.objects.filter(block=block)
+
+    elif current_step == 4:
+        if not lesson_id:
+            query_string = f'?step=3&subject_id={subject_id}&block_id={block_id}'
+            return redirect(base_url + query_string)
+        
+        if request.method == 'POST':
+            # Handle new video creation
+            if 'submit_new_video' in request.POST:
+                video_form = VideoForm(request.POST, request.FILES) # Added request.FILES for FileField
+                if video_form.is_valid():
+                    video = video_form.save()
+                    lesson.video = video
+                    lesson.save()
+                    return redirect(request.get_full_path())
+            # Handle existing video selection
+            elif 'submit_existing_video' in request.POST:
+                video_id = request.POST.get('existing_video')
+                if video_id:
+                    video = get_object_or_404(Video, id=video_id)
+                    lesson.video = video
+                    lesson.save()
+                    return redirect(request.get_full_path())
+
+            # Handle new test creation
+            elif 'submit_new_test' in request.POST:
+                test_form = TestForm(request.POST)
+                if test_form.is_valid():
+                    test = test_form.save()
+                    lesson.test = test
+                    lesson.save()
+                    return redirect(request.get_full_path())
+            # Handle existing test selection
+            elif 'submit_existing_test' in request.POST:
+                test_id = request.POST.get('existing_test')
+                if test_id:
+                    test = get_object_or_404(Test, id=test_id)
+                    lesson.test = test
+                    lesson.save()
+                    return redirect(request.get_full_path())
+
+        video_form = VideoForm()
+        test_form = TestForm()
+        
+        context['video_form'] = video_form
+        context['test_form'] = test_form
+        context['lesson'] = lesson
+        
+        # Corrected queries for unassigned videos and tests
+        # A video is unassigned if no lesson points to it
+        context['unassigned_videos'] = Video.objects.filter(lessons__isnull=True)
+        # A test is unassigned if no lesson points to it AND no block points to it (as final_test)
+        context['unassigned_tests'] = Test.objects.filter(lesson_for__isnull=True, final_block_of__isnull=True)
+
+    return render(request, 'admin/course_constructor.html', context)

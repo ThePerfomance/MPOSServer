@@ -12,6 +12,7 @@ DEBUG = os.environ.get("DEBUG", "True") == "True"
 ALLOWED_HOSTS = ["*"]
 
 INSTALLED_APPS = [
+    'api.apps.ApiConfig',
     'jazzmin',
 
     "django.contrib.admin",
@@ -24,7 +25,6 @@ INSTALLED_APPS = [
     "rest_framework",
     "rest_framework_simplejwt",
     "corsheaders",
-    'api.apps.ApiConfig',
 ]
 
 MIDDLEWARE = [

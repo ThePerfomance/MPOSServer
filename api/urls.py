@@ -2,9 +2,12 @@
 from django.urls import path
 from . import views # <-- Импортируйте views из текущей директории (api)
 
+app_name = 'api'
+
 # Убираем определение index и корневой urlpatterns из этого файла
 
 urlpatterns = [
+    path('course-constructor/', views.course_constructor_view, name='course-constructor'),
     # Root (если нужен, но обычно не нужен внутри api/)
     # path("", views.index), # <-- Лучше убрать или сделать внутреннюю точку входа
 
@@ -85,7 +88,7 @@ urlpatterns = [
     # ML - НОВЫЕ ENDPOINTS ДЛЯ ДИПЛОМА (персонализированные рекомендации)
     path("ml/analyze-weak-topics/<uuid:user_id>/", views.ml_analyze_weak_topics, name='ml-analyze-weak-topics'),
     path("ml/personalized-recommendations/<uuid:user_id>/", views.ml_personalized_recommendations, name='ml-personalized-recommendations'),
-    path("ml/learning-path/<uuid:user_id>/", views.ml_learning_path, name='ml-learning-path'),
+    path("ml/learning-path/<uuid:user_id>/", views.build_learning_path, name='ml-learning-path'),
 ]
 
 # Уберите определение index и внешний urlpatterns из этого файла

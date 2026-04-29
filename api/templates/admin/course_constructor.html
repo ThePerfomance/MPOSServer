@@ -1,0 +1,431 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+{% load course_constructor_tags %}
+
+{% block extrastyle %}
+    {{ block.super }}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Onest:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root{
+          --pr:#2563EB;--pr-d:#1D4ED8;--pr-l:#EFF6FF;
+          --teal:#0EA5E9;--teal-l:#F0F9FF;
+          --amber:#F59E0B;--amber-l:#FFFBEB;
+          --green:#10B981;--green-l:#ECFDF5;
+          --violet:#8B5CF6;--violet-l:#F5F3FF;
+          --rose:#F43F5E;--rose-l:#FFF1F2;
+          --surface:#F1F5F9;--card:#FFFFFF;--border:#E2E8F0;
+          --t1:#0F172A;--t2:#475569;--t3:#94A3B8;
+          --sh1:0 1px 3px rgba(15,23,42,.07),0 1px 2px rgba(15,23,42,.04);
+          --sh2:0 4px 16px rgba(15,23,42,.09),0 2px 6px rgba(15,23,42,.04);
+          --r:14px;--r2:8px;
+          --font:'Onest',sans-serif;--mono:'JetBrains Mono',monospace;
+        }
+        #content{background:var(--surface)!important;padding:0!important;font-family:var(--font)!important}
+        #content-main{padding:0!important}
+        h1#site-name,.breadcrumbs{display:none}
+        *{box-sizing:border-box}
+        .dw{max-width:1380px;margin:0 auto;padding:28px 26px 60px}
+        .slabel{font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--t3);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+        .slabel::after{content:'';flex:1;height:1px;background:var(--border)}
+        .panel{background:var(--card);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--sh1);overflow:hidden;margin-bottom:20px}
+        .ph{display:flex;align-items:center;gap:10px;padding:15px 20px;border-bottom:1px solid var(--border)}
+        .phi{width:30px;height:30px;border-radius:var(--r2);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+        .pht{font-size:14px;font-weight:600;color:var(--t1)}
+        .pb{padding:20px}
+        .flow{display:flex;align-items:flex-start;gap:0;overflow-x:auto;padding-bottom:6px;margin-bottom:20px}
+        .fstep{display:flex;flex-direction:column;align-items:center;gap:8px;flex-shrink:0}
+        .fbtn{display:inline-flex;align-items:center;gap:7px;padding:9px 17px;border-radius:30px;font-size:13px;font-weight:700;text-decoration:none!important;transition:all .18s;white-space:nowrap;border:none}
+        .fbtn:hover{transform:translateY(-2px);box-shadow:var(--sh2)}
+        .fbtn.s0{background:var(--pr)!important;color:#fff!important}
+        .fbtn.s1{background:var(--pr)!important;color:#fff!important}
+        .fbtn.s2{background:var(--teal)!important;color:#fff!important}
+        .fbtn.s3{background:var(--amber)!important;color:#fff!important}
+        .fbtn.s4{background:var(--violet)!important;color:#fff!important}
+        .fbtn.s-inactive{background:#F1F5F9!important;color:var(--t3)!important;pointer-events:none}
+        .fbtn *{color:#fff!important}
+        .fnum{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--t3);font-family:var(--mono)}
+        .farr{font-size:13px;color:var(--border);margin:0 6px;padding-bottom:22px;flex-shrink:0}
+        .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+        .form-section{background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);padding:20px}
+        .form-section h4, .form-section h5{margin-top:0;margin-bottom:16px;font-size:14px;font-weight:600;color:var(--t1)}
+        .form-section h5 { font-size: 13px; color: var(--t2); border-top: 1px solid var(--border); padding-top: 16px; margin-top: 20px; }
+        .form-section p{margin-bottom:10px}
+        .form-section label{display:block;margin-bottom:5px;font-weight:500;font-size:13px;color:var(--t2)}
+        .form-section input[type="text"], .form-section select, .form-section textarea, .form-section input[type="number"], .form-section input[type="url"]{width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:var(--r2);background:#fff}
+        .form-section input[type="checkbox"] { margin-right: 5px; }
+        .form-section .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:30px;font-size:13px;font-weight:600;text-decoration:none!important;border:1px solid var(--pr);background:var(--pr);color:#fff;cursor:pointer}
+        .item-list{list-style:none;padding:0;margin:0}
+        .item-list li{display:flex;justify-content:space-between;align-items:center;padding:10px;border-radius:var(--r2);transition:background .15s}
+        .item-list li:hover{background:var(--surface)}
+        .item-list li span{font-size:14px;font-weight:500}
+        .item-list .btn-select{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:30px;font-size:12px;font-weight:600;text-decoration:none!important;border:1px solid var(--border);background:#fff;color:var(--t2)}
+        .item-list .btn-select:hover{border-color:var(--pr);color:var(--pr)}
+        .info-box{background:var(--pr-l);color:var(--pr-d);padding:15px;border-radius:var(--r2);font-size:13px;margin-bottom:15px}
+        .info-box a{color:var(--pr-d)!important;font-weight:600;text-decoration:none}
+        .info-box a:hover{text-decoration:underline}
+        .formset-item {
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: var(--r2);
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .formset-item h5 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            font-size: 14px;
+            color: var(--t1);
+        }
+        .add-form-button {
+            background: var(--teal);
+            border-color: var(--teal);
+        }
+        .add-form-button:hover {
+            background: var(--teal-l);
+            color: var(--teal);
+        }
+        @media(max-width:800px){.form-grid{grid-template-columns:1fr}}
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="dw">
+    <div class="panel">
+        <div class="ph">
+            <div class="phi" style="background: var(--pr-l); color: var(--pr);"><i class="fas fa-rocket"></i></div>
+            <div class="pht">Конструктор курса</div>
+        </div>
+        <div class="pb">
+            <!-- Навигация по шагам -->
+            <div class="flow" style="margin-bottom: 30px; padding: 10px 4px;">
+                <div class="fstep">
+                    <a href="{% url 'api:course-constructor' %}?step=1" class="fbtn {% if current_step >= 1 %}s1{% else %}s-inactive{% endif %}">
+                        <i class="fas fa-book"></i> Предмет
+                    </a>
+                    <span class="fnum">Шаг 1</span>
+                </div>
+                <div class="farr"><i class="fas fa-chevron-right"></i></div>
+                <div class="fstep">
+                    <a href="{% if subject_id %}{% url 'api:course-constructor' %}?step=2&subject_id={{ subject_id }}{% else %}#{% endif %}" class="fbtn {% if current_step >= 2 %}s2{% else %}s-inactive{% endif %}">
+                        <i class="fas fa-cube"></i> Блок
+                    </a>
+                    <span class="fnum">Шаг 2</span>
+                </div>
+                <div class="farr"><i class="fas fa-chevron-right"></i></div>
+                <div class="fstep">
+                    <a href="{% if block_id %}{% url 'api:course-constructor' %}?step=3&subject_id={{ subject_id }}&block_id={{ block_id }}{% else %}#{% endif %}" class="fbtn {% if current_step >= 3 %}s3{% else %}s-inactive{% endif %}">
+                        <i class="fas fa-film"></i> Урок
+                    </a>
+                    <span class="fnum">Шаг 3</span>
+                </div>
+                <div class="farr"><i class="fas fa-chevron-right"></i></div>
+                <div class="fstep">
+                    <a href="{% if lesson_id %}{% url 'api:course-constructor' %}?step=4&subject_id={{ subject_id }}&block_id={{ block_id }}&lesson_id={{ lesson_id }}{% else %}#{% endif %}" class="fbtn {% if current_step >= 4 %}s4{% else %}s-inactive{% endif %}">
+                        <i class="fas fa-puzzle-piece"></i> Контент
+                    </a>
+                    <span class="fnum">Шаг 4</span>
+                </div>
+            </div>
+
+            <!-- Содержимое шага -->
+            {% if current_step == 1 %}
+                <div class="slabel">Шаг 1: Создайте или выберите предмет</div>
+                <div class="form-grid">
+                    <div class="form-section">
+                        <h4>Создать новый предмет</h4>
+                        <form method="post" action="{% url 'api:course-constructor' %}?step=1">
+                            {% csrf_token %}
+                            {{ form.as_p }}
+                            <button type="submit" class="btn mt-2"><i class="fas fa-plus"></i> Создать и перейти к блокам</button>
+                        </form>
+                    </div>
+                    <div class="form-section">
+                        <h4>Или выберите из существующих</h4>
+                        <ul class="item-list">
+                            {% for subject in subjects %}
+                                <li>
+                                    <span>{{ subject.name }}</span>
+                                    <a href="{% url 'api:course-constructor' %}?step=2&subject_id={{ subject.id }}" class="btn-select">Выбрать <i class="fas fa-arrow-right"></i></a>
+                                </li>
+                            {% empty %}
+                                <li>Нет созданных предметов.</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            {% elif current_step == 2 %}
+                <div class="slabel">Шаг 2: Создайте или выберите блок для предмета "{{ selected_items|get_item:subject_id }}"</div>
+                <div class="form-grid">
+                    <div class="form-section">
+                        <h4>Создать новые блоки</h4>
+                        <form method="post" action="{% url 'api:course-constructor' %}?step=2&subject_id={{ subject_id }}" id="block-formset-form">
+                            {% csrf_token %}
+                            {{ formset.management_form }}
+                            <div id="block-formset-container">
+                                {% for form in formset %}
+                                    <div class="formset-item">
+                                        <h5>Блок #{{ forloop.counter }}</h5>
+                                        {% for field in form %}
+                                            {% if field.is_hidden %}
+                                                {{ field }}
+                                            {% else %}
+                                                <p>
+                                                    {{ field.label_tag }}
+                                                    {{ field }}
+                                                    {% if field.help_text %}
+                                                        <span class="helptext">{{ field.help_text }}</span>
+                                                    {% endif %}
+                                                    {% for error in field.errors %}
+                                                        <span class="errorlist">{{ error }}</span>
+                                                    {% endfor %}
+                                                </p>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                {% endfor %}
+                            </div>
+                            <button type="button" class="btn mt-2 add-form-button" id="add-block-form"><i class="fas fa-plus"></i> Добавить еще блок</button>
+                            <button type="submit" class="btn mt-2"><i class="fas fa-save"></i> Сохранить блоки и перейти к урокам</button>
+                        </form>
+                    </div>
+                    <div class="form-section">
+                        <h4>Или выберите из существующих</h4>
+                        <ul class="item-list">
+                            {% for block in blocks %}
+                                <li>
+                                    <span>{{ block.title }}</span>
+                                    <a href="{% url 'api:course-constructor' %}?step=3&subject_id={{ subject_id }}&block_id={{ block.id }}" class="btn-select">Выбрать <i class="fas fa-arrow-right"></i></a>
+                                </li>
+                            {% empty %}
+                                <li>Нет созданных блоков для этого предмета.</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+                <a href="{% url 'api:course-constructor' %}?step=1" class="btn btn-secondary mt-4" style="background:var(--surface);color:var(--t2);border-color:var(--border);"><i class="fas fa-arrow-left"></i> Назад к выбору предмета</a>
+            {% elif current_step == 3 %}
+                <div class="slabel">Шаг 3: Создайте или выберите урок для блока "{{ selected_items|get_item:block_id }}"</div>
+                <div class="form-grid">
+                    <div class="form-section">
+                        <h4>Создать новые уроки</h4>
+                        <form method="post" action="{% url 'api:course-constructor' %}?step=3&subject_id={{ subject_id }}&block_id={{ block_id }}" id="lesson-formset-form">
+                            {% csrf_token %}
+                            {{ formset.management_form }}
+                            <div id="lesson-formset-container">
+                                {% for form in formset %}
+                                    <div class="formset-item">
+                                        <h5>Урок #{{ forloop.counter }}</h5>
+                                        {% for field in form %}
+                                            {% if field.is_hidden %}
+                                                {{ field }}
+                                            {% else %}
+                                                <p>
+                                                    {{ field.label_tag }}
+                                                    {{ field }}
+                                                    {% if field.help_text %}
+                                                        <span class="helptext">{{ field.help_text }}</span>
+                                                    {% endif %}
+                                                    {% for error in field.errors %}
+                                                        <span class="errorlist">{{ error }}</span>
+                                                    {% endfor %}
+                                                </p>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                {% endfor %}
+                            </div>
+                            <button type="button" class="btn mt-2 add-form-button" id="add-lesson-form"><i class="fas fa-plus"></i> Добавить еще урок</button>
+                            <button type="submit" class="btn mt-2"><i class="fas fa-save"></i> Сохранить уроки и перейти к контенту</button>
+                        </form>
+                    </div>
+                    <div class="form-section">
+                        <h4>Или выберите из существующих</h4>
+                        <ul class="item-list">
+                            {% for lesson in lessons %}
+                                <li>
+                                    <span>{{ lesson.title }}</span>
+                                    <a href="{% url 'api:course-constructor' %}?step=4&subject_id={{ subject_id }}&block_id={{ block_id }}&lesson_id={{ lesson.id }}" class="btn-select">Выбрать <i class="fas fa-arrow-right"></i></a>
+                                </li>
+                            {% empty %}
+                                <li>Нет созданных уроков для этого блока.</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+                <a href="{% url 'api:course-constructor' %}?step=2&subject_id={{ subject_id }}" class="btn btn-secondary mt-4" style="background:var(--surface);color:var(--t2);border-color:var(--border);"><i class="fas fa-arrow-left"></i> Назад к выбору блока</a>
+            {% elif current_step == 4 %}
+                <div class="slabel">Шаг 4: Добавьте контент к уроку "{{ selected_items|get_item:lesson_id }}"</div>
+                <div class="form-grid">
+                    <div class="form-section">
+                        <h4>Видео</h4>
+                        {% if lesson.video %}
+                            <div class="info-box">К уроку уже привязано видео: <a href="{% url 'admin:api_video_change' lesson.video.id %}">{{ lesson.video.name }}</a></div>
+                        {% else %}
+                            <form method="post" action="{% url 'api:course-constructor' %}?step=4&subject_id={{ subject_id }}&block_id={{ block_id }}&lesson_id={{ lesson.id }}" enctype="multipart/form-data">
+                                {% csrf_token %}
+                                <h5>Создать новое видео</h5>
+                                {% for field in video_form %}
+                                    {% if field.is_hidden %}
+                                        {{ field }}
+                                    {% else %}
+                                        <p>
+                                            {{ field.label_tag }}
+                                            {{ field }}
+                                            {% if field.help_text %}
+                                                <span class="helptext">{{ field.help_text }}</span>
+                                            {% endif %}
+                                            {% for error in field.errors %}
+                                                <span class="errorlist">{{ error }}</span>
+                                            {% endfor %}
+                                        </p>
+                                    {% endif %}
+                                {% endfor %}
+                                <button type="submit" name="submit_new_video" class="btn mt-2"><i class="fas fa-plus"></i> Создать и привязать</button>
+                            </form>
+                            <hr style="border-top: 1px solid var(--border); margin: 20px 0;">
+                            <form method="post" action="{% url 'api:course-constructor' %}?step=4&subject_id={{ subject_id }}&block_id={{ block_id }}&lesson_id={{ lesson.id }}">
+                                {% csrf_token %}
+                                <h5>Или выберите существующее</h5>
+                                <p>
+                                    <label for="id_existing_video">Существующее видео:</label>
+                                    <select name="existing_video" id="id_existing_video">
+                                        {% for video in unassigned_videos %}
+                                            <option value="{{ video.id }}">{{ video.name }}</option>
+                                        {% empty %}
+                                            <option value="">Нет доступных видео</option>
+                                        {% endfor %}
+                                    </select>
+                                </p>
+                                <button type="submit" name="submit_existing_video" class="btn mt-2"><i class="fas fa-link"></i> Привязать существующее</button>
+                            </form>
+                        {% endif %}
+                    </div>
+                    <div class="form-section">
+                        <h4>Тест</h4>
+                        {% if lesson.test %}
+                            <div class="info-box">К уроку уже привязан тест: <a href="{% url 'admin:api_test_change' lesson.test.id %}">{{ lesson.test.title }}</a></div>
+                        {% else %}
+                            <form method="post" action="{% url 'api:course-constructor' %}?step=4&subject_id={{ subject_id }}&block_id={{ block_id }}&lesson_id={{ lesson.id }}">
+                                {% csrf_token %}
+                                <h5>Создать новый тест</h5>
+                                {% for field in test_form %}
+                                    {% if field.is_hidden %}
+                                        {{ field }}
+                                    {% else %}
+                                        <p>
+                                            {{ field.label_tag }}
+                                            {{ field }}
+                                            {% if field.help_text %}
+                                                <span class="helptext">{{ field.help_text }}</span>
+                                            {% endif %}
+                                            {% for error in field.errors %}
+                                                <span class="errorlist">{{ error }}</span>
+                                            {% endfor %}
+                                        </p>
+                                    {% endif %}
+                                {% endfor %}
+                                <button type="submit" name="submit_new_test" class="btn mt-2"><i class="fas fa-plus"></i> Создать и привязать</button>
+                            </form>
+                            <hr style="border-top: 1px solid var(--border); margin: 20px 0;">
+                            <form method="post" action="{% url 'api:course-constructor' %}?step=4&subject_id={{ subject_id }}&block_id={{ block_id }}&lesson_id={{ lesson.id }}">
+                                {% csrf_token %}
+                                <h5>Или выберите существующий</h5>
+                                <p>
+                                    <label for="id_existing_test">Существующий тест:</label>
+                                    <select name="existing_test" id="id_existing_test">
+                                        {% for test in unassigned_tests %}
+                                            <option value="{{ test.id }}">{{ test.title }}</option>
+                                        {% empty %}
+                                            <option value="">Нет доступных тестов</option>
+                                        {% endfor %}
+                                    </select>
+                                </p>
+                                <button type="submit" name="submit_existing_test" class="btn mt-2"><i class="fas fa-link"></i> Привязать существующий</button>
+                            </form>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="mt-4 d-flex justify-content-between">
+                    <a href="{% url 'api:course-constructor' %}?step=3&subject_id={{ subject_id }}&block_id={{ block_id }}" class="btn btn-secondary" style="background:var(--surface);color:var(--t2);border-color:var(--border);"><i class="fas fa-arrow-left"></i> Назад к выбору урока</a>
+                    <a href="{% url 'admin:index' %}" class="btn btn-success" style="background:var(--green);border-color:var(--green);"><i class="fas fa-check-circle"></i> Завершить</a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+    function updateFormsetIndexes(container, prefix) {
+        const forms = container.querySelectorAll('.formset-item');
+        forms.forEach((form, index) => {
+            form.querySelector('h5').textContent = (prefix === 'blocks' ? 'Блок #' : 'Урок #') + (index + 1);
+            form.querySelectorAll('[name]').forEach(input => {
+                const name = input.name.replace(/-\d+-/, `-${index}-`);
+                input.name = name;
+                input.id = `id_${name}`;
+            });
+            form.querySelectorAll('label').forEach(label => {
+                const htmlFor = label.htmlFor.replace(/-\d+-/, `-${index}-`);
+                label.htmlFor = htmlFor;
+            });
+        });
+        document.getElementById(`id_${prefix}-TOTAL_FORMS`).value = forms.length;
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add Block Form
+        const addBlockFormButton = document.getElementById('add-block-form');
+        const blockFormsetContainer = document.getElementById('block-formset-container');
+        if (addBlockFormButton && blockFormsetContainer) {
+            addBlockFormButton.addEventListener('click', function() {
+                const totalFormsInput = document.getElementById('id_blocks-TOTAL_FORMS');
+                const currentForms = parseInt(totalFormsInput.value);
+                const emptyForm = blockFormsetContainer.querySelector('.formset-item').cloneNode(true);
+
+                emptyForm.querySelectorAll('[name]').forEach(input => {
+                    input.name = input.name.replace(/-\d+-/, `-${currentForms}-`);
+                    input.id = `id_${input.name}`;
+                    input.value = ''; // Clear values for new form
+                    if (input.type === 'checkbox') {
+                        input.checked = false;
+                    }
+                });
+                emptyForm.querySelectorAll('label').forEach(label => {
+                    label.htmlFor = label.htmlFor.replace(/-\d+-/, `-${currentForms}-`);
+                });
+                emptyForm.querySelector('h5').textContent = `Блок #${currentForms + 1}`;
+                blockFormsetContainer.appendChild(emptyForm);
+                totalFormsInput.value = currentForms + 1;
+            });
+        }
+
+        // Add Lesson Form
+        const addLessonFormButton = document.getElementById('add-lesson-form');
+        const lessonFormsetContainer = document.getElementById('lesson-formset-container');
+        if (addLessonFormButton && lessonFormsetContainer) {
+            addLessonFormButton.addEventListener('click', function() {
+                const totalFormsInput = document.getElementById('id_lessons-TOTAL_FORMS');
+                const currentForms = parseInt(totalFormsInput.value);
+                const emptyForm = lessonFormsetContainer.querySelector('.formset-item').cloneNode(true);
+
+                emptyForm.querySelectorAll('[name]').forEach(input => {
+                    input.name = input.name.replace(/-\d+-/, `-${currentForms}-`);
+                    input.id = `id_${input.name}`;
+                    input.value = ''; // Clear values for new form
+                    if (input.type === 'checkbox') {
+                        input.checked = false;
+                    }
+                });
+                emptyForm.querySelectorAll('label').forEach(label => {
+                    label.htmlFor = label.htmlFor.replace(/-\d+-/, `-${currentForms}-`);
+                });
+                emptyForm.querySelector('h5').textContent = `Урок #${currentForms + 1}`;
+                lessonFormsetContainer.appendChild(emptyForm);
+                totalFormsInput.value = currentForms + 1;
+            });
+        }
+    });
+</script>
+{% endblock %}

@@ -99,6 +99,8 @@ h1#site-name,.breadcrumbs{display:none}
   font-size:13px;font-weight:700;text-decoration:none!important;transition:all .18s;
   white-space:nowrap;border:none}
 .fbtn:hover{transform:translateY(-2px);box-shadow:var(--sh2)}
+.fbtn.s0{background:var(--violet)!important;color:#fff!important}
+.fbtn.s0 *{color:#fff!important}
 .fbtn.s1{background:var(--pr)     !important;color:#fff!important}
 .fbtn.s2{background:var(--teal)   !important;color:#fff!important}
 .fbtn.s3{background:var(--amber)  !important;color:#fff!important}
@@ -296,6 +298,8 @@ h1#site-name,.breadcrumbs{display:none}
       </div>
       <div class="pb">
         <div class="flow">
+          <div class="fstep"><a href="{% url 'api:course-constructor' %}" class="fbtn s0"><i class="fas fa-rocket"></i> Начать конструктор</a><span class="fnum">Старт</span></div>
+          <div class="farr"><i class="fas fa-chevron-right"></i></div>
           <div class="fstep"><a href="{% url 'admin:api_subject_add' %}" class="fbtn s1"><i class="fas fa-plus"></i> Предмет</a><span class="fnum">Шаг 1</span></div>
           <div class="farr"><i class="fas fa-chevron-right"></i></div>
           <div class="fstep"><a href="{% url 'admin:api_block_add' %}" class="fbtn s2"><i class="fas fa-plus"></i> Блок</a><span class="fnum">Шаг 2</span></div>
