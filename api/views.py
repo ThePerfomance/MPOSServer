@@ -20,7 +20,10 @@ from .serializers import (
     ScorePredictionSerializer, RecommendationSerializer,VideoTypeSerializer, VideoSerializer, UserAnswerSerializer,
     TrainingSessionSerializer, TrainingQuestionSerializer
 )
-from .forms import SubjectForm, BlockForm, LessonForm, VideoForm, TestForm, BlockFormSet, LessonFormSet
+from .forms import (
+    SubjectForm, BlockForm, LessonForm, VideoForm, TestForm, BlockFormSet, LessonFormSet,
+    QuestionForm, AnswerFormSet
+)
 from ml.engine import (
     analyze_weak_topics,
     generate_personalized_recommendations,
@@ -1044,6 +1047,7 @@ def course_constructor_view(request):
     subject = None
     block = None
     lesson = None
+    test = None
 
     if subject_id:
         subject = get_object_or_404(Subject, id=subject_id)
@@ -1054,6 +1058,9 @@ def course_constructor_view(request):
     if lesson_id:
         lesson = get_object_or_404(Lesson, id=lesson_id)
         selected_items[str(lesson.id)] = lesson.title
+        if lesson.test:
+            test = lesson.test
+            selected_items[f"test_{test.id}"] = test.title
 
     context = {
         'current_step': current_step,
@@ -1061,6 +1068,7 @@ def course_constructor_view(request):
         'block_id': block_id,
         'lesson_id': lesson_id,
         'selected_items': selected_items,
+        'test': test,
     }
     
     base_url = reverse('api:course-constructor')
@@ -1084,21 +1092,17 @@ def course_constructor_view(request):
         if request.method == 'POST':
             formset = BlockFormSet(request.POST, prefix='blocks')
             if formset.is_valid():
-                first_block_id = None
                 for form in formset:
-                    if form.has_changed(): # Only save forms that have data
+                    if form.has_changed():  # Only save forms that have data
                         block_instance = form.save(commit=False)
                         block_instance.subject = subject
                         block_instance.save()
-                        if not first_block_id:
-                            first_block_id = block_instance.id
-                
-                if first_block_id: # If at least one block was created, move to step 3 with its ID
-                    query_string = f'?step=3&subject_id={subject.id}&block_id={first_block_id}'
-                    return redirect(base_url + query_string)
-                else: # If no blocks were created, stay on step 2
-                    query_string = f'?step=2&subject_id={subject.id}'
-                    return redirect(base_url + query_string)
+
+                # After saving, always redirect to step 3 without a block_id
+                # to let the user choose which block to edit.
+                # The logic in step 3 will handle the selection.
+                query_string = f'?step=3&subject_id={subject.id}'
+                return redirect(base_url + query_string)
             else:
                 # If formset is not valid, re-render with errors
                 context['formset'] = formset
@@ -1108,35 +1112,44 @@ def course_constructor_view(request):
         context['blocks'] = Block.objects.filter(subject=subject)
 
     elif current_step == 3:
+        if not subject_id:
+            return redirect(base_url + '?step=1')
+
         if not block_id:
-            query_string = f'?step=2&subject_id={subject_id}'
-            return redirect(base_url + query_string)
-        
+            blocks_for_subject = Block.objects.filter(subject_id=subject_id)
+            if blocks_for_subject.count() == 1:
+                block = blocks_for_subject.first()
+                query_string = f'?step=3&subject_id={subject_id}&block_id={block.id}'
+                return redirect(base_url + query_string)
+            
+            context['blocks_to_select'] = blocks_for_subject
+            return render(request, 'admin/course_constructor.html', context)
+
         if request.method == 'POST':
             formset = LessonFormSet(request.POST, prefix='lessons')
             if formset.is_valid():
                 first_lesson_id = None
                 for form in formset:
-                    if form.has_changed(): # Only save forms that have data
+                    if form.has_changed():
                         lesson_instance = form.save(commit=False)
                         lesson_instance.block = block
                         lesson_instance.save()
                         if not first_lesson_id:
                             first_lesson_id = lesson_instance.id
                 
-                if first_lesson_id: # If at least one lesson was created, move to step 4 with its ID
+                if first_lesson_id:
                     query_string = f'?step=4&subject_id={subject.id}&block_id={block.id}&lesson_id={first_lesson_id}'
                     return redirect(base_url + query_string)
-                else: # If no lessons were created, stay on step 3
+                else:
                     query_string = f'?step=3&subject_id={subject.id}&block_id={block.id}'
                     return redirect(base_url + query_string)
             else:
-                # If formset is not valid, re-render with errors
                 context['formset'] = formset
         else:
             formset = LessonFormSet(prefix='lessons')
         context['formset'] = formset
         context['lessons'] = Lesson.objects.filter(block=block)
+
 
     elif current_step == 4:
         if not lesson_id:
@@ -1144,15 +1157,13 @@ def course_constructor_view(request):
             return redirect(base_url + query_string)
         
         if request.method == 'POST':
-            # Handle new video creation
             if 'submit_new_video' in request.POST:
-                video_form = VideoForm(request.POST, request.FILES) # Added request.FILES for FileField
+                video_form = VideoForm(request.POST, request.FILES)
                 if video_form.is_valid():
                     video = video_form.save()
                     lesson.video = video
                     lesson.save()
                     return redirect(request.get_full_path())
-            # Handle existing video selection
             elif 'submit_existing_video' in request.POST:
                 video_id = request.POST.get('existing_video')
                 if video_id:
@@ -1161,22 +1172,24 @@ def course_constructor_view(request):
                     lesson.save()
                     return redirect(request.get_full_path())
 
-            # Handle new test creation
             elif 'submit_new_test' in request.POST:
                 test_form = TestForm(request.POST)
                 if test_form.is_valid():
                     test = test_form.save()
                     lesson.test = test
                     lesson.save()
-                    return redirect(request.get_full_path())
-            # Handle existing test selection
+                    # Redirect to step 5 after creating a test
+                    query_string = f'?step=5&subject_id={subject.id}&block_id={block.id}&lesson_id={lesson.id}'
+                    return redirect(base_url + query_string)
             elif 'submit_existing_test' in request.POST:
                 test_id = request.POST.get('existing_test')
                 if test_id:
                     test = get_object_or_404(Test, id=test_id)
                     lesson.test = test
                     lesson.save()
-                    return redirect(request.get_full_path())
+                    # Redirect to step 5 after selecting a test
+                    query_string = f'?step=5&subject_id={subject.id}&block_id={block.id}&lesson_id={lesson.id}'
+                    return redirect(base_url + query_string)
 
         video_form = VideoForm()
         test_form = TestForm()
@@ -1184,11 +1197,34 @@ def course_constructor_view(request):
         context['video_form'] = video_form
         context['test_form'] = test_form
         context['lesson'] = lesson
-        
-        # Corrected queries for unassigned videos and tests
-        # A video is unassigned if no lesson points to it
         context['unassigned_videos'] = Video.objects.filter(lessons__isnull=True)
-        # A test is unassigned if no lesson points to it AND no block points to it (as final_test)
         context['unassigned_tests'] = Test.objects.filter(lesson_for__isnull=True, final_block_of__isnull=True)
+
+    elif current_step == 5:
+        if not test:
+            return redirect(base_url + f'?step=4&subject_id={subject_id}&block_id={block_id}&lesson_id={lesson_id}')
+
+        if request.method == 'POST':
+            question_form = QuestionForm(request.POST)
+            # Pass a dummy question instance to the formset
+            answer_formset = AnswerFormSet(request.POST, instance=Question())
+            
+            if question_form.is_valid() and answer_formset.is_valid():
+                question = question_form.save(commit=False)
+                question.test = test
+                question.save()
+                
+                # Now that the question is saved, we can save the formset
+                answer_formset.instance = question
+                answer_formset.save()
+                
+                return redirect(request.get_full_path())
+        else:
+            question_form = QuestionForm()
+            answer_formset = AnswerFormSet(instance=Question())
+
+        context['question_form'] = question_form
+        context['answer_formset'] = answer_formset
+        context['questions'] = Question.objects.filter(test=test)
 
     return render(request, 'admin/course_constructor.html', context)
