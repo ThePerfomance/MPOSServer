@@ -272,16 +272,16 @@
                                     {% endfor %}
                                 </div>
                                 <button type="button" class="btn mt-2 add-form-button" id="add-lesson-form"><i class="fas fa-plus"></i> Добавить еще урок</button>
-                                <button type="submit" class="btn mt-2"><i class="fas fa-save"></i> Сохранить уроки и перейти к контенту</button>
+                                <button type="submit" class="btn mt-2"><i class="fas fa-save"></i> Сохранить уроки</button>
                             </form>
                         </div>
                         <div class="form-section">
-                            <h4>Или выберите из существующих</h4>
+                            <h4>Существующие уроки в этом блоке</h4>
                             <ul class="item-list">
                                 {% for lesson in lessons %}
                                     <li>
                                         <span>{{ lesson.title }}</span>
-                                        <a href="{% url 'api:course-constructor' %}?step=4&subject_id={{ subject_id }}&block_id={{ block_id }}&lesson_id={{ lesson.id }}" class="btn-select">Выбрать <i class="fas fa-arrow-right"></i></a>
+                                        <a href="{% url 'api:course-constructor' %}?step=4&subject_id={{ subject_id }}&block_id={{ block_id }}&lesson_id={{ lesson.id }}" class="btn-select">Выбрать и добавить контент <i class="fas fa-arrow-right"></i></a>
                                     </li>
                                 {% empty %}
                                     <li>Нет созданных уроков для этого блока.</li>
@@ -386,7 +386,7 @@
                 <div class="mt-4 d-flex justify-content-between">
                     <a href="{% url 'api:course-constructor' %}?step=3&subject_id={{ subject_id }}&block_id={{ block_id }}" class="btn btn-secondary" style="background:var(--surface);color:var(--t2);border-color:var(--border);"><i class="fas fa-arrow-left"></i> Назад к выбору урока</a>
                     {% if lesson.test %}
-                        <a href="{% url 'api:course-constructor' %}?step=5&subject_id={{ subject_id }}&block_id={{ block_id }}&lesson_id={{ lesson_id }}" class="btn btn-primary"><i class="fas fa-arrow-right"></i> Перейти к вопросам</a>
+                        <a href="{% url 'api:course-constructor' %}?step=5&subject_id={{ subject_id }}&block_id={{ block_id }}&lesson_id={{ lesson.id }}" class="btn btn-primary"><i class="fas fa-arrow-right"></i> Перейти к вопросам</a>
                     {% else %}
                         <a href="{% url 'admin:index' %}" class="btn btn-success" style="background:var(--green);border-color:var(--green);"><i class="fas fa-check-circle"></i> Завершить</a>
                     {% endif %}
@@ -405,25 +405,47 @@
                             <div id="answer-formset-container">
                                 {% for form in answer_formset %}
                                     <div class="formset-item">
-                                        {% if form.instance.pk %}<p>Ответ #{{ forloop.counter }} <span class="delete-row" data-form-id="{{ form.prefix }}">Удалить</span></p>{% endif %}
-                                        {% for field in form %}
-                                            {% if field.is_hidden %}
+                                        <p>
+                                            <strong class="answer-number">Ответ #{{ forloop.counter }}</strong>
+                                            <span class="delete-row">Удалить</span>
+                                        </p>
+                                        {{ form.id }}
+                                        {% for field in form.hidden_fields %}
+                                            {{ field }}
+                                        {% endfor %}
+                                        {% for field in form.visible_fields %}
+                                            <p>
+                                                {{ field.label_tag }}
                                                 {{ field }}
-                                            {% else %}
-                                                <p>
-                                                    {{ field.label_tag }}
-                                                    {{ field }}
-                                                    {% if field.help_text %}
-                                                        <span class="helptext">{{ field.help_text }}</span>
-                                                    {% endif %}
-                                                    {% for error in field.errors %}
-                                                        <span class="errorlist">{{ error }}</span>
-                                                    {% endfor %}
-                                                </p>
-                                            {% endif %}
+                                                {% if field.help_text %}
+                                                    <span class="helptext">{{ field.help_text }}</span>
+                                                {% endif %}
+                                                {% for error in field.errors %}
+                                                    <span class="errorlist">{{ error }}</span>
+                                                {% endfor %}
+                                            </p>
                                         {% endfor %}
                                     </div>
                                 {% endfor %}
+                            </div>
+                            {# Скрытый шаблон для новой формы ответа #}
+                            <div id="answer-form-template" style="display: none;">
+                                <div class="formset-item">
+                                    <p>
+                                        <strong class="answer-number"></strong>
+                                        <span class="delete-row">Удалить</span>
+                                    </p>
+                                    {{ answer_formset.empty_form.id }}
+                                    {% for field in answer_formset.empty_form.hidden_fields %}
+                                        {{ field }}
+                                    {% endfor %}
+                                    {% for field in answer_formset.empty_form.visible_fields %}
+                                        <p>
+                                            {{ field.label_tag }}
+                                            {{ field }}
+                                        </p>
+                                    {% endfor %}
+                                </div>
                             </div>
                             <button type="button" class="btn mt-2 add-form-button" id="add-answer-form"><i class="fas fa-plus"></i> Добавить еще ответ</button>
                             <button type="submit" class="btn mt-2"><i class="fas fa-save"></i> Сохранить вопрос и ответы</button>
@@ -453,162 +475,164 @@
 </div>
 
 <script>
-    function updateFormsetIndexes(container, prefix) {
-        const forms = container.querySelectorAll('.formset-item');
-        forms.forEach((form, index) => {
-            // Update header for blocks/lessons, not for answers
-            if (prefix === 'blocks' || prefix === 'lessons') {
-                form.querySelector('h5').textContent = (prefix === 'blocks' ? 'Блок #' : 'Урок #') + (index + 1);
-            } else if (prefix === 'answer_set') { // For answers
-                const deleteSpan = form.querySelector('.delete-row');
-                if (deleteSpan) {
-                    deleteSpan.dataset.formId = `${prefix}-${index}`;
-                }
-            }
+document.addEventListener('DOMContentLoaded', function() {
+    // --- ОБЩАЯ ЛОГИКА ДЛЯ FORMSETS ---
+    function setupFormset(containerId, addButtonId, templateId, prefix) {
+        const container = document.getElementById(containerId);
+        const addButton = document.getElementById(addButtonId);
+        const template = document.getElementById(templateId);
+        const totalFormsInput = document.getElementById(`id_${prefix}-TOTAL_FORMS`);
 
-            form.querySelectorAll('[name]').forEach(input => {
-                const name = input.name.replace(/-\d+-/, `-${index}-`);
-                input.name = name;
-                input.id = `id_${name}`;
+        if (!container || !addButton || !template || !totalFormsInput) {
+            return;
+        }
+
+        // Обновление индексов для существующих форм
+        updateIndexes();
+
+        // Добавление новой формы
+        addButton.addEventListener('click', function() {
+            const newIndex = parseInt(totalFormsInput.value);
+            const newFormHtml = template.innerHTML.replace(/__prefix__/g, newIndex);
+            
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = newFormHtml;
+            const newForm = tempDiv.firstElementChild;
+            
+            // Очищаем значения полей в новой форме
+            newForm.querySelectorAll('input, textarea').forEach(input => {
+                if (input.type === 'checkbox') {
+                    input.checked = false;
+                } else {
+                    input.value = '';
+                }
             });
-            form.querySelectorAll('label').forEach(label => {
-                const htmlFor = label.htmlFor.replace(/-\d+-/, `-${index}-`);
-                label.htmlFor = htmlFor;
-            });
+
+            container.appendChild(newForm);
+            totalFormsInput.value = newIndex + 1;
+            updateIndexes();
         });
-        document.getElementById(`id_${prefix}-TOTAL_FORMS`).value = forms.length;
+
+        // Удаление формы (делегирование событий)
+        container.addEventListener('click', function(e) {
+            if (e.target && e.target.classList.contains('delete-row')) {
+                const formToDelete = e.target.closest('.formset-item');
+                if (!formToDelete) return;
+
+                const deleteInput = formToDelete.querySelector(`input[name$="-DELETE"]`);
+
+                if (deleteInput) { // Если форма уже была сохранена (есть ID)
+                    deleteInput.checked = true;
+                    formToDelete.style.display = 'none'; // Скрываем форму
+                } else { // Если это новая, еще не сохраненная форма
+                    formToDelete.remove(); // Полностью удаляем из DOM
+                }
+                updateIndexes();
+            }
+        });
+
+        function updateIndexes() {
+            const forms = container.querySelectorAll('.formset-item');
+            let visibleFormCount = 0;
+            forms.forEach((form, index) => {
+                // Пропускаем скрытые формы (помеченные на удаление)
+                if (form.style.display === 'none') {
+                    return;
+                }
+
+                // Обновляем номер в заголовке
+                const numberElement = form.querySelector('.answer-number, h5');
+                if (numberElement) {
+                    if (prefix === 'blocks') numberElement.textContent = `Блок #${visibleFormCount + 1}`;
+                    else if (prefix === 'lessons') numberElement.textContent = `Урок #${visibleFormCount + 1}`;
+                    else if (prefix === 'answers') numberElement.textContent = `Ответ #${visibleFormCount + 1}`; // Исправлено на 'answers'
+                }
+
+                // Обновляем атрибуты name и id для всех полей
+                form.querySelectorAll('[name]').forEach(input => {
+                    const oldName = input.name;
+                    const newName = oldName.replace(new RegExp(`${prefix}-\\d+-`), `${prefix}-${visibleFormCount}-`);
+                    input.name = newName;
+                    input.id = `id_${newName}`;
+                });
+                // Обновляем атрибуты for для всех label
+                form.querySelectorAll('label').forEach(label => {
+                    if(label.htmlFor) {
+                        const oldFor = label.htmlFor;
+                        const newFor = oldFor.replace(new RegExp(`${prefix}-\\d+-`), `${prefix}-${visibleFormCount}-`);
+                        label.htmlFor = newFor;
+                    }
+                });
+                visibleFormCount++;
+            });
+            // Обновляем TOTAL_FORMS на количество видимых форм
+            totalFormsInput.value = visibleFormCount;
+        }
     }
 
-    document.addEventListener('DOMContentLoaded', function() {
-        // Add Block Form
+    // --- ИНИЦИАЛИЗАЦИЯ ДЛЯ КАЖДОГО ШАГА ---
+    const currentStep = new URLSearchParams(window.location.search).get('step');
+
+    if (currentStep === '2') {
+        // Для блоков нет шаблона, логика немного другая
+        // setupFormset('block-formset-container', 'add-block-form', 'block-form-template', 'blocks');
+        // В вашем коде для блоков и уроков используется другая, более простая логика клонирования.
+        // Если она работает, можно оставить. Если нет, перевести на setupFormset.
         const addBlockFormButton = document.getElementById('add-block-form');
         const blockFormsetContainer = document.getElementById('block-formset-container');
         if (addBlockFormButton && blockFormsetContainer) {
             addBlockFormButton.addEventListener('click', function() {
                 const totalFormsInput = document.getElementById('id_blocks-TOTAL_FORMS');
                 const currentForms = parseInt(totalFormsInput.value);
-                const emptyForm = blockFormsetContainer.querySelector('.formset-item').cloneNode(true);
+                const firstForm = blockFormsetContainer.querySelector('.formset-item');
+                if (!firstForm) return;
+                const newForm = firstForm.cloneNode(true);
 
-                emptyForm.querySelectorAll('[name]').forEach(input => {
+                newForm.querySelectorAll('[name]').forEach(input => {
                     input.name = input.name.replace(/-\d+-/, `-${currentForms}-`);
                     input.id = `id_${input.name}`;
-                    input.value = ''; // Clear values for new form
-                    if (input.type === 'checkbox') {
-                        input.checked = false;
-                    }
+                    input.value = '';
+                    if (input.type === 'checkbox') input.checked = false;
                 });
-                emptyForm.querySelectorAll('label').forEach(label => {
+                newForm.querySelectorAll('label').forEach(label => {
                     label.htmlFor = label.htmlFor.replace(/-\d+-/, `-${currentForms}-`);
                 });
-                emptyForm.querySelector('h5').textContent = `Блок #${currentForms + 1}`;
-                blockFormsetContainer.appendChild(emptyForm);
+                newForm.querySelector('h5').textContent = `Блок #${currentForms + 1}`;
+                blockFormsetContainer.appendChild(newForm);
                 totalFormsInput.value = currentForms + 1;
             });
         }
-
-        // Add Lesson Form
+    } else if (currentStep === '3') {
+        // Логика для уроков (если нужна)
+        // setupFormset('lesson-formset-container', 'add-lesson-form', 'lesson-form-template', 'lessons');
         const addLessonFormButton = document.getElementById('add-lesson-form');
         const lessonFormsetContainer = document.getElementById('lesson-formset-container');
         if (addLessonFormButton && lessonFormsetContainer) {
             addLessonFormButton.addEventListener('click', function() {
                 const totalFormsInput = document.getElementById('id_lessons-TOTAL_FORMS');
                 const currentForms = parseInt(totalFormsInput.value);
-                const emptyForm = lessonFormsetContainer.querySelector('.formset-item').cloneNode(true);
+                const firstForm = lessonFormsetContainer.querySelector('.formset-item');
+                if (!firstForm) return;
+                const newForm = firstForm.cloneNode(true);
 
-                emptyForm.querySelectorAll('[name]').forEach(input => {
+                newForm.querySelectorAll('[name]').forEach(input => {
                     input.name = input.name.replace(/-\d+-/, `-${currentForms}-`);
                     input.id = `id_${input.name}`;
-                    input.value = ''; // Clear values for new form
-                    if (input.type === 'checkbox') {
-                        input.checked = false;
-                    }
+                    input.value = '';
+                    if (input.type === 'checkbox') input.checked = false;
                 });
-                emptyForm.querySelectorAll('label').forEach(label => {
+                newForm.querySelectorAll('label').forEach(label => {
                     label.htmlFor = label.htmlFor.replace(/-\d+-/, `-${currentForms}-`);
                 });
-                emptyForm.querySelector('h5').textContent = `Урок #${currentForms + 1}`;
-                lessonFormsetContainer.appendChild(emptyForm);
+                newForm.querySelector('h5').textContent = `Урок #${currentForms + 1}`;
+                lessonFormsetContainer.appendChild(newForm);
                 totalFormsInput.value = currentForms + 1;
             });
         }
-
-        // Add Answer Form (for Step 5)
-        const addAnswerFormButton = document.getElementById('add-answer-form');
-        const answerFormsetContainer = document.getElementById('answer-formset-container');
-        if (addAnswerFormButton && answerFormsetContainer) {
-            addAnswerFormButton.addEventListener('click', function() {
-                const totalFormsInput = document.getElementById('id_answer_set-TOTAL_FORMS');
-                const currentForms = parseInt(totalFormsInput.value);
-                
-                // Find the last existing form to clone, or create a new empty one if none exist
-                let emptyForm;
-                const existingForms = answerFormsetContainer.querySelectorAll('.formset-item');
-                if (existingForms.length > 0) {
-                    emptyForm = existingForms[0].cloneNode(true);
-                } else {
-                    // Create a basic structure if no forms exist (shouldn't happen with extra=1)
-                    emptyForm = document.createElement('div');
-                    emptyForm.className = 'formset-item';
-                    emptyForm.innerHTML = `
-                        <p>Ответ #<span></span> <span class="delete-row">Удалить</span></p>
-                        <p><label for="id_answer_set-__prefix__-text">Текст ответа:</label><input type="text" name="answer_set-__prefix__-text" id="id_answer_set-__prefix__-text"></p>
-                        <p><label for="id_answer_set-__prefix__-is_correct">Правильный ответ:</label><input type="checkbox" name="answer_set-__prefix__-is_correct" id="id_answer_set-__prefix__-is_correct"></p>
-                        <input type="hidden" name="answer_set-__prefix__-id" id="id_answer_set-__prefix__-id">
-                        <input type="hidden" name="answer_set-__prefix__-question" id="id_answer_set-__prefix__-question">
-                        <input type="hidden" name="answer_set-__prefix__-DELETE" id="id_answer_set-__prefix__-DELETE">
-                    `;
-                }
-
-                emptyForm.querySelectorAll('[name]').forEach(input => {
-                    input.name = input.name.replace(/-\d+-/, `-${currentForms}-`).replace(/__prefix__/, `${currentForms}`);
-                    input.id = `id_${input.name}`;
-                    input.value = ''; // Clear values for new form
-                    if (input.type === 'checkbox') {
-                        input.checked = false;
-                    }
-                });
-                emptyForm.querySelectorAll('label').forEach(label => {
-                    label.htmlFor = label.htmlFor.replace(/-\d+-/, `-${currentForms}-`).replace(/__prefix__/, `${currentForms}`);
-                });
-                
-                const answerNumberSpan = emptyForm.querySelector('p span:first-child');
-                if (answerNumberSpan) {
-                    answerNumberSpan.textContent = `Ответ #${currentForms + 1}`;
-                }
-                const deleteSpan = emptyForm.querySelector('.delete-row');
-                if (deleteSpan) {
-                    deleteSpan.dataset.formId = `answer_set-${currentForms}`;
-                    deleteSpan.onclick = function() {
-                        deleteForm(this, 'answer_set');
-                    };
-                }
-
-                answerFormsetContainer.appendChild(emptyForm);
-                totalFormsInput.value = currentForms + 1;
-            });
-        }
-
-        // Delete Answer Form (for Step 5)
-        answerFormsetContainer.addEventListener('click', function(event) {
-            if (event.target.classList.contains('delete-row')) {
-                deleteForm(event.target, 'answer_set');
-            }
-        });
-
-        function deleteForm(element, prefix) {
-            const formId = element.dataset.formId;
-            const formToDelete = document.querySelector(`[data-form-id="${formId}"]`).closest('.formset-item');
-            if (formToDelete) {
-                const deleteInput = formToDelete.querySelector(`input[name="${formId}-DELETE"]`);
-                if (deleteInput) {
-                    deleteInput.value = 'on'; // Mark for deletion
-                    formToDelete.style.display = 'none'; // Hide the form
-                } else {
-                    formToDelete.remove(); // If it's a new unsaved form, just remove it
-                }
-                updateFormsetIndexes(answerFormsetContainer, prefix);
-            }
-        }
-    });
+    } else if (currentStep === '5') {
+        // Инициализация для формсета ответов
+        setupFormset('answer-formset-container', 'add-answer-form', 'answer-form-template', 'answers'); // Исправлено на 'answers'
+    }
+});
 </script>
 {% endblock %}

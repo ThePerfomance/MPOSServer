@@ -1128,21 +1128,15 @@ def course_constructor_view(request):
         if request.method == 'POST':
             formset = LessonFormSet(request.POST, prefix='lessons')
             if formset.is_valid():
-                first_lesson_id = None
                 for form in formset:
                     if form.has_changed():
                         lesson_instance = form.save(commit=False)
                         lesson_instance.block = block
                         lesson_instance.save()
-                        if not first_lesson_id:
-                            first_lesson_id = lesson_instance.id
                 
-                if first_lesson_id:
-                    query_string = f'?step=4&subject_id={subject.id}&block_id={block.id}&lesson_id={first_lesson_id}'
-                    return redirect(base_url + query_string)
-                else:
-                    query_string = f'?step=3&subject_id={subject.id}&block_id={block.id}'
-                    return redirect(base_url + query_string)
+                # Always redirect back to the same step to allow adding more lessons
+                query_string = f'?step=3&subject_id={subject.id}&block_id={block.id}'
+                return redirect(base_url + query_string)
             else:
                 context['formset'] = formset
         else:
