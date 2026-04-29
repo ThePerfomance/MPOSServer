@@ -107,6 +107,33 @@ class GroupMember(models.Model):
         return f"{self.user} in {self.group}"
 
 
+# Новая модель для связи преподавателей с группами
+class TeacherGroup(models.Model):
+    id      = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    teacher = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='teacher_groups',
+        limit_choices_to={'role': 'teacher'}, # Ограничиваем выбор только преподавателями
+        verbose_name="Преподаватель"
+    )
+    group   = models.ForeignKey(
+        Group,
+        on_delete=models.CASCADE,
+        related_name='group_teachers',
+        verbose_name="Группа"
+    )
+
+    class Meta:
+        db_table = 'teacher_groups'
+        unique_together = ('teacher', 'group')
+        verbose_name = 'Преподаватель группы'
+        verbose_name_plural = 'Преподаватели групп'
+
+    def __str__(self):
+        return f"{self.teacher.firstname} {self.teacher.lastname} in {self.group.name}"
+
+
 # ═══════════════════════════════════════════════════════════════════════
 # VIDEO
 # ═══════════════════════════════════════════════════════════════════════
@@ -175,6 +202,15 @@ class Video(models.Model):
 class Subject(models.Model):
     id   = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField("Название предмета", max_length=255)
+    # Новое поле для отслеживания создателя предмета
+    creator = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='created_subjects',
+        verbose_name="Создатель"
+    )
 
     class Meta:
         db_table = 'subjects'
@@ -183,6 +219,32 @@ class Subject(models.Model):
 
     def __str__(self):
         return self.name
+
+
+# Новая модель для связи предметов с группами
+class GroupSubject(models.Model):
+    id      = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    group   = models.ForeignKey(
+        Group,
+        on_delete=models.CASCADE,
+        related_name='group_subjects',
+        verbose_name="Группа"
+    )
+    subject = models.ForeignKey(
+        Subject,
+        on_delete=models.CASCADE,
+        related_name='subject_groups',
+        verbose_name="Предмет"
+    )
+
+    class Meta:
+        db_table = 'group_subjects'
+        unique_together = ('group', 'subject')
+        verbose_name = 'Предмет группы'
+        verbose_name_plural = 'Предметы групп'
+
+    def __str__(self):
+        return f"{self.subject.name} for {self.group.name}"
 
 
 class Block(models.Model):
