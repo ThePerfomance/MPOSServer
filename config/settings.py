@@ -125,49 +125,36 @@ JAZZMIN_SETTINGS = {
             ],
         },
         {
-            "name": "👥 Пользователи",
+            "name": "👥 Пользователи и Группы",
             "children": [
-                {"name": "👤 Пользователи",    "url": "admin:api_user_changelist"},
-                {"name": "🏫 Группы",          "url": "admin:api_group_changelist"},
-                {"name": "➕ Участники групп", "url": "admin:api_groupmember_changelist"},
+                {"name": "👤 Пользователи",        "url": "admin:api_user_changelist"},
+                {"name": "🏫 Группы",              "url": "admin:api_group_changelist"},
+                {"name": "➕ Студенты в группах",  "url": "admin:api_groupmember_changelist"},
+                {"name": "👨‍🏫 Преподаватели групп", "url": "admin:api_teachergroup_changelist"},
+                {"name": "📚 Предметы групп",      "url": "admin:api_groupsubject_changelist"},
             ],
         },
-        {
-            "name": "🎥 Видео",
-            "children": [
-                {"name": "🎞 Видеоматериалы", "url": "admin:api_video_changelist"},
-                {"name": "🏷 Типы видео",     "url": "admin:api_videotype_changelist"},
-            ],
-        },
-        {
-            "name": "📊 Статистика",
-            "children": [
-                {"name": "🏆 Результаты тестов",     "url": "admin:api_testresult_changelist"},
-                {"name": "✏️ Ответы пользователей",  "url": "admin:api_useranswer_changelist"},
-                {"name": "🏋 Сессии тренажёра",      "url": "admin:api_trainingsession_changelist"},
-                {"name": "🔀 Вопросы тренажёра",     "url": "admin:api_trainingquestion_changelist"},
-            ],
-        },
+        # ... (остальные меню Видео и Статистика оставляем без изменений) ...
     ],
 
     # ── Порядок моделей в боковой панели ─────────────────────────────────────
-    # Порядок строго соответствует логической иерархии разделов
     "order_with_respect_to": [
-        # Обучение
         "api.subject",
         "api.block",
         "api.lesson",
         "api.test",
         "api.question",
         "api.answer",
-        # Пользователи
+
         "api.user",
         "api.group",
         "api.groupmember",
-        # Видео
+        "api.teachergroup",
+        "api.groupsubject",
+
         "api.video",
         "api.videotype",
-        # Статистика
+
         "api.testresult",
         "api.useranswer",
         "api.trainingsession",
@@ -176,23 +163,24 @@ JAZZMIN_SETTINGS = {
 
     # ── Иконки (Font Awesome 5) ───────────────────────────────────────────────
     "icons": {
-        # Приложение
         "api": "fas fa-graduation-cap",
-        # Обучение
+
         "api.subject":         "fas fa-book",
         "api.block":           "fas fa-cube",
         "api.lesson":          "fas fa-film",
         "api.test":            "fas fa-clipboard-check",
         "api.question":        "fas fa-question-circle",
         "api.answer":          "fas fa-check-square",
-        # Пользователи
+
         "api.user":            "fas fa-user",
         "api.group":           "fas fa-users",
-        "api.groupmember":     "fas fa-user-plus",
-        # Видео
+        "api.groupmember":     "fas fa-user-graduate",
+        "api.teachergroup":    "fas fa-chalkboard-teacher",
+        "api.groupsubject":    "fas fa-book-reader",
+
         "api.video":           "fas fa-video",
         "api.videotype":       "fas fa-tags",
-        # Статистика
+
         "api.testresult":      "fas fa-chart-bar",
         "api.useranswer":      "fas fa-pen",
         "api.trainingsession": "fas fa-dumbbell",

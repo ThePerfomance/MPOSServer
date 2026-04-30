@@ -42,7 +42,7 @@ services:
       DJANGO_SUPERUSER_FIRSTNAME: "Admin"
       DJANGO_SUPERUSER_LASTNAME: "System"
       DJANGO_SUPERUSER_PATRONYMIC: "Root"
-      DJANGO_SUPERUSER_ROLE: "teacher"
+      DJANGO_SUPERUSER_ROLE: "admin"
 
 volumes:
   pgdata:

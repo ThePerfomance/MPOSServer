@@ -7,7 +7,7 @@ from django.shortcuts import redirect
 import logging
 from django.conf import settings
 from .models import (
-    User, Group, GroupMember, Subject, Block,
+    User, Group, GroupMember, TeacherGroup, GroupSubject, Subject, Block,
     Lesson, Test, Question, Answer, Video, TestResult, VideoType, UserAnswer,
     TrainingSession, TrainingQuestion
 )
@@ -90,7 +90,63 @@ class GroupMemberInline(admin.TabularInline):
     verbose_name = "Участник"
     verbose_name_plural = "Состав группы"
 
+class TeacherGroupInline(admin.TabularInline):
+    """Преподаватели, прикрепленные к группе."""
+    model = TeacherGroup
+    extra = 1
+    autocomplete_fields = ('teacher',)
+    verbose_name = "Преподаватель"
+    verbose_name_plural = "Преподаватели группы"
 
+
+class GroupSubjectInline(admin.TabularInline):
+    """Предметы, прикрепленные к группе."""
+    model = GroupSubject
+    extra = 1
+    autocomplete_fields = ('subject',)
+    verbose_name = "Предмет"
+    verbose_name_plural = "Предметы группы"
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Группы и преподаватели
+# ══════════════════════════════════════════════════════════════════════════════
+@admin.register(TeacherGroup)
+class TeacherGroupAdmin(admin.ModelAdmin):
+    list_display = ('teacher', 'group')
+    list_filter = ('group',)
+    search_fields = ('teacher__email', 'teacher__lastname', 'group__name')
+    autocomplete_fields = ('teacher', 'group')
+
+    def has_view_permission(self, request, obj=None):   return is_teacher_or_admin(request.user)
+
+    def has_add_permission(self, request):              return is_admin(request.user)
+
+    def has_change_permission(self, request, obj=None): return is_admin(request.user)
+
+    def has_delete_permission(self, request, obj=None): return is_admin(request.user)
+
+
+@admin.register(GroupSubject)
+class GroupSubjectAdmin(admin.ModelAdmin):
+    list_display = ('group', 'subject')
+    list_filter = ('group', 'subject')
+    search_fields = ('group__name', 'subject__name')
+    autocomplete_fields = ('group', 'subject')
+
+    def has_view_permission(self, request, obj=None):   return is_teacher_or_admin(request.user)
+
+    def has_add_permission(self, request):              return is_admin(request.user)
+
+    def has_change_permission(self, request, obj=None): return is_admin(request.user)
+
+    def has_delete_permission(self, request, obj=None): return is_admin(request.user)
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        if is_admin(request.user):
+            return qs
+        # Преподаватель видит только те предметы групп, где он создатель самого предмета
+        return qs.filter(subject__creator=request.user)
 # ══════════════════════════════════════════════════════════════════════════════
 # ░░░░░░░░░░░░░░░░░  РАЗДЕЛ: ОБУЧЕНИЕ  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
 # ══════════════════════════════════════════════════════════════════════════════
@@ -98,27 +154,36 @@ class GroupMemberInline(admin.TabularInline):
 @admin.register(Subject)
 class SubjectAdmin(admin.ModelAdmin):
     """Учебные предметы (Математика, Физика…)."""
-    search_fields = ('name',)
+    search_fields = ('name', 'creator__email', 'creator__lastname')
+    list_filter = ('creator',)
     ordering = ('name',)
 
     def blocks_count(self, obj): return obj.blocks.count()
-
     blocks_count.short_description = "Кол-во блоков"
 
     def lessons_count(self, obj): return sum(b.lessons.count() for b in obj.blocks.all())
-
     lessons_count.short_description = "Кол-во уроков"
 
     def get_list_display(self, request):
-        # Преподавателю не нужно видеть лишнее, показываем просто и понятно
+        if is_admin(request.user):
+            return ('name', 'creator', 'blocks_count', 'lessons_count')
         return ('name', 'blocks_count', 'lessons_count')
 
+    def get_readonly_fields(self, request, obj=None):
+        # Обычные преподаватели не могут менять создателя
+        if not is_admin(request.user):
+            return ('creator',)
+        return ()
+
+    def save_model(self, request, obj, form, change):
+        # При создании предмета автоматически назначаем текущего пользователя создателем, если поле пустое
+        if getattr(obj, 'creator', None) is None:
+            obj.creator = request.user
+        super().save_model(request, obj, form, change)
+
     def has_view_permission(self, request, obj=None):   return is_teacher_or_admin(request.user)
-
     def has_add_permission(self, request):              return is_teacher_or_admin(request.user)
-
     def has_change_permission(self, request, obj=None): return is_teacher_or_admin(request.user)
-
     def has_delete_permission(self, request, obj=None): return is_admin(request.user)
 
 
@@ -402,20 +467,23 @@ class UserAdmin(admin.ModelAdmin):
 
 @admin.register(Group)
 class GroupAdmin(admin.ModelAdmin):
-    list_display = ('name', 'members_count')
+    list_display = ('name', 'members_count', 'teachers_count', 'subjects_count')
     search_fields = ('name',)
-    inlines = [GroupMemberInline]
+    # Добавляем инлайны для управления всем прямо из карточки группы
+    inlines = [TeacherGroupInline, GroupSubjectInline, GroupMemberInline]
 
     def members_count(self, obj): return obj.members.count()
+    members_count.short_description = "Студентов"
 
-    members_count.short_description = "Количество студентов"
+    def teachers_count(self, obj): return obj.group_teachers.count()
+    teachers_count.short_description = "Преподавателей"
+
+    def subjects_count(self, obj): return obj.group_subjects.count()
+    subjects_count.short_description = "Предметов"
 
     def has_view_permission(self, request, obj=None):   return is_teacher_or_admin(request.user)
-
     def has_add_permission(self, request):              return is_admin(request.user)
-
     def has_change_permission(self, request, obj=None): return is_admin(request.user)
-
     def has_delete_permission(self, request, obj=None): return is_admin(request.user)
 
 
@@ -644,7 +712,6 @@ class TrainingQuestionAdmin(admin.ModelAdmin):
     def has_change_permission(self, request, obj=None): return False
 
     def has_delete_permission(self, request, obj=None): return is_admin(request.user)
-
 
 # ══════════════════════════════════════════════════════════════════════════════
 # КАСТОМНЫЙ ДАШБОРД И ПЕРЕХВАТ 404 ОШИБКИ

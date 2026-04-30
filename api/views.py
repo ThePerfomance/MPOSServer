@@ -10,15 +10,17 @@ from django.utils import timezone
 
 from .models import (
     User, Group, GroupMember, Subject, Block, Lesson, Test, Question, Answer, TestResult,
-    StudentCluster, TestDifficulty, ScorePrediction, Recommendation, VideoType, Video, UserAnswer, TrainingSession, TrainingQuestion
+    StudentCluster, TestDifficulty, ScorePrediction, Recommendation, VideoType, Video, UserAnswer, TrainingSession, TrainingQuestion,
+    TeacherGroup, GroupSubject
 )
 from .serializers import (
     UserSerializer, UserRegistrationSerializer, GroupSerializer, GroupMemberSerializer, SubjectSerializer,
     TestSerializer, BlockSerializer, LessonSerializer, QuestionSerializer, QuestionWithAnswersSerializer,
-    AnswerSerializer, TestResultSerializer, # TestResultWithTestDetailsSerializer
+    AnswerSerializer, TestResultSerializer,
     StudentClusterSerializer, TestDifficultySerializer,
     ScorePredictionSerializer, RecommendationSerializer,VideoTypeSerializer, VideoSerializer, UserAnswerSerializer,
-    TrainingSessionSerializer, TrainingQuestionSerializer
+    TrainingSessionSerializer, TrainingQuestionSerializer,
+    TeacherGroupSerializer, GroupSubjectSerializer # <--- ДОБАВЛЕНО
 )
 from .forms import (
     SubjectForm, BlockForm, LessonForm, VideoForm, TestForm, BlockFormSet, LessonFormSet,
@@ -160,6 +162,60 @@ def users_for_group(request, group_id):
     users = User.objects.filter(id__in=user_ids)
     return Response(UserSerializer(users, many=True).data)
 
+# ═══════════════════════════════════════════════════════════════════════
+# ПРЕПОДАВАТЕЛИ И ПРЕДМЕТЫ ГРУПП (NEW)
+# ═══════════════════════════════════════════════════════════════════════
+
+@api_view(["GET"])
+def subjects_for_group(request, group_id):
+    """Получить список предметов для конкретной группы"""
+    subject_ids = GroupSubject.objects.filter(group_id=group_id).values_list("subject_id", flat=True)
+    subjects = Subject.objects.filter(id__in=subject_ids)
+    return Response(SubjectSerializer(subjects, many=True).data)
+
+
+@api_view(["POST"])
+def add_subject_to_group(request):
+    """Привязать предмет к группе"""
+    s = GroupSubjectSerializer(data=request.data)
+    if s.is_valid():
+        gs = s.save()
+        return Response({
+            "status": "success",
+            "message": "Предмет успешно привязан к группе",
+            "id": str(gs.id)
+        }, status=status.HTTP_201_CREATED)
+    return Response(s.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(["GET"])
+def teachers_for_group(request, group_id):
+    """Получить список преподавателей конкретной группы"""
+    teacher_ids = TeacherGroup.objects.filter(group_id=group_id).values_list("teacher_id", flat=True)
+    teachers = User.objects.filter(id__in=teacher_ids)
+    return Response(UserSerializer(teachers, many=True).data)
+
+
+@api_view(["POST"])
+def add_teacher_to_group(request):
+    """Привязать преподавателя к группе"""
+    s = TeacherGroupSerializer(data=request.data)
+    if s.is_valid():
+        tg = s.save()
+        return Response({
+            "status": "success",
+            "message": "Преподаватель успешно привязан к группе",
+            "id": str(tg.id)
+        }, status=status.HTTP_201_CREATED)
+    return Response(s.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(["GET"])
+def groups_for_teacher(request, teacher_id):
+    """Получить все группы, которые ведет конкретный преподаватель"""
+    group_ids = TeacherGroup.objects.filter(teacher_id=teacher_id).values_list("group_id", flat=True)
+    groups = Group.objects.filter(id__in=group_ids)
+    return Response(GroupSerializer(groups, many=True).data)
 
 # ═══════════════════════════════════════════════════════════════════════
 # GROUP MEMBERS

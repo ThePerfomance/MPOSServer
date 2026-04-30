@@ -26,6 +26,16 @@ urlpatterns = [
     path("groups/by-name/<str:name>/", views.group_by_name, name='group-by-name'),
     path("groups/<uuid:group_id>/users/", views.users_for_group, name='users-for-group'),
 
+    # =========================================================================
+    # НОВЫЕ ПУТИ: Преподаватели и Предметы в группах
+    # =========================================================================
+    path("groups/<uuid:group_id>/subjects/", views.subjects_for_group, name='subjects-for-group'),
+    path("group-subjects/", views.add_subject_to_group, name='group-subjects-create'),
+
+    path("groups/<uuid:group_id>/teachers/", views.teachers_for_group, name='teachers-for-group'),
+    path("teacher-groups/", views.add_teacher_to_group, name='teacher-groups-create'),
+
+    path("users/<uuid:teacher_id>/teacher-groups/", views.groups_for_teacher, name='groups-for-teacher'),
     # Group Members
     path("group-members/", views.group_members_list, name='group-members-list'),
     path("group-members/<uuid:pk>/", views.group_member_detail, name='group-member-detail'),

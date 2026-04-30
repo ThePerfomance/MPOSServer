@@ -1,17 +1,17 @@
 # api/management/commands/seed_db.py
 from django.core.management.base import BaseCommand
-from api.models import User, Group, GroupMember, Subject, Block, Lesson, Test, Question, Answer, TestResult, VideoType, Video
-from django.contrib.auth.hashers import make_password
+from api.models import (
+    User, Group, GroupMember, TeacherGroup, GroupSubject,
+    Subject, Block, Lesson, Test, Question, Answer,
+    TestResult, VideoType, Video
+)
 from datetime import datetime, timedelta
-from django.contrib.auth import get_user_model
-import uuid
 
 
 class Command(BaseCommand):
-    help = 'Seed database with initial data for new schema (Subject -> Block -> Lesson -> Test)'
+    help = 'Seed database with initial data for new schema'
 
     def handle(self, *args, **kwargs):
-        # Проверяем, существует ли пользователь
         if User.objects.filter(email='nikita@mail.ru').exists():
             self.stdout.write('Database already seeded, skipping.')
             return
@@ -19,51 +19,51 @@ class Command(BaseCommand):
         self.stdout.write('Seeding database for new schema...')
 
         # ── USERS ──
-        u1 = User.objects.create_user(
-            firstname='Никита',
-            lastname='Смольников',
-            patronymic='Матвеевич',
-            email='nikita@mail.ru',
-            password='123456n',
-            role='student'
-        )
-        u2 = User.objects.create_user(
-            firstname='Александра',
-            lastname='Непейн',
-            patronymic='Александровна',
-            email='nepein@mail.ru',
-            password='123456n',
-            role='teacher'
-        )
-        #u1 = User.objects.create(firstname='Никита',    lastname='Смольников',    patronymic='Матвеевич',   email='nikita@mail.ru', password=make_password('123456n'), role='student')
-        #u2 = User.objects.create(firstname='Александра',  lastname='Непейн',   patronymic='Александровна',  email='nepein@mail.ru',  password=make_password('123456n'),     role='teacher')
+        # 2. Безопасное создание студента
+        if not User.objects.filter(email='nikita@mail.ru').exists():
+            u1 = User.objects.create_user(
+                firstname='Никита',
+                lastname='Смольников',
+                patronymic='Матвеевич',
+                email='nikita@mail.ru',
+                password='123456n',
+                role='student'
+            )
+        else:
+            u1 = User.objects.get(email='nikita@mail.ru')
+
+        # 3. Безопасное создание преподавателя
+        if not User.objects.filter(email='nepein@mail.ru').exists():
+            u2 = User.objects.create_user(
+                firstname='Александра',
+                lastname='Непейн',
+                patronymic='Александровна',
+                email='nepein@mail.ru',
+                password='123456n',
+                role='teacher'
+            )
+        else:
+            u2 = User.objects.get(email='nepein@mail.ru')
 
         # ── GROUPS ──
-        group_names = [
-            '24ИБ(б)БАС-1','24ИБ(б)БАС-2','24ИВТ(б)ВМК','24ИСТ(б)-1','24ИСТ(б)-2',
-            '24КБ(с)РЗПО-1','24КБ(с)РЗПО-2','24МКН(б)ЦТ','24ПИ(б)Эк','24ПИнж(б)-1',
-            '24ПИнж(б)-2','24ПМ(б)МКМ','24ПМИ(б)ППКС','24Ст(б)СУД','24ФИИТ(б)РАИС',
-            '23ИБ(б)БАС-1','23ИБ(б)БАС-2','23ИВТ(б)ВМК','23ИСТ(б)АДМО','23ИСТ(б)СИЦ',
-            '23КБ(с)РЗПО-1','23КБ(с)РЗПО-2','23МКН(б)ЦТ','23ПИ(б)Эк','23ПИнж(б)РПиС-1',
-            '23ПИнж(б)РПиС-2','23ПМ(б)МКМ','23ПМИ(б)ППКС','23Ст(б)СУД','23ФИИТ(б)РАИС',
-            '22БИ(б)ИСЭ','22ИБ(б)БАС-1','22ИБ(б)БАС-2','22ИВТ(б)ВМК','22ИСТ(б)АДМО',
-            '22ИСТ(б)СИЦ','22КБ(с)РЗПО-1','22КБ(с)РЗПО-2','22МКН(б)ЦТ','22ПИ(б)Эк',
-            '22ПИнж(б)РПиС-1','22ПИнж(б)РПиС-2','22ПМ(б)МКМ','22ПМИ(б)ППКС','22ПО(б)Ин',
-            '22Ст(б)СУД','22ФИИТ(б)РАИС',
-            '21ИБ(б)БАС-1','21ИБ(б)БАС-2','21ИВТ(б)ВМК','21ИВТ(б)ПОВТ','21ИСТ(б)АДМО',
-            '21ИСТ(б)СИЦ','21КБ(с)РЗПО-1','21КБ(с)РЗПО-2','21МКН(б)ЦТ','21ПИ(б)Эк',
-            '21ПИнж(б)РПиС','21ПМ(б)ПММ','21ПМИ(б)ППКС','21Ст(б)СУД','21ФИИТ(б)РАИС',
-        ]
-        groups = {name: Group.objects.create(name=name) for name in group_names}
+        main_group = Group.objects.create(name='22ПИнж(б)РПиС-2')
 
-        # ── GROUP MEMBERS ──
-        GroupMember.objects.create(user=u1, group=groups['22ПИнж(б)РПиС-2'])
-        GroupMember.objects.create(user=u2, group=groups['22ПИнж(б)РПиС-2'])
+        # ── GROUP MEMBERS & TEACHERS ──
+        # Студент Никита состоит в группе
+        GroupMember.objects.create(user=u1, group=main_group)
+        # Преподаватель Александра ведет занятия у этой группы
+        TeacherGroup.objects.create(teacher=u2, group=main_group)
 
         # ── SUBJECTS ──
-        Subject.objects.create(name='Программирование и алгоритмизация')
-        Subject.objects.create(name='Компьютерные сети')
-        sw = Subject.objects.create(name='Программирование WEB-приложений')
+        Subject.objects.create(name='Программирование и алгоритмизация', creator=u2)
+        Subject.objects.create(name='Компьютерные сети', creator=u2)
+
+        # Создаем целевой предмет
+        sw = Subject.objects.create(name='Программирование WEB-приложений', creator=u2)
+
+        # ── GROUP SUBJECTS ──
+        # Назначаем предмет "Программирование WEB-приложений" группе, в которой состоит Никита
+        GroupSubject.objects.create(group=main_group, subject=sw)
 
         # ── BLOCKS ──
         b1 = Block.objects.create(subject=sw, title='HTML Basics', description='Введение в HTML', position=0, is_published=True)

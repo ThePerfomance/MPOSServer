@@ -4,7 +4,8 @@ from rest_framework import serializers
 from .models import (
     User, Group, GroupMember, Subject, Block, Lesson, Test, Question, Answer,
     TestResult, StudentCluster, TestDifficulty, ScorePrediction, Recommendation,
-    VideoType, Video, UserAnswer, TrainingSession, TrainingQuestion
+    VideoType, Video, UserAnswer, TrainingSession, TrainingQuestion,
+    TeacherGroup, GroupSubject
 )
 
 class UserSerializer(serializers.ModelSerializer):
@@ -89,6 +90,36 @@ class GroupMemberSerializer(serializers.ModelSerializer):
         validated_data["group_id"] = group_id
         return GroupMember.objects.create(**validated_data)
 
+class TeacherGroupSerializer(serializers.ModelSerializer):
+    teacher_id = serializers.UUIDField(write_only=True)
+    group_id = serializers.UUIDField(write_only=True)
+
+    class Meta:
+        model = TeacherGroup
+        fields = ["id", "teacher_id", "group_id"]
+
+    def create(self, validated_data):
+        teacher_id = validated_data.pop("teacher_id")
+        group_id = validated_data.pop("group_id")
+        validated_data["teacher_id"] = teacher_id
+        validated_data["group_id"] = group_id
+        return TeacherGroup.objects.create(**validated_data)
+
+
+class GroupSubjectSerializer(serializers.ModelSerializer):
+    group_id = serializers.UUIDField(write_only=True)
+    subject_id = serializers.UUIDField(write_only=True)
+
+    class Meta:
+        model = GroupSubject
+        fields = ["id", "group_id", "subject_id"]
+
+    def create(self, validated_data):
+        group_id = validated_data.pop("group_id")
+        subject_id = validated_data.pop("subject_id")
+        validated_data["group_id"] = group_id
+        validated_data["subject_id"] = subject_id
+        return GroupSubject.objects.create(**validated_data)
 
 class TestSerializer(serializers.ModelSerializer):
     # Убрали 'subject' из полей
