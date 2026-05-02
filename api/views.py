@@ -1198,12 +1198,21 @@ def answer_training_question(request, pk):
     tq.answered_at = timezone.now()
     tq.save()
 
-    # Если это был последний вопрос, закрываем сессию
+    # 1. Получаем сессию
     session = tq.session
-    if not session.training_questions.filter(status='pending').exists():
+
+    # 2. ИСПРАВЛЕНИЕ: Закрываем сессию ТОЛЬКО если НЕТ вопросов со статусом, отличным от 'correct'
+    # То есть и 'pending', и 'wrong' будут удерживать сессию открытой
+    if not session.training_questions.exclude(status='correct').exists():
         session.status = 'completed'
         session.completed_at = timezone.now()
         session.save()
+    else:
+        # Защита: Если сессия случайно была закрыта раньше времени, открываем обратно
+        if session.status == 'completed':
+            session.status = 'active'
+            session.completed_at = None
+            session.save()
 
     return Response(TrainingQuestionSerializer(tq).data)
 
