@@ -144,7 +144,8 @@ class GroupSubjectAdmin(admin.ModelAdmin):
     def get_queryset(self, request):
         qs = super().get_queryset(request)
         if is_admin(request.user): return qs
-        return qs.filter(creator=request.user)
+        # ИСПРАВЛЕНИЕ: фильтруем через связанный предмет (subject__creator)
+        return qs.filter(subject__creator=request.user)
 # ══════════════════════════════════════════════════════════════════════════════
 # ░░░░░░░░░░░░░░░░░  РАЗДЕЛ: ОБУЧЕНИЕ  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
 # ══════════════════════════════════════════════════════════════════════════════
@@ -783,6 +784,17 @@ def _custom_app_index(self, request, app_label, extra_context=None):
         return redirect('admin:index')
     return _orig_app_index(self, request, app_label, extra_context)
 
+# --- ПЕРЕХВАТ ДОСТУПА К АДМИНКЕ БЕЗ IS_STAFF ---
+def _custom_has_permission(self, request):
+    """
+    Разрешаем доступ в админку, если пользователь активен И
+    (является персоналом ИЛИ у него роль teacher/admin)
+    """
+    if not request.user.is_active:
+        return False
+    return request.user.is_staff or getattr(request.user, 'role', '') in ['teacher', 'admin']
+
+_AdminSite.has_permission = _custom_has_permission
 
 _AdminSite.index = _custom_index
 _AdminSite.app_index = _custom_app_index

@@ -1265,20 +1265,24 @@ def course_constructor_view(request):
         if request.method == 'POST':
             form = SubjectForm(request.POST)
             if form.is_valid():
-                new_subject = form.save(commit=False)
-                new_subject.creator = user  # Привязываем предмет к преподавателю
-                new_subject.save()
-                return redirect(base_url + f'?step=2&subject_id={new_subject.id}')
+                # БЫЛО: subject = form.save()
+                # СТАЛО:
+                subject = form.save(commit=False)
+                subject.creator = request.user  # <--- ЗАПИСЫВАЕМ АВТОРА
+                subject.save()
+
+                query_string = f'?step=2&subject_id={subject.id}'
+                return redirect(base_url + query_string)
         else:
             form = SubjectForm()
 
-        # Фильтрация только своих предметов для преподавателя
-        subjects_qs = Subject.objects.all()
-        if is_teacher:
-            subjects_qs = subjects_qs.filter(creator=user)
-
         context['form'] = form
-        context['subjects'] = subjects_qs
+
+        # ФИЛЬТРАЦИЯ: Преподаватель видит только свои предметы
+        if getattr(request.user, 'role', '') == 'teacher':
+            context['subjects'] = Subject.objects.filter(creator=request.user)
+        else:
+            context['subjects'] = Subject.objects.all()
 
     elif current_step == 2:
         if not subject_id: return redirect(base_url + '?step=1')
@@ -1328,10 +1332,10 @@ def course_constructor_view(request):
             if 'submit_new_video' in request.POST:
                 video_form = VideoForm(request.POST, request.FILES)
                 if video_form.is_valid():
-                    new_video = video_form.save(commit=False)
-                    new_video.creator = user  # Привязываем видео
-                    new_video.save()
-                    lesson.video = new_video
+                    video = video_form.save(commit=False)
+                    video.creator = request.user  # <--- ЗАПИСЫВАЕМ АВТОРА ВИДЕО
+                    video.save()
+                    lesson.video = video
                     lesson.save()
                     return redirect(request.get_full_path())
             elif 'submit_existing_video' in request.POST:
@@ -1343,13 +1347,13 @@ def course_constructor_view(request):
             elif 'submit_new_test' in request.POST:
                 test_form = TestForm(request.POST)
                 if test_form.is_valid():
-                    new_test = test_form.save(commit=False)
-                    new_test.creator = user  # Привязываем тест
-                    new_test.save()
-                    lesson.test = new_test
+                    test = test_form.save(commit=False)
+                    test.creator = request.user  # <--- ЗАПИСЫВАЕМ АВТОРА ТЕСТА
+                    test.save()
+                    lesson.test = test
                     lesson.save()
-                    return redirect(
-                        base_url + f'?step=5&subject_id={subject.id}&block_id={block.id}&lesson_id={lesson.id}')
+                    query_string = f'?step=5&subject_id={subject.id}&block_id={block.id}&lesson_id={lesson.id}'
+                    return redirect(base_url + query_string)
             elif 'submit_existing_test' in request.POST:
                 test_id = request.POST.get('existing_test')
                 if test_id:
@@ -1369,8 +1373,15 @@ def course_constructor_view(request):
         context['video_form'] = VideoForm()
         context['test_form'] = TestForm()
         context['lesson'] = lesson
-        context['unassigned_videos'] = unassigned_videos
-        context['unassigned_tests'] = unassigned_tests
+        free_videos = Video.objects.filter(lessons__isnull=True)
+        free_tests = Test.objects.filter(lesson_for__isnull=True, final_block_of__isnull=True)
+
+        if getattr(request.user, 'role', '') == 'teacher':
+            free_videos = free_videos.filter(creator=request.user)
+            free_tests = free_tests.filter(creator=request.user)
+
+        context['unassigned_videos'] = free_videos
+        context['unassigned_tests'] = free_tests
 
     elif current_step == 5:
         if not test: return redirect(

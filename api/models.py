@@ -63,6 +63,24 @@ class User(AbstractBaseUser, PermissionsMixin):
         """Проверка прав администратора"""
         return self.role == 'admin'
 
+    def save(self, *args, **kwargs):
+        if self.role in ['teacher', 'admin']:
+            self.is_staff = True
+        super().save(*args, **kwargs)
+
+    def has_perm(self, perm, obj=None):
+        # Разрешаем базовые права к приложению 'api' для отображения кнопок
+        # (Реальная защита данных уже написана у нас в admin.py)
+        if self.role in ['teacher', 'admin'] and perm.startswith('api.'):
+            return True
+        return super().has_perm(perm, obj)
+
+    def has_module_perms(self, app_label):
+        # Разрешаем преподавателям видеть раздел 'api' в боковом меню
+        if self.role in ['teacher', 'admin'] and app_label == 'api':
+            return True
+        return super().has_module_perms(app_label)
+
 
 # ═══════════════════════════════════════════════════════════════════════
 # GROUPS
