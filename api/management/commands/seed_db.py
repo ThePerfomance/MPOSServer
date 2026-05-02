@@ -1,13 +1,71 @@
 # api/management/commands/seed_db.py
+import random
+from datetime import datetime, timedelta
+
 from django.core.management.base import BaseCommand
 from django.db.models import Sum
 from django.utils import timezone
+
 from api.models import (
     User, Group, GroupMember, TeacherGroup, GroupSubject,
     Subject, Block, Lesson, Test, Question, Answer,
     TestResult, UserAnswer, VideoType, Video
 )
-from datetime import datetime, timedelta
+
+
+def create_test_result(user, test_obj, correct_answers_count, start_time):
+    """
+    Helper to create a TestResult with a mix of correct and incorrect answers.
+    """
+    questions = list(test_obj.questions.all())
+    total_questions = len(questions)
+
+    if total_questions == 0:
+        print(f"Skipping result for test '{test_obj.title}' as it has no questions.")
+        return
+
+    # Ensure correct_answers_count is valid
+    correct_answers_count = min(correct_answers_count, total_questions)
+
+    # Shuffle questions to randomize which ones are answered correctly/incorrectly
+    random.shuffle(questions)
+
+    test_result = TestResult.objects.create(
+        user=user,
+        test=test_obj,  # Correctly associate the test with the result
+        started_at=start_time,
+        completed_at=start_time + timedelta(minutes=random.randint(5, 20))
+    )
+
+    earned_points = 0
+
+    # Process correct answers
+    for q in questions[:correct_answers_count]:
+        correct_answer = q.answers.filter(is_correct=True).first()
+        if correct_answer:
+            UserAnswer.objects.create(
+                test_result=test_result,
+                question=q,
+                chosen_answer=correct_answer,
+                points_earned=q.points
+            )
+            earned_points += q.points
+
+    # Process incorrect answers
+    for q in questions[correct_answers_count:]:
+        incorrect_answer = q.answers.filter(is_correct=False).first()
+        if incorrect_answer:
+            UserAnswer.objects.create(
+                test_result=test_result,
+                question=q,
+                chosen_answer=incorrect_answer,
+                points_earned=0
+            )
+
+    # Finalize the result with calculated points
+    test_result.earned_points = earned_points
+    test_result.total_points = test_obj.questions.aggregate(Sum('points'))['points__sum'] or 0
+    test_result.save()
 
 
 class Command(BaseCommand):
@@ -280,64 +338,11 @@ class Command(BaseCommand):
         # ── TEST RESULTS ──
         dt_start = timezone.make_aware(datetime(2026, 3, 1, 10, 0, 0))
 
-        # --- Result 1: User u1 takes Test t1 (Good score) ---
-        tr1 = TestResult.objects.create(user=u1, test=t1, started_at=dt_start, completed_at=dt_start + timedelta(minutes=7))
-        earned_points_tr1 = 0
-        questions_t1 = t1.questions.all()
-        for q in questions_t1[:8]: # Correct answers
-            correct_answer = q.answers.get(is_correct=True)
-            UserAnswer.objects.create(test_result=tr1, question=q, chosen_answer=correct_answer, points_earned=q.points)
-            earned_points_tr1 += q.points
-        for q in questions_t1[8:]: # Incorrect answers
-            incorrect_answer = q.answers.filter(is_correct=False).first()
-            UserAnswer.objects.create(test_result=tr1, question=q, chosen_answer=incorrect_answer, points_earned=0)
-        tr1.earned_points = earned_points_tr1
-        tr1.total_points = questions_t1.aggregate(Sum('points'))['points__sum'] or 0
-        tr1.save()
-
-        # --- Result 2: User u1 takes Test t1 again (Perfect score) ---
-        tr2_start = dt_start + timedelta(days=1)
-        tr2 = TestResult.objects.create(user=u1, test=t1, started_at=tr2_start, completed_at=tr2_start + timedelta(minutes=5))
-        earned_points_tr2 = 0
-        for q in questions_t1: # All correct
-            correct_answer = q.answers.get(is_correct=True)
-            UserAnswer.objects.create(test_result=tr2, question=q, chosen_answer=correct_answer, points_earned=q.points)
-            earned_points_tr2 += q.points
-        tr2.earned_points = earned_points_tr2
-        tr2.total_points = questions_t1.aggregate(Sum('points'))['points__sum'] or 0
-        tr2.save()
-
-        # --- Result 3: User u1 takes Test t2 (Mediocre score) ---
-        tr3_start = dt_start + timedelta(days=2)
-        tr3 = TestResult.objects.create(user=u1, test=t2, started_at=tr3_start, completed_at=tr3_start + timedelta(minutes=9))
-        earned_points_tr3 = 0
-        questions_t2 = t2.questions.all()
-        for q in questions_t2[:5]: # Correct
-            correct_answer = q.answers.get(is_correct=True)
-            UserAnswer.objects.create(test_result=tr3, question=q, chosen_answer=correct_answer, points_earned=q.points)
-            earned_points_tr3 += q.points
-        for q in questions_t2[5:]: # Incorrect
-            incorrect_answer = q.answers.filter(is_correct=False).first()
-            UserAnswer.objects.create(test_result=tr3, question=q, chosen_answer=incorrect_answer, points_earned=0)
-        tr3.earned_points = earned_points_tr3
-        tr3.total_points = questions_t2.aggregate(Sum('points'))['points__sum'] or 0
-        tr3.save()
-
-        # --- Result 4: User u1 takes Final Test t12 ---
-        tr4_start = dt_start + timedelta(days=5)
-        tr4 = TestResult.objects.create(user=u1, test=t12, started_at=tr4_start, completed_at=tr4_start + timedelta(minutes=15))
-        earned_points_tr4 = 0
-        questions_t12 = t12.questions.all()
-        for q in questions_t12[:18]: # Mostly correct
-            correct_answer = q.answers.get(is_correct=True)
-            UserAnswer.objects.create(test_result=tr4, question=q, chosen_answer=correct_answer, points_earned=q.points)
-            earned_points_tr4 += q.points
-        for q in questions_t12[18:]: # A few incorrect
-            incorrect_answer = q.answers.filter(is_correct=False).first()
-            UserAnswer.objects.create(test_result=tr4, question=q, chosen_answer=incorrect_answer, points_earned=0)
-        tr4.earned_points = earned_points_tr4
-        tr4.total_points = questions_t12.aggregate(Sum('points'))['points__sum'] or 0
-        tr4.save()
+        # Create 4 test results using the helper function
+        create_test_result(user=u1, test_obj=t1, correct_answers_count=8, start_time=dt_start)
+        create_test_result(user=u1, test_obj=t1, correct_answers_count=10, start_time=dt_start + timedelta(days=1))
+        create_test_result(user=u1, test_obj=t2, correct_answers_count=5, start_time=dt_start + timedelta(days=2))
+        create_test_result(user=u1, test_obj=t12, correct_answers_count=18, start_time=dt_start + timedelta(days=5))
 
         self.stdout.write(self.style.SUCCESS(
             f'OK: Seeded new schema - '

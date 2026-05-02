@@ -57,10 +57,12 @@ urlpatterns = [
     path("blocks/<uuid:block_id>/lessons/", views.lessons_by_block, name='lessons-by-block'),
 
     # Tests (Updated: remove subject filter if needed, add block/lesson filters)
-    path("tests/", views.tests_list, name='tests-list'), # <-- Добавил слэш
+    path("tests/<int:test_id>/start/", views.test_start, name='test-start'),
+    path("results/<uuid:result_id>/submit/", views.test_submit, name='test-submit'),
+    path("tests/", views.tests_list, name='tests-list'),
     path("tests/<int:pk>/", views.test_detail, name='test-detail'),
-    path("lessons/<uuid:lesson_id>/test/", views.test_by_lesson, name='test-by-lesson'), # <-- Добавил слэш
-    path("blocks/<uuid:block_id>/final-test/", views.final_test_by_block, name='final-test-by-block'), # <-- Добавил слэш
+    path("lessons/<uuid:lesson_id>/test/", views.test_by_lesson, name='test-by-lesson'),
+    path("blocks/<uuid:block_id>/final-test/", views.final_test_by_block, name='final-test-by-block'),
     path("tests/<int:test_id>/questions/", views.questions_for_test, name='questions-for-test'),
 
     # Test Results (Unchanged)

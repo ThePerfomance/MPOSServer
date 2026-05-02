@@ -367,7 +367,7 @@ class TestResult(models.Model):
     earned_points = models.IntegerField("Набранные баллы", default=0)
     total_points  = models.IntegerField("Максимальные баллы", default=0)
     started_at    = models.DateTimeField(verbose_name="Начало в")
-    completed_at  = models.DateTimeField(auto_now_add=True, verbose_name="Конец в")
+    completed_at  = models.DateTimeField(null=True, blank=True, verbose_name="Конец в")
     user          = models.ForeignKey(User, on_delete=models.CASCADE,
                                       related_name='results', null=True, blank=True, verbose_name="Пользователь")
     test          = models.ForeignKey(Test, on_delete=models.CASCADE,

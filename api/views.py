@@ -283,6 +283,124 @@ def subject_by_name(request, name):
 # TESTS
 # ═══════════════════════════════════════════════════════════════════════
 
+@api_view(["POST"])
+def test_start(request, test_id):
+    """
+    Шаг 1: Создание объекта TestResult и получение вопросов.
+    """
+    test = get_object_or_404(Test, pk=test_id)
+    user = request.user if request.user.is_authenticated else None
+
+    # Если в мобильном приложении нет JWT, можно передавать user_id в теле
+    if not user and 'user_id' in request.data:
+        user = get_object_or_404(User, id=request.data.get('user_id'))
+
+    # Создаем запись о начале теста
+    test_result = TestResult.objects.create(
+        user=user,
+        test=test,
+        started_at=timezone.now(),
+        earned_points=0,
+        total_points=0
+    )
+
+    # Получаем вопросы с ответами
+    questions = Question.objects.filter(test=test)
+    questions_data = QuestionWithAnswersSerializer(questions, many=True).data
+
+    return Response({
+        "result_id": test_result.id,
+        "test": {
+            "id": test.id,
+            "title": test.title,
+            "questions": questions_data
+        }
+    }, status=status.HTTP_201_CREATED)
+
+@api_view(["POST"])
+def test_submit(request, result_id):
+    """
+    Шаг 3: Прием ответов, расчет баллов и завершение теста.
+    (ML-анализ отключен)
+    """
+    test_result = get_object_or_404(TestResult, pk=result_id)
+
+    # Защита: если тест уже завершен, не даем перезаписать результаты
+    if test_result.completed_at is not None:
+        return Response({"detail": "Тест уже завершен."}, status=status.HTTP_400_BAD_REQUEST)
+
+    answers_data = request.data.get("answers", [])
+
+    # 1. Считаем max_points на основе ВСЕХ вопросов в тесте
+    all_questions = Question.objects.filter(test=test_result.test)
+    max_points = sum(q.points for q in all_questions)
+    total_earned = 0
+
+    # Преобразуем присланные ответы в словарь {question_id: answer_id} для быстрого поиска
+    user_answers_dict = {ans.get("question"): ans.get("answer") for ans in answers_data}
+
+    # 2. Проходим по всем вопросам теста
+    for question in all_questions:
+        chosen_answer_id = user_answers_dict.get(question.id)
+
+        # Если ответ был предоставлен
+        if chosen_answer_id:
+            chosen_answer = Answer.objects.filter(pk=chosen_answer_id, question=question).first()
+            if chosen_answer:
+                is_correct = chosen_answer.is_correct
+                points = question.points if is_correct else 0
+            else:
+                chosen_answer = None
+                is_correct = False
+                points = 0
+        else:
+            # Пользователь пропустил вопрос
+            chosen_answer = None
+            is_correct = False
+            points = 0
+
+        # Сохраняем результат ответа
+        UserAnswer.objects.update_or_create(
+            test_result=test_result,
+            question=question,
+            defaults={
+                'chosen_answer': chosen_answer,
+                'is_correct': is_correct,
+                'points_earned': points
+            }
+        )
+
+        total_earned += points
+
+    # 3. Обновляем итоговый результат
+    test_result.earned_points = total_earned
+    test_result.total_points = max_points
+    test_result.completed_at = timezone.now()
+    test_result.save()
+
+    # --- ЗДЕСЬ БЫЛ ML-АНАЛИЗ. СЕЙЧАС ОН ОТКЛЮЧЕН ---
+
+    # Возвращаем детализированный результат
+    user_answers = UserAnswer.objects.filter(test_result=test_result)
+
+    return Response({
+        "id": test_result.id,
+        "user": str(test_result.user.id) if test_result.user else None,
+        "test": {"id": test_result.test.id, "title": test_result.test.title},
+        "earned_points": test_result.earned_points,
+        "total_points": test_result.total_points,
+        "started_at": test_result.started_at,
+        "completed_at": test_result.completed_at,
+        "user_answers": [
+            {
+                "question": ua.question_id,
+                "chosen_answer": ua.chosen_answer_id,
+                "is_correct": ua.is_correct,
+                "points_earned": ua.points_earned
+            } for ua in user_answers
+        ]
+    })
+
 @api_view(["GET", "PUT", "DELETE"])
 def test_detail(request, pk):
     test = get_object_or_404(Test, pk=pk)
