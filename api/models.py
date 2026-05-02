@@ -181,6 +181,11 @@ class Video(models.Model):
     type = models.ForeignKey('VideoType', on_delete=models.CASCADE)
     duration = models.IntegerField(default=0)
 
+    creator = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='created_videos', verbose_name="Создатель"
+    )
+
     def get_video_url(self):
         if self.video_file:
             return self.video_file.url
@@ -307,7 +312,10 @@ class Test(models.Model):
     description  = models.TextField(blank=True, null=True, verbose_name="Описание теста")
     duration     = models.IntegerField(default=0, help_text='Таймер теста в секундах (0 = без ограничений)', verbose_name="Длительность теста в сек")
     is_published = models.BooleanField(default=False, help_text='Видимость для пользователей ', verbose_name="Опубликовано?")
-
+    creator = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='created_tests', verbose_name="Создатель"
+    )
     class Meta:
         db_table = 'tests'
         verbose_name = 'Тест'

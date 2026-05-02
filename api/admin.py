@@ -143,10 +143,8 @@ class GroupSubjectAdmin(admin.ModelAdmin):
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
-        if is_admin(request.user):
-            return qs
-        # Преподаватель видит только те предметы групп, где он создатель самого предмета
-        return qs.filter(subject__creator=request.user)
+        if is_admin(request.user): return qs
+        return qs.filter(creator=request.user)
 # ══════════════════════════════════════════════════════════════════════════════
 # ░░░░░░░░░░░░░░░░░  РАЗДЕЛ: ОБУЧЕНИЕ  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
 # ══════════════════════════════════════════════════════════════════════════════
@@ -232,6 +230,11 @@ class BlockAdmin(admin.ModelAdmin):
     def has_delete_permission(self, request, obj=None):
         return is_admin(request.user)
 
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        if is_admin(request.user): return qs
+        return qs.filter(subject__creator=request.user)
+
 
 @admin.register(Lesson)
 class LessonAdmin(admin.ModelAdmin):
@@ -282,6 +285,11 @@ class LessonAdmin(admin.ModelAdmin):
 
     def has_delete_permission(self, request, obj=None):
         return is_admin(request.user)
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        if is_admin(request.user): return qs
+        return qs.filter(block__subject__creator=request.user)
 
 
 @admin.register(Test)
@@ -343,6 +351,15 @@ class TestAdmin(admin.ModelAdmin):
     def has_delete_permission(self, request, obj=None):
         return is_admin(request.user)
 
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        if is_admin(request.user): return qs
+        return qs.filter(creator=request.user)
+
+    def save_model(self, request, obj, form, change):
+        if getattr(obj, 'creator', None) is None: obj.creator = request.user
+        super().save_model(request, obj, form, change)
+
 
 @admin.register(Question)
 class QuestionAdmin(admin.ModelAdmin):
@@ -382,6 +399,11 @@ class QuestionAdmin(admin.ModelAdmin):
     def has_change_permission(self, request, obj=None): return is_teacher_or_admin(request.user)
 
     def has_delete_permission(self, request, obj=None): return is_admin(request.user)
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        if is_admin(request.user): return qs
+        return qs.filter(test__creator=request.user)
 
 
 @admin.register(Answer)
@@ -549,6 +571,15 @@ class VideoAdmin(admin.ModelAdmin):
 
     def has_delete_permission(self, request, obj=None):
         return is_admin(request.user)
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        if is_admin(request.user): return qs
+        return qs.filter(creator=request.user)
+
+    def save_model(self, request, obj, form, change):
+        if getattr(obj, 'creator', None) is None: obj.creator = request.user
+        super().save_model(request, obj, form, change)
 
 
 @admin.register(VideoType)

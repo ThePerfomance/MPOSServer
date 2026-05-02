@@ -7,6 +7,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from django.utils import timezone
+from django.contrib.auth.decorators import login_required
 
 from .models import (
     User, Group, GroupMember, Subject, Block, Lesson, Test, Question, Answer, TestResult,
@@ -1220,20 +1221,24 @@ def answer_training_question(request, pk):
 # COURSE CONSTRUCTOR VIEW
 # ═══════════════════════════════════════════════════════════════════════
 
+@login_required
 def course_constructor_view(request):
     current_step = int(request.GET.get('step', 1))
     subject_id = request.GET.get('subject_id')
     block_id = request.GET.get('block_id')
     lesson_id = request.GET.get('lesson_id')
 
-    selected_items = {}
-    subject = None
-    block = None
-    lesson = None
-    test = None
+    user = request.user
+    is_teacher = getattr(user, 'role', '') == 'teacher'
 
+    selected_items = {}
+    subject, block, lesson, test = None, None, None, None
+
+    # Проверка прав доступа к объектам при их получении
     if subject_id:
         subject = get_object_or_404(Subject, id=subject_id)
+        if is_teacher and subject.creator != user:
+            return redirect('admin:index')  # Запрет доступа к чужому предмету
         selected_items[str(subject.id)] = subject.name
     if block_id:
         block = get_object_or_404(Block, id=block_id)
@@ -1253,58 +1258,51 @@ def course_constructor_view(request):
         'selected_items': selected_items,
         'test': test,
     }
-    
+
     base_url = reverse('api:course-constructor')
 
     if current_step == 1:
         if request.method == 'POST':
             form = SubjectForm(request.POST)
             if form.is_valid():
-                subject = form.save()
-                query_string = f'?step=2&subject_id={subject.id}'
-                return redirect(base_url + query_string)
+                new_subject = form.save(commit=False)
+                new_subject.creator = user  # Привязываем предмет к преподавателю
+                new_subject.save()
+                return redirect(base_url + f'?step=2&subject_id={new_subject.id}')
         else:
             form = SubjectForm()
+
+        # Фильтрация только своих предметов для преподавателя
+        subjects_qs = Subject.objects.all()
+        if is_teacher:
+            subjects_qs = subjects_qs.filter(creator=user)
+
         context['form'] = form
-        context['subjects'] = Subject.objects.all()
+        context['subjects'] = subjects_qs
 
     elif current_step == 2:
-        if not subject_id:
-            return redirect(base_url + '?step=1')
-        
+        if not subject_id: return redirect(base_url + '?step=1')
         if request.method == 'POST':
             formset = BlockFormSet(request.POST, prefix='blocks')
             if formset.is_valid():
                 for form in formset:
-                    if form.has_changed():  # Only save forms that have data
+                    if form.has_changed():
                         block_instance = form.save(commit=False)
                         block_instance.subject = subject
                         block_instance.save()
-
-                # After saving, always redirect to step 3 without a block_id
-                # to let the user choose which block to edit.
-                # The logic in step 3 will handle the selection.
-                query_string = f'?step=3&subject_id={subject.id}'
-                return redirect(base_url + query_string)
+                return redirect(base_url + f'?step=3&subject_id={subject.id}')
             else:
-                # If formset is not valid, re-render with errors
                 context['formset'] = formset
         else:
-            formset = BlockFormSet(prefix='blocks')
-        context['formset'] = formset
+            context['formset'] = BlockFormSet(prefix='blocks')
         context['blocks'] = Block.objects.filter(subject=subject)
 
     elif current_step == 3:
-        if not subject_id:
-            return redirect(base_url + '?step=1')
-
+        if not subject_id: return redirect(base_url + '?step=1')
         if not block_id:
             blocks_for_subject = Block.objects.filter(subject_id=subject_id)
             if blocks_for_subject.count() == 1:
-                block = blocks_for_subject.first()
-                query_string = f'?step=3&subject_id={subject_id}&block_id={block.id}'
-                return redirect(base_url + query_string)
-            
+                return redirect(base_url + f'?step=3&subject_id={subject_id}&block_id={blocks_for_subject.first().id}')
             context['blocks_to_select'] = blocks_for_subject
             return render(request, 'admin/course_constructor.html', context)
 
@@ -1316,92 +1314,80 @@ def course_constructor_view(request):
                         lesson_instance = form.save(commit=False)
                         lesson_instance.block = block
                         lesson_instance.save()
-                
-                # Always redirect back to the same step to allow adding more lessons
-                query_string = f'?step=3&subject_id={subject.id}&block_id={block.id}'
-                return redirect(base_url + query_string)
+                return redirect(base_url + f'?step=3&subject_id={subject.id}&block_id={block.id}')
             else:
                 context['formset'] = formset
         else:
-            formset = LessonFormSet(prefix='lessons')
-        context['formset'] = formset
+            context['formset'] = LessonFormSet(prefix='lessons')
         context['lessons'] = Lesson.objects.filter(block=block)
 
-
     elif current_step == 4:
-        if not lesson_id:
-            query_string = f'?step=3&subject_id={subject_id}&block_id={block_id}'
-            return redirect(base_url + query_string)
-        
+        if not lesson_id: return redirect(base_url + f'?step=3&subject_id={subject_id}&block_id={block_id}')
+
         if request.method == 'POST':
             if 'submit_new_video' in request.POST:
                 video_form = VideoForm(request.POST, request.FILES)
                 if video_form.is_valid():
-                    video = video_form.save()
-                    lesson.video = video
+                    new_video = video_form.save(commit=False)
+                    new_video.creator = user  # Привязываем видео
+                    new_video.save()
+                    lesson.video = new_video
                     lesson.save()
                     return redirect(request.get_full_path())
             elif 'submit_existing_video' in request.POST:
                 video_id = request.POST.get('existing_video')
                 if video_id:
-                    video = get_object_or_404(Video, id=video_id)
-                    lesson.video = video
+                    lesson.video = get_object_or_404(Video, id=video_id)
                     lesson.save()
                     return redirect(request.get_full_path())
-
             elif 'submit_new_test' in request.POST:
                 test_form = TestForm(request.POST)
                 if test_form.is_valid():
-                    test = test_form.save()
-                    lesson.test = test
+                    new_test = test_form.save(commit=False)
+                    new_test.creator = user  # Привязываем тест
+                    new_test.save()
+                    lesson.test = new_test
                     lesson.save()
-                    # Redirect to step 5 after creating a test
-                    query_string = f'?step=5&subject_id={subject.id}&block_id={block.id}&lesson_id={lesson.id}'
-                    return redirect(base_url + query_string)
+                    return redirect(
+                        base_url + f'?step=5&subject_id={subject.id}&block_id={block.id}&lesson_id={lesson.id}')
             elif 'submit_existing_test' in request.POST:
                 test_id = request.POST.get('existing_test')
                 if test_id:
-                    test = get_object_or_404(Test, id=test_id)
-                    lesson.test = test
+                    lesson.test = get_object_or_404(Test, id=test_id)
                     lesson.save()
-                    # Redirect to step 5 after selecting a test
-                    query_string = f'?step=5&subject_id={subject.id}&block_id={block.id}&lesson_id={lesson.id}'
-                    return redirect(base_url + query_string)
+                    return redirect(
+                        base_url + f'?step=5&subject_id={subject.id}&block_id={block.id}&lesson_id={lesson.id}')
 
-        video_form = VideoForm()
-        test_form = TestForm()
-        
-        context['video_form'] = video_form
-        context['test_form'] = test_form
+        # Фильтруем свободные объекты только для текущего преподавателя
+        unassigned_videos = Video.objects.filter(lessons__isnull=True)
+        unassigned_tests = Test.objects.filter(lesson_for__isnull=True, final_block_of__isnull=True)
+
+        if is_teacher:
+            unassigned_videos = unassigned_videos.filter(creator=user)
+            unassigned_tests = unassigned_tests.filter(creator=user)
+
+        context['video_form'] = VideoForm()
+        context['test_form'] = TestForm()
         context['lesson'] = lesson
-        context['unassigned_videos'] = Video.objects.filter(lessons__isnull=True)
-        context['unassigned_tests'] = Test.objects.filter(lesson_for__isnull=True, final_block_of__isnull=True)
+        context['unassigned_videos'] = unassigned_videos
+        context['unassigned_tests'] = unassigned_tests
 
     elif current_step == 5:
-        if not test:
-            return redirect(base_url + f'?step=4&subject_id={subject_id}&block_id={block_id}&lesson_id={lesson_id}')
-
+        if not test: return redirect(
+            base_url + f'?step=4&subject_id={subject_id}&block_id={block_id}&lesson_id={lesson_id}')
         if request.method == 'POST':
             question_form = QuestionForm(request.POST)
-            # Pass a dummy question instance to the formset
             answer_formset = AnswerFormSet(request.POST, instance=Question())
-            
             if question_form.is_valid() and answer_formset.is_valid():
-                question = question_form.save(commit=False)
-                question.test = test
-                question.save()
-                
-                # Now that the question is saved, we can save the formset
-                answer_formset.instance = question
+                new_question = question_form.save(commit=False)
+                new_question.test = test
+                new_question.save()
+                answer_formset.instance = new_question
                 answer_formset.save()
-                
                 return redirect(request.get_full_path())
         else:
-            question_form = QuestionForm()
-            answer_formset = AnswerFormSet(instance=Question())
-
-        context['question_form'] = question_form
-        context['answer_formset'] = answer_formset
+            context['question_form'] = QuestionForm()
+            context['answer_formset'] = AnswerFormSet(instance=Question())
         context['questions'] = Question.objects.filter(test=test)
 
     return render(request, 'admin/course_constructor.html', context)
