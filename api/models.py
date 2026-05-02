@@ -320,6 +320,7 @@ class Test(models.Model):
 class Question(models.Model):
     id                       = models.BigAutoField(primary_key=True)
     text                     = models.TextField(verbose_name="Текст вопроса")
+    points                   = models.IntegerField("Баллы за вопрос", default=1)
     test                     = models.ForeignKey(Test, on_delete=models.CASCADE, related_name='questions', verbose_name="Связанный тест")
     recommendation_link      = models.URLField(
         max_length=2048, null=True, blank=True,
@@ -362,14 +363,15 @@ class Answer(models.Model):
 # ═══════════════════════════════════════════════════════════════════════
 
 class TestResult(models.Model):
-    id           = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, verbose_name="ИД Результата")
-    score        = models.IntegerField(verbose_name="Оценка")
-    started_at   = models.DateTimeField(verbose_name="Начало в")
-    completed_at = models.DateTimeField(auto_now_add=True, verbose_name="Конец в")
-    user         = models.ForeignKey(User, on_delete=models.CASCADE,
-                                     related_name='results', null=True, blank=True, verbose_name="Пользователь")
-    test         = models.ForeignKey(Test, on_delete=models.CASCADE,
-                                     related_name='results', null=True, blank=True, verbose_name="Тест")
+    id            = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, verbose_name="ИД Результата")
+    earned_points = models.IntegerField("Набранные баллы", default=0)
+    total_points  = models.IntegerField("Максимальные баллы", default=0)
+    started_at    = models.DateTimeField(verbose_name="Начало в")
+    completed_at  = models.DateTimeField(auto_now_add=True, verbose_name="Конец в")
+    user          = models.ForeignKey(User, on_delete=models.CASCADE,
+                                      related_name='results', null=True, blank=True, verbose_name="Пользователь")
+    test          = models.ForeignKey(Test, on_delete=models.CASCADE,
+                                      related_name='results', null=True, blank=True, verbose_name="Тест")
 
     class Meta:
         db_table = 'test_results'
@@ -377,7 +379,7 @@ class TestResult(models.Model):
         verbose_name_plural = 'Результаты тестирований'
 
     def __str__(self):
-        return f"{self.user} — {self.test} — {self.score}"
+        return f"{self.user} — {self.test} — {self.earned_points}/{self.total_points}"
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -394,6 +396,7 @@ class UserAnswer(models.Model):
     chosen_answer  = models.ForeignKey(Answer, on_delete=models.SET_NULL,
                                        null=True, blank=True, related_name='chosen_in', verbose_name="Выбранный ответ")
     is_correct     = models.BooleanField(default=False, verbose_name="Правильность")
+    points_earned  = models.IntegerField("Получено баллов", default=0)
     answered_at    = models.DateTimeField(auto_now_add=True, verbose_name="Отвечено в")
 
     class Meta:

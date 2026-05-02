@@ -194,13 +194,13 @@ class SubjectSerializer(serializers.ModelSerializer):
 class AnswerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Answer
-        fields = "__all__"
+        exclude = ['question', 'is_correct']
 
 
 class QuestionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Question
-        fields = "__all__"
+        fields = ['id', 'text', 'points']
 
 
 class QuestionWithAnswersSerializer(serializers.ModelSerializer):
@@ -208,51 +208,31 @@ class QuestionWithAnswersSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Question
-        fields = ["id", "text", "answers"]
+        fields = ["id", "text", "points", "answers"]
 
 class TestResultSerializer(serializers.ModelSerializer):
-    user_id      = serializers.UUIDField(write_only=True)
-    test_id      = serializers.IntegerField(write_only=True)
-    completed_at = serializers.DateTimeField(required=False, allow_null=True, write_only=False)
+    user = UserSerializer(read_only=True)
+    test = TestSerializer(read_only=True)
 
     class Meta:
         model = TestResult
-        fields = ["id", "user_id", "test_id", "score", "started_at", "completed_at"]
+        fields = [
+            "id", "user", "test",
+            "earned_points", "total_points",
+            "started_at", "completed_at"
+        ]
 
-    def to_representation(self, instance):
-        def fmt(dt):
-            return dt.strftime("%Y-%m-%dT%H:%M:%S") if dt else None
-
-        return {
-            "id":           str(instance.id),
-            "user_id":      str(instance.user_id) if instance.user_id else None,
-            "test_id":      instance.test_id if instance.test_id else None,
-            "score":        instance.score,
-            "started_at":   fmt(instance.started_at),
-            "completed_at": fmt(instance.completed_at),
-        }
-
-    def create(self, validated_data):
-        from datetime import datetime
-        user_id = validated_data.pop("user_id")
-        test_id = validated_data.pop("test_id")
-        validated_data["user_id"] = user_id
-        validated_data["test_id"] = test_id
-        if not validated_data.get("completed_at"):
-            validated_data["completed_at"] = datetime.now()
-        if not validated_data.get("started_at"):
-            validated_data["started_at"] = validated_data["completed_at"]
-        return TestResult.objects.create(**validated_data)
 
 class TestResultWithTestDetailsSerializer(serializers.ModelSerializer):
-    user_id = serializers.UUIDField(write_only=True)
-    test_id = serializers.IntegerField(write_only=True)
-    # Вложенная информация о тесте
     test_details = TestSerializer(source='test', read_only=True)
 
     class Meta:
         model = TestResult
-        fields = ["id", "user_id", "test_id", "score", "started_at", "completed_at", "test_details"]
+        fields = [
+            "id", "user", "test",
+            "earned_points", "total_points",
+            "started_at", "completed_at", "test_details"
+        ]
 
 
 # ── ML serializers ──────────────────────────────────
@@ -288,7 +268,8 @@ class VideoTypeSerializer(serializers.ModelSerializer):
 class UserAnswerSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserAnswer
-        fields = "__all__"
+        fields = ['id', 'user', 'question', 'selected_answer', 'is_correct', 'points_earned']
+
 
 class TrainingQuestionSerializer(serializers.ModelSerializer):
     question_details = QuestionWithAnswersSerializer(source='question', read_only=True)
@@ -310,4 +291,3 @@ class TrainingSessionSerializer(serializers.ModelSerializer):
     class Meta:
         model = TrainingSession
         fields = ['id', 'user', 'lesson', 'lesson_id', 'status', 'source_test_result', 'training_questions', 'created_at']
-

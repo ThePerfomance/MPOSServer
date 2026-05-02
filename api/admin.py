@@ -57,7 +57,7 @@ class AnswerInline(admin.TabularInline):
 class UserAnswerInline(admin.TabularInline):
     """Детализация ответов внутри результата теста (только чтение)."""
     model = UserAnswer
-    readonly_fields = ('question', 'chosen_answer', 'is_correct', 'answered_at')
+    readonly_fields = ('question', 'chosen_answer', 'is_correct', 'points_earned', 'answered_at')
     extra = 0
     can_delete = False
     verbose_name = "Ответ"
@@ -347,7 +347,7 @@ class TestAdmin(admin.ModelAdmin):
 @admin.register(Question)
 class QuestionAdmin(admin.ModelAdmin):
     """Вопросы тестов."""
-    list_display = ('text_preview', 'test', 'answers_count')
+    list_display = ('text_preview', 'test', 'points', 'answers_count')
     list_filter = ('test',)
     search_fields = ('text',)
     inlines = [AnswerInline]
@@ -368,7 +368,7 @@ class QuestionAdmin(admin.ModelAdmin):
 
     def get_fieldsets(self, request, obj=None):
         return (
-            ('Вопрос', {'fields': ('text', 'test')}),
+            ('Вопрос', {'fields': ('text', 'test', 'points')}),
             ('Подсказки студенту (необязательно)', {
                 'fields': ('recommendation_link', 'recommendation_video_link'),
                 'classes': ('collapse',)
@@ -573,23 +573,27 @@ class VideoTypeAdmin(admin.ModelAdmin):
 
 @admin.register(TestResult)
 class TestResultAdmin(admin.ModelAdmin):
-    list_display = ('user', 'test', 'score_badge', 'correct_summary', 'completed_at')
-    readonly_fields = ('user', 'test', 'score', 'started_at', 'completed_at')
+    list_display = ('user', 'test', 'score_badge', 'points_summary', 'completed_at')
+    readonly_fields = ('user', 'test', 'earned_points', 'total_points', 'started_at', 'completed_at')
     list_filter = ('test', 'completed_at')
     search_fields = ('user__email', 'test__title')
     ordering = ('-completed_at',)
     inlines = [UserAnswerInline]
 
     def score_badge(self, obj):
-        if obj.score >= 80:
+        if not obj.total_points:
+            percentage = 0
+        else:
+            percentage = (obj.earned_points / obj.total_points) * 100
+
+        if percentage >= 80:
             color, label = '#28a745', 'Отлично'
-        elif obj.score >= 50:
+        elif percentage >= 50:
             color, label = '#fd7e14', 'Нормально'
         else:
             color, label = '#dc3545', 'Плохо'
 
-        # Исправление ошибки ValueError: форматируем float/int в строку ДО format_html
-        score_val = f"{obj.score:.0f}" if isinstance(obj.score, (int, float)) else str(obj.score)
+        score_val = f"{percentage:.0f}"
 
         return format_html(
             '<b style="color:{};">{}%</b> '
@@ -599,12 +603,10 @@ class TestResultAdmin(admin.ModelAdmin):
 
     score_badge.short_description = "Оценка"
 
-    def correct_summary(self, obj):
-        correct = UserAnswer.objects.filter(test_result=obj, is_correct=True).count()
-        total = UserAnswer.objects.filter(test_result=obj).count()
-        return f"{correct} из {total}"
+    def points_summary(self, obj):
+        return f"{obj.earned_points} из {obj.total_points}"
 
-    correct_summary.short_description = "Верных ответов"
+    points_summary.short_description = "Баллы"
 
     def has_view_permission(self, request, obj=None):
         return is_teacher_or_admin(request.user)
@@ -621,10 +623,10 @@ class TestResultAdmin(admin.ModelAdmin):
 
 @admin.register(UserAnswer)
 class UserAnswerAdmin(admin.ModelAdmin):
-    list_display = ('user_email', 'test_name', 'question_short', 'correct_badge', 'answered_at')
+    list_display = ('user_email', 'test_name', 'question_short', 'correct_badge', 'points_earned', 'answered_at')
     list_filter = ('is_correct', 'answered_at', 'test_result__test')
     search_fields = ('test_result__user__email', 'question__text')
-    readonly_fields = ('test_result', 'question', 'chosen_answer', 'is_correct', 'answered_at')
+    readonly_fields = ('test_result', 'question', 'chosen_answer', 'is_correct', 'points_earned', 'answered_at')
 
     def user_email(self, obj): return obj.test_result.user.email if obj.test_result.user else "Аноним"
 
