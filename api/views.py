@@ -11,7 +11,8 @@ from django.contrib.auth.decorators import login_required
 
 from .models import (
     User, Group, GroupMember, Subject, Block, Lesson, Test, Question, Answer, TestResult,
-    StudentCluster, TestDifficulty, ScorePrediction, Recommendation, VideoType, Video, UserAnswer, TrainingSession, TrainingQuestion,
+    StudentCluster, TestDifficulty, ScorePrediction, Recommendation, VideoType, Video, UserAnswer, TrainingSession,
+    TrainingQuestion,
     TeacherGroup, GroupSubject
 )
 from .serializers import (
@@ -19,9 +20,9 @@ from .serializers import (
     TestSerializer, BlockSerializer, LessonSerializer, QuestionSerializer, QuestionWithAnswersSerializer,
     AnswerSerializer, TestResultSerializer,
     StudentClusterSerializer, TestDifficultySerializer,
-    ScorePredictionSerializer, RecommendationSerializer,VideoTypeSerializer, VideoSerializer, UserAnswerSerializer,
+    ScorePredictionSerializer, RecommendationSerializer, VideoTypeSerializer, VideoSerializer, UserAnswerSerializer,
     TrainingSessionSerializer, TrainingQuestionSerializer,
-    TeacherGroupSerializer, GroupSubjectSerializer # <--- ДОБАВЛЕНО
+    TeacherGroupSerializer, GroupSubjectSerializer  # <--- ДОБАВЛЕНО
 )
 from .forms import (
     SubjectForm, BlockForm, LessonForm, VideoForm, TestForm, BlockFormSet, LessonFormSet,
@@ -48,6 +49,7 @@ def users_list(request):
     s.is_valid(raise_exception=True)
     s.save()
     return Response(s.data, status=status.HTTP_201_CREATED)
+
 
 @api_view(["POST"])
 @permission_classes([AllowAny])
@@ -163,6 +165,7 @@ def users_for_group(request, group_id):
     users = User.objects.filter(id__in=user_ids)
     return Response(UserSerializer(users, many=True).data)
 
+
 # ═══════════════════════════════════════════════════════════════════════
 # ПРЕПОДАВАТЕЛИ И ПРЕДМЕТЫ ГРУПП (NEW)
 # ═══════════════════════════════════════════════════════════════════════
@@ -217,6 +220,7 @@ def groups_for_teacher(request, teacher_id):
     group_ids = TeacherGroup.objects.filter(teacher_id=teacher_id).values_list("group_id", flat=True)
     groups = Group.objects.filter(id__in=group_ids)
     return Response(GroupSerializer(groups, many=True).data)
+
 
 # ═══════════════════════════════════════════════════════════════════════
 # GROUP MEMBERS
@@ -318,6 +322,7 @@ def test_start(request, test_id):
         }
     }, status=status.HTTP_201_CREATED)
 
+
 @api_view(["POST"])
 def test_submit(request, result_id):
     """
@@ -402,6 +407,7 @@ def test_submit(request, result_id):
         ]
     })
 
+
 @api_view(["GET", "PUT", "DELETE"])
 def test_detail(request, pk):
     test = get_object_or_404(Test, pk=pk)
@@ -463,7 +469,7 @@ def test_results_list(request):
                     is_correct = (correct_answer and correct_answer.id == chosen_answer_id)
                 else:
                     is_correct = False
-            
+
             UserAnswer.objects.create(
                 test_result=test_result,
                 question_id=ans.get("question_id"),
@@ -478,15 +484,15 @@ def test_results_list(request):
     # 3. Запускаем ML-анализ слабых тем сразу после прохождения теста
     try:
         from ml.engine import analyze_weak_topics, generate_personalized_recommendations
-        
+
         user_id = str(test_result.user.id) if test_result.user else None
         if user_id:
             # Анализируем слабые темы
             weak_topics = analyze_weak_topics(user_id)
-            
+
             # Генерируем персонализированные рекомендации
             recommendations = generate_personalized_recommendations(user_id)
-            
+
             # Логируем для отладки
             print(f"[ML] Анализ выполнен для пользователя {user_id}")
             print(f"[ML] Слабые темы: {weak_topics}")
@@ -579,7 +585,7 @@ def _collect_student_stats(students):
     for student in students:
         qs = TestResult.objects.filter(user=student)
         agg = qs.aggregate(avg=Avg("score"), cnt=Count("id"))
-        avg_score   = float(agg["avg"] or 0)
+        avg_score = float(agg["avg"] or 0)
         tests_taken = int(agg["cnt"] or 0)
 
         # Среднее время выполнения (минуты)
@@ -599,16 +605,17 @@ def _collect_student_stats(students):
         weighted_diff = float(sum(difficulty_vals) / len(difficulty_vals)) if difficulty_vals else 0.0
 
         stats.append({
-            "user_id":             str(student.id),
-            "firstname":           student.firstname,
-            "lastname":            student.lastname,
-            "avg_score":           avg_score,
-            "tests_taken":         tests_taken,
-            "avg_time":            avg_time,
-            "test_count":          test_count,
+            "user_id": str(student.id),
+            "firstname": student.firstname,
+            "lastname": student.lastname,
+            "avg_score": avg_score,
+            "tests_taken": tests_taken,
+            "avg_time": avg_time,
+            "test_count": test_count,
             "weighted_difficulty": weighted_diff,
         })
     return stats
+
 
 # ═══════════════════════════════════════════════════════════════════════
 # BLOCKS (NEW)
@@ -648,6 +655,7 @@ def block_detail(request, pk):
         block.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+
 @api_view(["GET"])
 def blocks_by_subject(request, subject_id):
     blocks = Block.objects.filter(subject_id=subject_id).order_by('position')
@@ -676,6 +684,7 @@ def lessons_list(request):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+
 @api_view(["GET", "PUT", "DELETE"])
 def lesson_detail(request, pk):
     lesson = get_object_or_404(Lesson, pk=pk)
@@ -691,6 +700,7 @@ def lesson_detail(request, pk):
     elif request.method == "DELETE":
         lesson.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
 
 @api_view(["GET"])
 def lessons_by_block(request, block_id):
@@ -717,7 +727,7 @@ def tests_list(request):
                 serializer = TestSerializer([lesson.test], many=True)
                 return Response(serializer.data)
             else:
-                return Response([], status=status.HTTP_200_OK) # У урока нет теста
+                return Response([], status=status.HTTP_200_OK)  # У урока нет теста
         elif block_id:
             # Получаем финальный тест по ID блока
             block = get_object_or_404(Block, pk=block_id)
@@ -725,7 +735,7 @@ def tests_list(request):
                 serializer = TestSerializer([block.final_test], many=True)
                 return Response(serializer.data)
             else:
-                return Response([], status=status.HTTP_200_OK) # У блока нет финального теста
+                return Response([], status=status.HTTP_200_OK)  # У блока нет финального теста
         else:
             # Просто список всех тестов (без фильтрации)
             serializer = TestSerializer(tests, many=True)
@@ -750,6 +760,7 @@ def test_by_lesson(request, lesson_id):
     else:
         return Response({"detail": "Lesson has no associated test"}, status=status.HTTP_404_NOT_FOUND)
 
+
 @api_view(["GET"])
 def final_test_by_block(request, block_id):
     block = get_object_or_404(Block, pk=block_id)
@@ -758,6 +769,7 @@ def final_test_by_block(request, block_id):
         return Response(serializer.data)
     else:
         return Response({"detail": "Block has no associated final test"}, status=status.HTTP_404_NOT_FOUND)
+
 
 # ═══════════════════════════════════════════════════════════════════════
 # ML ENDPOINTS - ПЕРСОНАЛИЗИРОВАННЫЕ РЕКОМЕНДАЦИИ (НОВАЯ ВЕРСИЯ ДЛЯ ДИПЛОМА)
@@ -783,18 +795,18 @@ def ml_analyze_weak_topics(request, user_id):
     }
     """
     user = get_object_or_404(User, pk=user_id)
-    
+
     # Получаем все ответы пользователя
     user_answers_qs = UserAnswer.objects.filter(
         test_result__user=user
     ).select_related('test_result', 'question').order_by('-answered_at')
-    
+
     limit_days = request.data.get('limit_days')
     if limit_days:
         from datetime import timedelta
         cutoff_date = timezone.now() - timedelta(days=int(limit_days))
         user_answers_qs = user_answers_qs.filter(answered_at__gte=cutoff_date)
-    
+
     # Преобразуем в список словарей
     user_answers = [
         {
@@ -805,11 +817,11 @@ def ml_analyze_weak_topics(request, user_id):
         }
         for ua in user_answers_qs
     ]
-    
+
     # Получаем информацию о вопросах
     question_ids = set(ua["question_id"] for ua in user_answers if ua["question_id"])
     questions_qs = Question.objects.filter(id__in=question_ids)
-    
+
     questions_map = {}
     for q in questions_qs:
         # Определяем тему вопроса через тест → урок → блок → предмет
@@ -821,7 +833,7 @@ def ml_analyze_weak_topics(request, user_id):
                 topic = block.title  # Используем название блока как тему
         except:
             pass
-        
+
         questions_map[q.id] = {
             "topic": topic,
             "block_id": str(lesson.block_id) if lesson else None,
@@ -829,10 +841,10 @@ def ml_analyze_weak_topics(request, user_id):
             "recommendation_link": q.recommendation_link,
             "recommendation_video_link": q.recommendation_video_link,
         }
-    
+
     # Анализируем слабые темы
     result = analyze_weak_topics(user_answers, questions_map)
-    
+
     return Response(result)
 
 
@@ -868,20 +880,20 @@ def ml_personalized_recommendations(request, user_id):
     }
     """
     user = get_object_or_404(User, pk=user_id)
-    
+
     limit_days = request.query_params.get('limit_days', None)
     max_recs = int(request.query_params.get('max_recommendations', 10))
-    
+
     # 1. Получаем ответы пользователя
     user_answers_qs = UserAnswer.objects.filter(
         test_result__user=user
     ).select_related('test_result', 'question').order_by('-answered_at')
-    
+
     if limit_days:
         from datetime import timedelta
         cutoff_date = timezone.now() - timedelta(days=int(limit_days))
         user_answers_qs = user_answers_qs.filter(answered_at__gte=cutoff_date)
-    
+
     user_answers = [
         {
             "question_id": ua.question_id,
@@ -891,18 +903,18 @@ def ml_personalized_recommendations(request, user_id):
         }
         for ua in user_answers_qs
     ]
-    
+
     # 2. Получаем информацию о вопросах
     question_ids = set(ua["question_id"] for ua in user_answers if ua["question_id"])
     questions_qs = Question.objects.filter(id__in=question_ids)
-    
+
     questions_map = {}
     for q in questions_qs:
         topic = "Общая тема"
         lesson = Lesson.objects.filter(test=q.test_id).first()
         if lesson:
             topic = lesson.block.title
-        
+
         questions_map[q.id] = {
             "topic": topic,
             "block_id": str(lesson.block_id) if lesson else None,
@@ -910,10 +922,10 @@ def ml_personalized_recommendations(request, user_id):
             "recommendation_link": q.recommendation_link,
             "recommendation_video_link": q.recommendation_video_link,
         }
-    
+
     # 3. Анализируем слабые темы
     weak_topics_analysis = analyze_weak_topics(user_answers, questions_map)
-    
+
     # 4. Получаем данные для рекомендаций
     lessons_map = {}
     for lesson in Lesson.objects.select_related('video').all():
@@ -923,7 +935,7 @@ def ml_personalized_recommendations(request, user_id):
             "block_id": str(lesson.block_id),
             "video_id": str(lesson.video_id) if lesson.video_id else None,
         }
-    
+
     videos_map = {}
     for video in Video.objects.all():
         videos_map[str(video.id)] = {
@@ -931,14 +943,14 @@ def ml_personalized_recommendations(request, user_id):
             "link": video.link or "",
             "type": video.type.name if video.type else "",
         }
-    
+
     blocks_map = {}
     for block in Block.objects.all():
         blocks_map[str(block.id)] = {
             "title": block.title,
             "subject_id": str(block.subject_id),
         }
-    
+
     # 5. Генерируем рекомендации
     recommendations = generate_personalized_recommendations(
         weak_topics_analysis,
@@ -947,7 +959,7 @@ def ml_personalized_recommendations(request, user_id):
         blocks_map,
         max_recommendations=max_recs
     )
-    
+
     # 6. Строим структуру блоков
     blocks_structure = {
         "blocks": [
@@ -961,7 +973,7 @@ def ml_personalized_recommendations(request, user_id):
         ],
         "lessons_by_block": {},
     }
-    
+
     for block in Block.objects.all():
         block_id = str(block.id)
         lessons = Lesson.objects.filter(block=block).order_by('position')
@@ -973,16 +985,16 @@ def ml_personalized_recommendations(request, user_id):
             }
             for l in lessons
         ]
-    
+
     # 7. Строим траекторию обучения
     learning_path = build_learning_path(
         weak_topics_analysis,
         recommendations,
         blocks_structure
     )
-    
+
     total_time = sum(step.get("estimated_time_minutes", 0) for step in learning_path)
-    
+
     return Response({
         "user_id": str(user_id),
         "learning_path": learning_path,
@@ -1044,7 +1056,7 @@ def training_sessions_list(request):
         if user_id:
             # Фильтруем сессии только для этого пользователя
             sessions = TrainingSession.objects.filter(user_id=user_id)
-            
+
             # Если передан lesson_id, дополнительно фильтруем по уроку
             if lesson_id:
                 sessions = sessions.filter(lesson_id=lesson_id)
@@ -1103,7 +1115,7 @@ def create_training_from_result(request, result_id):
     session_filters = {'user': test_result.user, 'status': 'active'}
     if lesson:
         session_filters['lesson'] = lesson
-    
+
     session, created = TrainingSession.objects.get_or_create(
         **session_filters,
         defaults={'source_test_result': test_result}
@@ -1130,21 +1142,21 @@ def create_training_from_result(request, result_id):
     # 5. ЛОГИКА ЗАВЕРШЕНИЯ: если есть хотя бы один отвеченный вопрос, создаём новую сессию
     total_questions = session.training_questions.count()
     answered_count = session.training_questions.exclude(status='pending').count()
-    
+
     # Если пользователь ответил хотя бы на один вопрос и есть неотвеченные
     if answered_count >= 1 and total_questions > answered_count:
         # Получаем ID вопросов, на которые даны правильные ответы в текущей сессии
         correct_question_ids = list(
             session.training_questions.filter(is_correct=True).values_list('question_id', flat=True)
         )
-        
+
         # Фильтруем pending вопросы: исключаем те, на которые уже были даны правильные ответы
         pending_questions = session.training_questions.filter(
             status='pending'
         ).exclude(question_id__in=correct_question_ids)
-        
+
         pending_count = pending_questions.count()
-        
+
         if pending_count > 0:
             # Создаём новую сессию для оставшихся вопросов
             new_session = TrainingSession.objects.create(
@@ -1153,7 +1165,7 @@ def create_training_from_result(request, result_id):
                 status='active',
                 source_test_result=test_result
             )
-            
+
             # Переносим неотвеченные вопросы (исключая уже правильно отвеченные) в новую сессию
             for idx, tq in enumerate(pending_questions):
                 TrainingQuestion.objects.create(
@@ -1162,16 +1174,16 @@ def create_training_from_result(request, result_id):
                     position=idx,
                     status='pending'
                 )
-            
+
             # Удаляем старые TrainingQuestion из старой сессии
             session.training_questions.all().delete()
-            
+
             # Помечаем старую сессию как завершённую и удаляем её
             session.status = 'completed'
             session.completed_at = timezone.now()
             session.save()
             session.delete()
-            
+
             # Возвращаем новую сессию
             session = new_session
             created = True
@@ -1216,6 +1228,7 @@ def answer_training_question(request, pk):
             session.save()
 
     return Response(TrainingQuestionSerializer(tq).data)
+
 
 # ═══════════════════════════════════════════════════════════════════════
 # COURSE CONSTRUCTOR VIEW
@@ -1515,22 +1528,80 @@ def course_constructor_view(request):
         context['unassigned_videos'] = free_videos
         context['unassigned_tests'] = free_tests
 
+
     elif current_step == 5:
+
         if not test: return redirect(
+
             base_url + f'?step=4&subject_id={subject_id}&block_id={block_id}&lesson_id={lesson_id}')
+
+        # НОВОЕ: Проверяем, редактируем ли мы существующий вопрос
+
+        edit_q_id = request.GET.get('edit_q')
+
+        edit_question = None
+
+        if edit_q_id:
+            edit_question = get_object_or_404(Question, id=edit_q_id, test=test)
+
         if request.method == 'POST':
-            question_form = QuestionForm(request.POST)
-            answer_formset = AnswerFormSet(request.POST, instance=Question())
-            if question_form.is_valid() and answer_formset.is_valid():
-                new_question = question_form.save(commit=False)
-                new_question.test = test
-                new_question.save()
-                answer_formset.instance = new_question
-                answer_formset.save()
-                return redirect(request.get_full_path())
+
+            # НОВОЕ: Обработка сохранения отредактированного вопроса
+
+            if 'update_question' in request.POST and edit_question:
+
+                question_form = QuestionForm(request.POST, instance=edit_question)
+
+                answer_formset = AnswerFormSet(request.POST, instance=edit_question)
+
+                if question_form.is_valid() and answer_formset.is_valid():
+                    question_form.save()
+
+                    answer_formset.save()
+
+                    return redirect(
+                        base_url + f'?step=5&subject_id={subject_id}&block_id={block_id}&lesson_id={lesson_id}')
+
+
+            # Старая логика: сохранение нового вопроса
+
+            else:
+
+                question_form = QuestionForm(request.POST)
+
+                answer_formset = AnswerFormSet(request.POST, instance=Question())
+
+                if question_form.is_valid() and answer_formset.is_valid():
+                    new_question = question_form.save(commit=False)
+
+                    new_question.test = test
+
+                    new_question.save()
+
+                    answer_formset.instance = new_question
+
+                    answer_formset.save()
+
+                    return redirect(request.get_full_path())
+
         else:
-            context['question_form'] = QuestionForm()
-            context['answer_formset'] = AnswerFormSet(instance=Question())
+
+            # Инициализация форм (либо пустых, либо заполненных)
+
+            if edit_question:
+
+                context['question_form'] = QuestionForm(instance=edit_question)
+
+                context['answer_formset'] = AnswerFormSet(instance=edit_question)
+
+            else:
+
+                context['question_form'] = QuestionForm()
+
+                context['answer_formset'] = AnswerFormSet(instance=Question())
+
         context['questions'] = Question.objects.filter(test=test)
+
+        context['edit_q'] = int(edit_q_id) if edit_q_id and edit_q_id.isdigit() else None
 
     return render(request, 'admin/course_constructor.html', context)

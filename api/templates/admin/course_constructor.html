@@ -9,6 +9,34 @@
 <link href="https://fonts.googleapis.com/css2?family=Onest:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
       rel="stylesheet">
 <style>
+    /* Красивый чекбокс "Верный ответ" */
+        .correct-toggle {
+            display: inline-flex !important;
+            align-items: center !important;
+            gap: 8px;
+            cursor: pointer;
+            background: #fff;
+            border: 1px solid var(--border);
+            padding: 10px 14px; /* Заменили жесткую высоту на мягкие отступы */
+            border-radius: var(--r2);
+            transition: 0.2s;
+            white-space: nowrap;
+        }
+        .correct-toggle:hover { border-color: var(--green); background: var(--green-l); }
+        .correct-toggle input[type="checkbox"] {
+            accent-color: var(--green);
+            transform: scale(1.2);
+            cursor: pointer;
+            margin: 0 !important;
+            padding: 0 !important;
+            position: relative;
+            top: 1px; /* Визуальная корректировка центра */
+        }
+        .correct-toggle span {
+            margin: 0 !important;
+            line-height: 1 !important;
+            display: inline-block;
+        }
     /* Красивое поле выбора файла */
         input[type="file"] {
             display: block;
@@ -182,6 +210,47 @@
             grid-template-columns: 1fr 1fr;
             gap: 15px;
         }
+    /* Стили для 5 шага: Карточки ответов */
+        .answer-card {
+            background: #f8fafc;
+            border: 1px solid var(--border);
+            border-radius: var(--r2);
+            padding: 14px;
+            margin-bottom: 12px;
+            position: relative;
+        }
+        .answer-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .answer-card-header .answer-number { color: var(--t2); text-transform: uppercase; letter-spacing: 0.5px; }
+        .answer-card-header .delete-row { color: var(--rose); cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 4px; }
+        .answer-card-header .delete-row:hover { color: #be123c; }
+
+        .answer-body { display: flex; gap: 12px; align-items: flex-start; }
+        .answer-body .input-wrap { flex: 1; }
+        .answer-body .input-wrap input { margin: 0; height: 100%; }
+
+        /* Красивый чекбокс "Верный ответ" */
+        .correct-toggle {
+            display: flex; align-items: center; gap: 8px; cursor: pointer;
+            background: #fff; border: 1px solid var(--border); padding: 0 14px;
+            border-radius: var(--r2); transition: 0.2s; white-space: nowrap; height: 42px;
+        }
+        .correct-toggle:hover { border-color: var(--green); background: var(--green-l); }
+        .correct-toggle input[type="checkbox"] { accent-color: var(--green); transform: scale(1.2); cursor: pointer; margin: 0; }
+
+        /* Карточка существующего вопроса */
+        .q-exist-card {
+            background: #fff; border: 1px solid var(--border); border-radius: var(--r2);
+            padding: 15px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 10px;
+        }
+        .q-exist-text { font-size: 14px; color: var(--t1); font-weight: 500; line-height: 1.4; }
+        .q-exist-meta { display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed var(--border); padding-top: 10px; margin-top: 5px; }
 </style>
 {% endblock %}
 
@@ -779,94 +848,147 @@
                 {% endif %}
             </div>
             {% elif current_step == 5 %}
-            <div class="slabel">Шаг 5: Добавьте вопросы и ответы к тесту "{{ test.title }}"</div>
+            <div class="slabel">Шаг 5: Вопросы и ответы к тесту "{{ test.title }}"</div>
             <div class="form-grid">
-                <div class="form-section">
-                    <h4>Создать новый вопрос</h4>
-                    <form method="post"
-                          action="{% url 'api:course-constructor' %}?step=5&subject_id={{ subject_id }}&block_id={{ block_id }}&lesson_id={{ lesson_id }}"
-                          autocomplete="off">
-                        {% csrf_token %}
-                        {{ question_form.as_p }}
 
-                        <h5>Варианты ответов</h5>
+                <div class="form-section">
+                    {% if edit_q %}
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                            <h4 style="margin: 0; color: var(--pr);"><i class="fas fa-edit"></i> Редактирование вопроса</h4>
+                            <a href="{% url 'api:course-constructor' %}?step=5&subject_id={{ subject_id }}&block_id={{ block_id }}&lesson_id={{ lesson_id }}" class="btn-action">Отмена</a>
+                        </div>
+                    {% else %}
+                        <h4><i class="fas fa-plus-circle" style="color: var(--pr);"></i> Создать новый вопрос</h4>
+                    {% endif %}
+
+                    <div class="info-box" style="display: flex; gap: 10px; align-items: flex-start; margin-bottom: 20px;">
+                        <i class="fas fa-lightbulb" style="margin-top: 2px; font-size: 15px; color: var(--pr);"></i>
+                        <div>
+                            <strong>Совет:</strong> Ссылки для рекомендаций помогут студенту — тренажёр предложит их, если ученик ошибется в этом вопросе. Не забудьте отметить чекбокс <strong>«Верный»</strong> у правильного варианта ответа!
+                        </div>
+                    </div>
+
+                    <form method="post" action="{% url 'api:course-constructor' %}?step=5&subject_id={{ subject_id }}&block_id={{ block_id }}&lesson_id={{ lesson_id }}{% if edit_q %}&edit_q={{ edit_q }}{% endif %}" autocomplete="off">
+                        {% csrf_token %}
+
+                        <div style="background: #fff; padding: 15px; border: 1px solid var(--border); border-radius: var(--r2); margin-bottom: 20px;">
+                            <p>
+                                <label>{{ question_form.text.label }}</label>
+                                {{ question_form.text }}
+                                {% if question_form.text.errors %}{{ question_form.text.errors }}{% endif %}
+                            </p>
+                            <div class="form-row-2">
+                                <p>
+                                    <label>{{ question_form.recommendation_link.label }}</label>
+                                    {{ question_form.recommendation_link }}
+                                </p>
+                                <p>
+                                    <label>{{ question_form.recommendation_video_link.label }}</label>
+                                    {{ question_form.recommendation_video_link }}
+                                </p>
+                            </div>
+                        </div>
+
+                        <h5 style="margin-bottom: 12px; font-size: 13px; color: var(--t2); text-transform: uppercase; letter-spacing: 0.5px;">Варианты ответов:</h5>
                         {{ answer_formset.management_form }}
+
                         <div id="answer-formset-container">
                             {% for form in answer_formset %}
-                            <div class="formset-item">
-                                <p>
-                                    <strong class="answer-number">Ответ #{{ forloop.counter }}</strong>
-                                    <span class="delete-row">Удалить</span>
-                                </p>
+                            <div class="formset-item answer-card">
+                                <div class="answer-card-header">
+                                    <span class="answer-number"><i class="fas fa-list-ul"></i> Ответ #{{ forloop.counter }}</span>
+                                    <span class="delete-row"><i class="fas fa-trash-alt"></i> Удалить</span>
+                                </div>
                                 {{ form.id }}
-                                {% for field in form.hidden_fields %}
-                                {{ field }}
-                                {% endfor %}
-                                {% for field in form.visible_fields %}
-                                <p>
-                                    {{ field.label_tag }}
-                                    {{ field }}
-                                    {% if field.help_text %}
-                                    <span class="helptext">{{ field.help_text }}</span>
-                                    {% endif %}
-                                    {% for error in field.errors %}
-                                    <span class="errorlist">{{ error }}</span>
-                                    {% endfor %}
-                                </p>
-                                {% endfor %}
+                                {% for field in form.hidden_fields %}{{ field }}{% endfor %}
+
+                                <div class="answer-body">
+                                    <div class="input-wrap">
+                                        {{ form.text }}
+                                    </div>
+                                    <div>
+                                        <label class="correct-toggle">
+                                            {{ form.is_correct }}
+                                            <span style="font-size: 13px; font-weight: 600; color: var(--t1);">Верный</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                {% if form.errors %}{{ form.errors }}{% endif %}
                             </div>
                             {% endfor %}
                         </div>
-                        {# Скрытый шаблон для новой формы ответа #}
+
+                        {# Скрытый шаблон для JS #}
                         <div id="answer-form-template" style="display: none;">
-                            <div class="formset-item">
-                                <p>
-                                    <strong class="answer-number"></strong>
-                                    <span class="delete-row">Удалить</span>
-                                </p>
+                            <div class="formset-item answer-card">
+                                <div class="answer-card-header">
+                                    <span class="answer-number"><i class="fas fa-list-ul"></i> Ответ #__prefix__</span>
+                                    <span class="delete-row"><i class="fas fa-trash-alt"></i> Удалить</span>
+                                </div>
                                 {{ answer_formset.empty_form.id }}
-                                {% for field in answer_formset.empty_form.hidden_fields %}
-                                {{ field }}
-                                {% endfor %}
-                                {% for field in answer_formset.empty_form.visible_fields %}
-                                <p>
-                                    {{ field.label_tag }}
-                                    {{ field }}
-                                </p>
-                                {% endfor %}
+                                {% for field in answer_formset.empty_form.hidden_fields %}{{ field }}{% endfor %}
+
+                                <div class="answer-body">
+                                    <div class="input-wrap">
+                                        {{ answer_formset.empty_form.text }}
+                                    </div>
+                                    <div>
+                                        <label class="correct-toggle">
+                                            {{ answer_formset.empty_form.is_correct }}
+                                            <span style="font-size: 13px; font-weight: 600; color: var(--t1);">Верный</span>
+                                        </label>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                        <button type="button" class="btn mt-2 add-form-button" id="add-answer-form"><i
-                                class="fas fa-plus"></i> Добавить еще ответ
+
+                        <button type="button" class="btn mt-2 add-form-button" id="add-answer-form" style="background: #fff; color: var(--teal); border: 1px dashed var(--teal); width: 100%; justify-content: center; padding: 12px;">
+                            <i class="fas fa-plus"></i> Добавить вариант ответа
                         </button>
-                        <button type="submit" class="btn mt-2" id="save-questions-btn"><i class="fas fa-save"></i>
-                            Сохранить вопрос
+
+                        <button type="submit" name="{% if edit_q %}update_question{% else %}submit_new_question{% endif %}" class="btn mt-3" id="save-questions-btn" style="width: 100%; justify-content: center; padding: 12px;">
+                            <i class="fas fa-save"></i> {% if edit_q %}Сохранить изменения{% else %}Сохранить вопрос{% endif %}
                         </button>
                     </form>
                 </div>
+
                 <div class="form-section">
-                    <h4>Существующие вопросы</h4>
-                    <ul class="item-list">
+                    <h4>Существующие вопросы ({{ questions.count }})</h4>
+
+                    <div class="info-box" style="display: flex; gap: 10px; align-items: flex-start; padding: 10px 14px; font-size: 12px; margin-bottom: 15px;">
+                         <i class="fas fa-mouse-pointer" style="margin-top: 2px; color: var(--pr);"></i>
+                         <div>Нажмите <strong>Редактировать</strong> на любом из созданных вопросов ниже, чтобы изменить его текст, ссылки или варианты ответов.</div>
+                    </div>
+
+                    <div>
                         {% for question in questions %}
-                        <li>
-                            <span>{{ question.text }}</span>
-                            <a href="{% url 'admin:api_question_change' question.id %}" class="btn-select">Редактировать
-                                <i class="fas fa-edit"></i></a>
-                        </li>
+                        <div class="q-exist-card {% if edit_q == question.id %}active{% endif %}" {% if edit_q == question.id %}style="border-color: var(--pr); box-shadow: 0 0 0 2px var(--pr-l);"{% endif %}>
+                            <div class="q-exist-text">{{ question.text }}</div>
+                            <div class="q-exist-meta">
+                                <span style="font-size: 12px; color: var(--t3);"><i class="fas fa-list"></i> Вариантов: {{ question.answers.count }}</span>
+                                <a href="{% url 'api:course-constructor' %}?step=5&subject_id={{ subject_id }}&block_id={{ block_id }}&lesson_id={{ lesson_id }}&edit_q={{ question.id }}" class="btn-action" style="padding: 4px 10px; font-size: 11px;">
+                                    <i class="fas fa-edit"></i> Редактировать
+                                </a>
+                            </div>
+                        </div>
                         {% empty %}
-                        <li>Нет созданных вопросов для этого теста.</li>
+                        <div class="info-box" style="background: #fff; border: 1px dashed var(--border); color: var(--t3); text-align: center; padding: 30px 10px;">
+                            <i class="fas fa-box-open" style="font-size: 24px; margin-bottom: 10px; color: var(--border);"></i><br>
+                            Вопросов пока нет. Добавьте первый слева!
+                        </div>
                         {% endfor %}
-                    </ul>
+                    </div>
                 </div>
             </div>
+
             <div class="mt-4 d-flex justify-content-between">
                 <a href="{% url 'api:course-constructor' %}?step=4&subject_id={{ subject_id }}&block_id={{ block_id }}&lesson_id={{ lesson_id }}"
-                   class="btn btn-secondary"
-                   style="background:var(--surface);color:var(--t2);border-color:var(--border);"><i
-                        class="fas fa-arrow-left"></i> Назад к контенту</a>
-                <a href="{% url 'admin:index' %}" class="btn btn-success"
-                   style="background:var(--green);border-color:var(--green);"><i class="fas fa-check-circle"></i>
-                    Завершить</a>
+                   class="btn btn-secondary" style="background:var(--surface);color:var(--t2);border-color:var(--border);">
+                   <i class="fas fa-arrow-left"></i> Назад к контенту
+                </a>
+                <a href="{% url 'admin:index' %}" class="btn btn-success" style="background:var(--green);border-color:var(--green);">
+                   <i class="fas fa-check-circle"></i> Завершить сборку курса
+                </a>
             </div>
             {% endif %}
         </div>
@@ -949,7 +1071,14 @@
                     const numberElement = form.querySelector('h5, .answer-number');
                     if (numberElement) {
                         const labelBase = prefix === 'blocks' ? 'Блок' : (prefix === 'lessons' ? 'Урок' : 'Ответ');
-                        numberElement.innerHTML = `${labelBase} #${visibleFormCount + 1} <span class="delete-row" style="float:right;">Удалить</span>`;
+
+                        // Если это Шаг 5 (ответы), мы не добавляем кнопку внутрь текста, так как она уже есть в дизайне
+                        if (prefix === 'answers') {
+                            numberElement.innerHTML = `<i class="fas fa-list-ul"></i> ${labelBase} #${visibleFormCount + 1}`;
+                        } else {
+                            // Для блоков и уроков оставляем старую логику
+                            numberElement.innerHTML = `${labelBase} #${visibleFormCount + 1} <span class="delete-row" style="float:right;">Удалить</span>`;
+                        }
                     }
 
                     form.querySelectorAll('[name]').forEach(input => {
