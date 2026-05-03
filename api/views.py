@@ -1355,45 +1355,98 @@ def course_constructor_view(request):
             context['formset'] = LessonFormSet(prefix='lessons')
         context['lessons'] = Lesson.objects.filter(block=block)
 
+
     elif current_step == 4:
+
         if not lesson_id: return redirect(base_url + f'?step=3&subject_id={subject_id}&block_id={block_id}')
 
         if request.method == 'POST':
-            if 'submit_new_video' in request.POST:
+
+            # --- ДОБАВЛЕН КОД ДЛЯ ОТКРЕПЛЕНИЯ ВИДЕО И ТЕСТА ---
+
+            if 'unlink_video' in request.POST:
+
+                lesson.video = None
+
+                lesson.save()
+
+                return redirect(request.get_full_path())
+
+
+            elif 'unlink_test' in request.POST:
+
+                lesson.test = None
+
+                lesson.save()
+
+                return redirect(request.get_full_path())
+
+            # --------------------------------------------------
+
+            elif 'submit_new_video' in request.POST:
+
                 video_form = VideoForm(request.POST, request.FILES)
+
                 if video_form.is_valid():
                     video = video_form.save(commit=False)
+
                     video.creator = request.user  # <--- ЗАПИСЫВАЕМ АВТОРА ВИДЕО
+
                     video.save()
+
                     lesson.video = video
+
                     lesson.save()
+
                     return redirect(request.get_full_path())
+
             elif 'submit_existing_video' in request.POST:
+
                 video_id = request.POST.get('existing_video')
+
                 if video_id:
                     lesson.video = get_object_or_404(Video, id=video_id)
+
                     lesson.save()
+
                     return redirect(request.get_full_path())
+
             elif 'submit_new_test' in request.POST:
+
                 test_form = TestForm(request.POST)
+
                 if test_form.is_valid():
                     test = test_form.save(commit=False)
+
                     test.creator = request.user  # <--- ЗАПИСЫВАЕМ АВТОРА ТЕСТА
+
                     test.save()
+
                     lesson.test = test
+
                     lesson.save()
+
                     query_string = f'?step=5&subject_id={subject.id}&block_id={block.id}&lesson_id={lesson.id}'
+
                     return redirect(base_url + query_string)
+
             elif 'submit_existing_test' in request.POST:
+
                 test_id = request.POST.get('existing_test')
+
                 if test_id:
                     lesson.test = get_object_or_404(Test, id=test_id)
+
                     lesson.save()
+
                     return redirect(
+
                         base_url + f'?step=5&subject_id={subject.id}&block_id={block.id}&lesson_id={lesson.id}')
 
         # Фильтруем свободные объекты только для текущего преподавателя
+
         unassigned_videos = Video.objects.filter(lessons__isnull=True)
+
         unassigned_tests = Test.objects.filter(lesson_for__isnull=True, final_block_of__isnull=True)
 
         if is_teacher:
