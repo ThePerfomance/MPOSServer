@@ -115,7 +115,12 @@ class Command(BaseCommand):
         b3 = Block.objects.create(subject=sw, title='Advanced CSS & Layout', description='Гибкие макеты, сетки, переменные и анимации', position=2, is_published=True)
 
         # ── LESSONS & TESTS ──
+        VideoType.objects.all().delete()
         vt_rutube = VideoType.objects.create(name='Rutube')
+        VideoType.objects.create(name='VK Видео')
+        VideoType.objects.create(name='YouTube')
+        VideoType.objects.create(name='LocalFile')
+
         v1 = Video.objects.create(type=vt_rutube, link='https://rutube.ru/video/f19270376ddbd410699f575f9495a07c/?r=wd', duration=910)
 
         l1 = Lesson.objects.create(block=b1, title='Основы HTML', summary='Изучение основ HTML: теги, атрибуты, структура документа.', duration=1800, video=v1, position=0, is_published=True)
