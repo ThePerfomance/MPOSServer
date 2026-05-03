@@ -196,8 +196,8 @@ class Video(models.Model):
         verbose_name="Ссылка на видео"
     )
 
-    type = models.ForeignKey('VideoType', on_delete=models.CASCADE)
-    duration = models.IntegerField(default=0)
+    type = models.ForeignKey('VideoType', on_delete=models.CASCADE,verbose_name="Тип видео")
+    duration = models.IntegerField(default=0,verbose_name="Длительность видео", help_text="В секундах")
 
     creator = models.ForeignKey(
         User, on_delete=models.SET_NULL, null=True, blank=True,

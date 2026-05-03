@@ -1,4 +1,5 @@
 # admin.py
+from django.shortcuts import redirect
 from django.contrib import admin
 from django.contrib.auth.models import Group as AuthGroup
 from django.utils.html import format_html
@@ -556,7 +557,7 @@ class VideoAdmin(admin.ModelAdmin):
             ('Информация о видео', {'fields': ('name', 'description', 'type', 'duration')}),
             ('Загрузка', {
                 'fields': ('video_file', 'link'),
-                'description': 'Прикрепите файл с компьютера ИЛИ вставьте ссылку на YouTube/Rutube',
+                'description': 'Прикрепите файл с компьютера или вставьте ссылку YouTube/Rutube/VK Видео',
             }),
         )
 
@@ -817,3 +818,17 @@ def _custom_index(self, request, extra_context=None):
 
 
 _AdminSite.index = _custom_index
+
+_orig_app_index = _AdminSite.app_index
+
+
+def _custom_app_index(self, request, app_label, extra_context=None):
+    # Если пользователь переходит на страницу приложения 'api' (Учебная Платформа),
+    # перенаправляем его на наш кастомный дашборд
+    if app_label == 'api':
+        return redirect('admin:index')
+
+    return _orig_app_index(self, request, app_label, extra_context)
+
+
+_AdminSite.app_index = _custom_app_index
