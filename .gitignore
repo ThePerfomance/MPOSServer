@@ -80,3 +80,4 @@ yarn-error.log*
 *.tar.xz
 *.tar.zst
 ```
+/media
