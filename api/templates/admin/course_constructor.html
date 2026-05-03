@@ -423,11 +423,77 @@
                 <div class="form-section">
                     <h4>Видео</h4>
                     {% if lesson.video %}
+                    {% if edit_mode == 'video' %}
+                    <form method="post"
+                          action="{% url 'api:course-constructor' %}?step=4&subject_id={{ subject_id }}&block_id={{ block_id }}&lesson_id={{ lesson.id }}"
+                          enctype="multipart/form-data" autocomplete="off"
+                          style="background: #fff; padding: 15px; border-radius: var(--r2); border: 1px solid var(--pr);">
+                        {% csrf_token %}
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                            <h5 style="margin: 0; color: var(--pr);"><i class="fas fa-edit"></i> Редактирование:
+                                <strong>{{ lesson.video.name }}</strong></h5>
+                            <a href="{% url 'api:course-constructor' %}?step=4&subject_id={{ subject_id }}&block_id={{ block_id }}&lesson_id={{ lesson.id }}"
+                               class="btn-action">Отмена</a>
+                        </div>
+
+                        <p>
+                            <label>{{ video_form.name.label }}</label>
+                            {{ video_form.name }}
+                            {% if video_form.name.errors %}{{ video_form.name.errors }}{% endif %}
+                        </p>
+                        <p>
+                            <label>{{ video_form.description.label }}</label>
+                            {{ video_form.description }}
+                            {% if video_form.description.errors %}{{ video_form.description.errors }}{% endif %}
+                        </p>
+
+                        <div style="background: #f8fafc; border: 1px solid var(--border); border-radius: var(--r2); padding: 18px; margin: 20px 0;">
+                            <label style="margin-bottom: 10px; display: block;">Источник видео (выберите один
+                                вариант):</label>
+                            <div class="source-switch">
+                                <div class="source-btn {% if lesson.video.video_file %}active{% endif %}"
+                                     data-target="panel-file-edit"><i class="fas fa-file-upload"></i> Загрузить файл
+                                </div>
+                                <div class="source-btn {% if not lesson.video.video_file %}active{% endif %}"
+                                     data-target="panel-link-edit"><i class="fas fa-link"></i> Вставить ссылку
+                                </div>
+                            </div>
+                            <div id="panel-file-edit"
+                                 class="source-panel {% if lesson.video.video_file %}active{% endif %}">
+                                {{ video_form.video_file }}
+                                {% if video_form.video_file.errors %}{{ video_form.video_file.errors }}{% endif %}
+                            </div>
+                            <div id="panel-link-edit"
+                                 class="source-panel {% if not lesson.video.video_file %}active{% endif %}">
+                                {{ video_form.link }}
+                                {% if video_form.link.errors %}{{ video_form.link.errors }}{% endif %}
+                            </div>
+                        </div>
+
+                        <div class="form-row-2">
+                            <p>
+                                <label>{{ video_form.type.label }}</label>
+                                {{ video_form.type }}
+                                {% if video_form.type.errors %}{{ video_form.type.errors }}{% endif %}
+                            </p>
+                            <p>
+                                <label>{{ video_form.duration.label }}</label>
+                                {{ video_form.duration }}
+                                {% if video_form.duration.errors %}{{ video_form.duration.errors }}{% endif %}
+                            </p>
+                        </div>
+
+                        <button type="submit" name="update_video" class="btn mt-2"
+                                style="width: 100%; justify-content: center; padding: 10px;">
+                            <i class="fas fa-save"></i> Сохранить изменения
+                        </button>
+                    </form>
+                    {% else %}
                     <div class="info-box"
                          style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
                         <div>К уроку уже привязано видео: <strong>{{ lesson.video.name }}</strong></div>
                         <div style="display: flex; gap: 8px;">
-                            <a href="{% url 'admin:api_video_change' lesson.video.id %}" target="_blank"
+                            <a href="{% url 'api:course-constructor' %}?step=4&subject_id={{ subject_id }}&block_id={{ block_id }}&lesson_id={{ lesson.id }}&edit=video"
                                class="btn-action">
                                 <i class="fas fa-edit"></i> Редактировать
                             </a>
@@ -442,6 +508,7 @@
                             </form>
                         </div>
                     </div>
+                    {% endif %}
                     {% else %}
                     <form method="post"
                           action="{% url 'api:course-constructor' %}?step=4&subject_id={{ subject_id }}&block_id={{ block_id }}&lesson_id={{ lesson.id }}"
@@ -534,11 +601,59 @@
                 <div class="form-section">
                     <h4>Тест</h4>
                     {% if lesson.test %}
+                    {% if edit_mode == 'test' %}
+                    <form method="post"
+                          action="{% url 'api:course-constructor' %}?step=4&subject_id={{ subject_id }}&block_id={{ block_id }}&lesson_id={{ lesson.id }}"
+                          autocomplete="off"
+                          style="background: #fff; padding: 15px; border-radius: var(--r2); border: 1px solid var(--pr);">
+                        {% csrf_token %}
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                            <h5 style="margin: 0; color: var(--pr);"><i class="fas fa-edit"></i> Редактирование:
+                                <strong>{{ lesson.test.title }}</strong></h5>
+                            <a href="{% url 'api:course-constructor' %}?step=4&subject_id={{ subject_id }}&block_id={{ block_id }}&lesson_id={{ lesson.id }}"
+                               class="btn-action">Отмена</a>
+                        </div>
+
+                        <p>
+                            <label>{{ test_form.title.label }}</label>
+                            {{ test_form.title }}
+                            {% if test_form.title.errors %}{{ test_form.title.errors }}{% endif %}
+                        </p>
+                        <p>
+                            <label>{{ test_form.description.label }}</label>
+                            {{ test_form.description }}
+                            {% if test_form.description.errors %}{{ test_form.description.errors }}{% endif %}
+                        </p>
+
+                        <div class="form-row-2" style="align-items: flex-end;">
+                            <p style="margin-bottom: 0;">
+                                <label>{{ test_form.duration.label }}</label>
+                                {{ test_form.duration }}
+                                {% if test_form.duration.errors %}{{ test_form.duration.errors }}{% endif %}
+                                <span style="font-size: 11px; color: var(--t3); display: block; margin-top: 6px;">
+                <i class="fas fa-info-circle"></i> 0 = без ограничений
+            </span>
+                            </p>
+                            <p style="margin-bottom: 0; padding-bottom: 22px;">
+                                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; background: #fff; border: 1px solid var(--border); padding: 8px 14px; border-radius: var(--r2); margin: 0; transition: border-color 0.2s;">
+                                    {{ test_form.is_published }}
+                                    <span style="font-weight: 500; font-size: 13px; color: var(--t2); margin: 0;">Опубликовать тест</span>
+                                </label>
+                                {% if test_form.is_published.errors %}{{ test_form.is_published.errors }}{% endif %}
+                            </p>
+                        </div>
+
+                        <button type="submit" name="update_test" class="btn mt-3"
+                                style="width: 100%; justify-content: center; padding: 10px;">
+                            <i class="fas fa-save"></i> Сохранить изменения
+                        </button>
+                    </form>
+                    {% else %}
                     <div class="info-box"
                          style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
                         <div>К уроку уже привязан тест: <strong>{{ lesson.test.title }}</strong></div>
                         <div style="display: flex; gap: 8px;">
-                            <a href="{% url 'admin:api_test_change' lesson.test.id %}" target="_blank"
+                            <a href="{% url 'api:course-constructor' %}?step=4&subject_id={{ subject_id }}&block_id={{ block_id }}&lesson_id={{ lesson.id }}&edit=test"
                                class="btn-action">
                                 <i class="fas fa-edit"></i> Редактировать
                             </a>
@@ -553,38 +668,65 @@
                             </form>
                         </div>
                     </div>
+                    {% endif %}
                     {% else %}
                     <form method="post"
                           action="{% url 'api:course-constructor' %}?step=4&subject_id={{ subject_id }}&block_id={{ block_id }}&lesson_id={{ lesson.id }}"
                           autocomplete="off">
                         {% csrf_token %}
-                        <h5>Создать новый тест</h5>
-                        {% for field in test_form %}
-                        {% if field.is_hidden %}
-                        {{ field }}
-                        {% else %}
+                        <h5 style="margin-bottom: 20px;">Создать новый тест</h5>
+
                         <p>
-                            {{ field.label_tag }}
-                            {{ field }}
-                            {% if field.help_text %}
-                            <span class="helptext">{{ field.help_text }}</span>
-                            {% endif %}
-                            {% for error in field.errors %}
-                            <span class="errorlist">{{ error }}</span>
-                            {% endfor %}
+                            <label>{{ test_form.title.label }}</label>
+                            {{ test_form.title }}
+                            {{ test_form.title.errors }}
                         </p>
-                        {% endif %}
-                        {% endfor %}
-                        <button type="submit" name="submit_new_test" class="btn mt-2"><i class="fas fa-plus"></i>
-                            Создать и привязать
+                        <p>
+                            <label>{{ test_form.description.label }}</label>
+                            {{ test_form.description }}
+                            {{ test_form.description.errors }}
+                        </p>
+
+                        <div class="form-row-2" style="align-items: flex-end;">
+                            <p style="margin-bottom: 0;">
+                                <label>{{ test_form.duration.label }}</label>
+                                {{ test_form.duration }}
+                                <span style="font-size: 11px; color: var(--t3); display: block; margin-top: 6px;">
+                                        <i class="fas fa-info-circle"></i> 0 = без ограничений по времени
+                                    </span>
+                                {{ test_form.duration.errors }}
+                            </p>
+                            <p style="margin-bottom: 0; padding-bottom: 22px;">
+                                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; background: #fff; border: 1px solid var(--border); padding: 8px 14px; border-radius: var(--r2); margin: 0; transition: border-color 0.2s;">
+                                    {{ test_form.is_published }}
+                                    <span style="font-weight: 500; font-size: 13px; color: var(--t2); margin: 0;">Опубликовать тест</span>
+                                </label>
+                                {{ test_form.is_published.errors }}
+                            </p>
+                        </div>
+
+                        <div class="info-box"
+                             style="margin-top: 20px; margin-bottom: 0; display: flex; gap: 10px; align-items: flex-start;">
+                            <i class="fas fa-lightbulb" style="margin-top: 2px; font-size: 15px; color: var(--pr);"></i>
+                            <div>
+                                Здесь создается только общая карточка теста (название и настройки). <strong>Сами вопросы
+                                и варианты ответов</strong> вы сможете добавить на следующем шаге (Шаг 5).
+                            </div>
+                        </div>
+
+                        <button type="submit" name="submit_new_test" class="btn mt-3"
+                                style="width: 100%; justify-content: center; padding: 10px;">
+                            <i class="fas fa-plus"></i> Создать и привязать тест
                         </button>
                     </form>
-                    <hr style="border-top: 1px solid var(--border); margin: 20px 0;">
+
+                    <hr style="border-top: 1px solid var(--border); margin: 24px 0;">
+
                     <form method="post"
                           action="{% url 'api:course-constructor' %}?step=4&subject_id={{ subject_id }}&block_id={{ block_id }}&lesson_id={{ lesson.id }}"
                           autocomplete="off">
                         {% csrf_token %}
-                        <h5>Или выберите существующий</h5>
+                        <h5 style="margin-bottom: 15px;">Или выберите существующий</h5>
                         <p>
                             <label for="id_existing_test">Существующий тест:</label>
                             <select name="existing_test" id="id_existing_test">
@@ -595,8 +737,9 @@
                                 {% endfor %}
                             </select>
                         </p>
-                        <button type="submit" name="submit_existing_test" class="btn mt-2"><i
-                                class="fas fa-link"></i> Привязать существующий
+                        <button type="submit" name="submit_existing_test" class="btn mt-2"
+                                style="width: 100%; justify-content: center; padding: 10px; background: #fff; color: var(--pr); border-color: var(--pr);">
+                            <i class="fas fa-link"></i> Привязать существующий
                         </button>
                     </form>
                     {% endif %}

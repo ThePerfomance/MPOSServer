@@ -1356,13 +1356,16 @@ def course_constructor_view(request):
         context['lessons'] = Lesson.objects.filter(block=block)
 
 
+
     elif current_step == 4:
 
         if not lesson_id: return redirect(base_url + f'?step=3&subject_id={subject_id}&block_id={block_id}')
 
-        if request.method == 'POST':
+        # НОВОЕ: Проверяем, нажал ли пользователь кнопку редактирования
 
-            # --- ДОБАВЛЕН КОД ДЛЯ ОТКРЕПЛЕНИЯ ВИДЕО И ТЕСТА ---
+        edit_mode = request.GET.get('edit')
+
+        if request.method == 'POST':
 
             if 'unlink_video' in request.POST:
 
@@ -1372,7 +1375,6 @@ def course_constructor_view(request):
 
                 return redirect(request.get_full_path())
 
-
             elif 'unlink_test' in request.POST:
 
                 lesson.test = None
@@ -1381,7 +1383,32 @@ def course_constructor_view(request):
 
                 return redirect(request.get_full_path())
 
-            # --------------------------------------------------
+
+            # --- НОВОЕ: Обработка сохранения отредактированного видео ---
+
+            elif 'update_video' in request.POST:
+
+                video_form = VideoForm(request.POST, request.FILES, instance=lesson.video)
+
+                if video_form.is_valid():
+                    video_form.save()
+
+                    return redirect(
+                        base_url + f'?step=4&subject_id={subject.id}&block_id={block.id}&lesson_id={lesson.id}')
+
+
+            # --- НОВОЕ: Обработка сохранения отредактированного теста ---
+
+            elif 'update_test' in request.POST:
+
+                test_form = TestForm(request.POST, instance=lesson.test)
+
+                if test_form.is_valid():
+                    test_form.save()
+
+                    return redirect(
+                        base_url + f'?step=4&subject_id={subject.id}&block_id={block_id}&lesson_id={lesson.id}')
+
 
             elif 'submit_new_video' in request.POST:
 
@@ -1390,7 +1417,7 @@ def course_constructor_view(request):
                 if video_form.is_valid():
                     video = video_form.save(commit=False)
 
-                    video.creator = request.user  # <--- ЗАПИСЫВАЕМ АВТОРА ВИДЕО
+                    video.creator = request.user
 
                     video.save()
 
@@ -1418,7 +1445,7 @@ def course_constructor_view(request):
                 if test_form.is_valid():
                     test = test_form.save(commit=False)
 
-                    test.creator = request.user  # <--- ЗАПИСЫВАЕМ АВТОРА ТЕСТА
+                    test.creator = request.user
 
                     test.save()
 
@@ -1440,7 +1467,6 @@ def course_constructor_view(request):
                     lesson.save()
 
                     return redirect(
-
                         base_url + f'?step=5&subject_id={subject.id}&block_id={block.id}&lesson_id={lesson.id}')
 
         # Фильтруем свободные объекты только для текущего преподавателя
@@ -1451,11 +1477,34 @@ def course_constructor_view(request):
 
         if is_teacher:
             unassigned_videos = unassigned_videos.filter(creator=user)
+
             unassigned_tests = unassigned_tests.filter(creator=user)
 
-        context['video_form'] = VideoForm()
-        context['test_form'] = TestForm()
+        # --- ИЗМЕНЕНО: Инициализируем формы с данными (если мы в режиме редактирования) ---
+
+        if edit_mode == 'video' and lesson.video:
+
+            context['video_form'] = VideoForm(instance=lesson.video)
+
+        else:
+
+            context['video_form'] = VideoForm()
+
+        if edit_mode == 'test' and lesson.test:
+
+            context['test_form'] = TestForm(instance=lesson.test)
+
+        else:
+
+            context['test_form'] = TestForm()
+
+        context['edit_mode'] = edit_mode  # Передаем режим в шаблон
+
         context['lesson'] = lesson
+
+        context['unassigned_videos'] = unassigned_videos
+
+        context['unassigned_tests'] = unassigned_tests
         free_videos = Video.objects.filter(lessons__isnull=True)
         free_tests = Test.objects.filter(lesson_for__isnull=True, final_block_of__isnull=True)
 
