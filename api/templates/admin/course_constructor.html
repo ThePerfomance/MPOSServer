@@ -128,6 +128,43 @@
         border-color: var(--rose);
         background: var(--rose-l);
     }
+    /* Стили для переключателя Источника видео */
+        .source-switch {
+            display: flex;
+            gap: 10px;
+            background: var(--surface);
+            padding: 4px;
+            border-radius: var(--r2);
+            border: 1px solid var(--border);
+            margin-bottom: 15px;
+        }
+        .source-btn {
+            flex: 1;
+            text-align: center;
+            padding: 8px 12px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--t2);
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+        .source-btn:hover { color: var(--t1); }
+        .source-btn.active {
+            background: #fff;
+            color: var(--pr);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+        .source-panel { display: none; }
+        .source-panel.active { display: block; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Сетка для полей в один ряд */
+        .form-row-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
 </style>
 {% endblock %}
 
@@ -280,513 +317,583 @@
                         {% endfor %}
                     </ul>
                 </div>
-                <a href="{% url 'api:course-constructor' %}?step=1" class="btn btn-secondary mt-4"
-                   style="background:var(--surface);color:var(--t2);border-color:var(--border);"><i
-                        class="fas fa-arrow-left"></i> Назад к выбору предмета</a>
-                {% elif current_step == 3 %}
-                {% if blocks_to_select %}
-                <div class="slabel">Шаг 3: Выберите блок для предмета "{{ selected_items|get_item:subject_id }}"</div>
-                <div class="form-grid">
-                    <div class="form-section full-width">
-                        <h4>Выберите один из существующих блоков</h4>
-                        <ul class="item-list">
-                            {% for block_item in blocks_to_select %}
-                            <li>
-                                <span>{{ block_item.title }}</span>
-                                <a href="{% url 'api:course-constructor' %}?step=3&subject_id={{ subject_id }}&block_id={{ block_item.id }}"
-                                   class="btn-select">Выбрать <i class="fas fa-arrow-right"></i></a>
-                            </li>
-                            {% endfor %}
-                        </ul>
-                    </div>
+            </div>
+            <a href="{% url 'api:course-constructor' %}?step=1" class="btn btn-secondary mt-4"
+               style="background:var(--surface);color:var(--t2);border-color:var(--border);"><i
+                    class="fas fa-arrow-left"></i> Назад к выбору предмета</a>
+            {% elif current_step == 3 %}
+            {% if blocks_to_select %}
+            <div class="slabel">Шаг 3: Выберите блок для предмета "{{ selected_items|get_item:subject_id }}"</div>
+            <div class="form-grid">
+                <div class="form-section full-width">
+                    <h4>Выберите один из существующих блоков</h4>
+                    <ul class="item-list">
+                        {% for block_item in blocks_to_select %}
+                        <li>
+                            <span>{{ block_item.title }}</span>
+                            <a href="{% url 'api:course-constructor' %}?step=3&subject_id={{ subject_id }}&block_id={{ block_item.id }}"
+                               class="btn-select">Выбрать <i class="fas fa-arrow-right"></i></a>
+                        </li>
+                        {% endfor %}
+                    </ul>
                 </div>
-                <a href="{% url 'api:course-constructor' %}?step=2&subject_id={{ subject_id }}"
-                   class="btn btn-secondary mt-4"
-                   style="background:var(--surface);color:var(--t2);border-color:var(--border);"><i
-                        class="fas fa-arrow-left"></i> Назад к выбору блока</a>
-                {% else %}
-                <div class="slabel">Шаг 3: Создайте или выберите урок для блока "{{ selected_items|get_item:block_id
-                    }}"
-                </div>
-                <div class="form-grid">
-                    <div class="form-section">
-                        <h4>Создать новые уроки</h4>
-                        <form method="post"
-                              action="{% url 'api:course-constructor' %}?step=3&subject_id={{ subject_id }}&block_id={{ block_id }}"
-                              id="lesson-formset-form" autocomplete="off">
-                            {% csrf_token %}
-                            {{ formset.management_form }}
-                            <div id="lesson-formset-container">
-                                {% for form in formset %}
-                                <div class="formset-item">
-                                    <h5>Урок #{{ forloop.counter }} <span class="delete-row" style="float:right;">Удалить</span>
-                                    </h5>
-                                    {% for field in form.hidden_fields %}{{ field }}{% endfor %}
-                                    {% for field in form.visible_fields %}
-                                    <p>{{ field.label_tag }} {{ field }} {% for error in field.errors %}<span
-                                            class="errorlist">{{ error }}</span>{% endfor %}</p>
-                                    {% endfor %}
-                                </div>
+            </div>
+            <a href="{% url 'api:course-constructor' %}?step=2&subject_id={{ subject_id }}"
+               class="btn btn-secondary mt-4"
+               style="background:var(--surface);color:var(--t2);border-color:var(--border);"><i
+                    class="fas fa-arrow-left"></i> Назад к выбору блока</a>
+            {% else %}
+            <div class="slabel">Шаг 3: Создайте или выберите урок для блока "{{ selected_items|get_item:block_id
+                }}"
+            </div>
+            <div class="form-grid">
+                <div class="form-section">
+                    <h4>Создать новые уроки</h4>
+                    <form method="post"
+                          action="{% url 'api:course-constructor' %}?step=3&subject_id={{ subject_id }}&block_id={{ block_id }}"
+                          id="lesson-formset-form" autocomplete="off">
+                        {% csrf_token %}
+                        {{ formset.management_form }}
+                        <div id="lesson-formset-container">
+                            {% for form in formset %}
+                            <div class="formset-item">
+                                <h5>Урок #{{ forloop.counter }} <span class="delete-row"
+                                                                      style="float:right;">Удалить</span>
+                                </h5>
+                                {% for field in form.hidden_fields %}{{ field }}{% endfor %}
+                                {% for field in form.visible_fields %}
+                                <p>{{ field.label_tag }} {{ field }} {% for error in field.errors %}<span
+                                        class="errorlist">{{ error }}</span>{% endfor %}</p>
                                 {% endfor %}
                             </div>
-                            <div id="lesson-form-template" style="display: none;">
-                                <div class="formset-item">
-                                    <h5>Урок #__prefix__ <span class="delete-row" style="float:right;">Удалить</span>
-                                    </h5>
-                                    {{ formset.empty_form.id }}
-                                    {% for field in formset.empty_form.hidden_fields %}{{ field }}{% endfor %}
-                                    {% for field in formset.empty_form.visible_fields %}
-                                    <p>{{ field.label_tag }} {{ field }}</p>
-                                    {% endfor %}
-                                </div>
-                            </div>
-                            <button type="button" class="btn mt-2 add-form-button" id="add-lesson-form"><i
-                                    class="fas fa-plus"></i> Добавить еще урок
-                            </button>
-                            <button type="submit" class="btn mt-2" id="save-lessons-btn"><i class="fas fa-save"></i>
-                                Сохранить уроки
-                            </button>
-                        </form>
-                    </div>
-                    <div class="form-section">
-                        <h4>Существующие уроки в этом блоке</h4>
-                        <ul class="item-list">
-                            {% for lesson in lessons %}
-                            <li>
-                                <span>{{ lesson.title }}</span>
-
-                                <div style="display: flex; gap: 8px;">
-                                    <a href="{% url 'admin:api_lesson_change' lesson.id %}" target="_blank"
-                                       class="btn-select">
-                                        <i class="fas fa-edit"></i> Редактировать
-                                    </a>
-
-                                    <a href="{% url 'api:course-constructor' %}?step=4&subject_id={{ subject_id }}&block_id={{ block_id }}&lesson_id={{ lesson.id }}"
-                                       class="btn-select">
-                                        Выбрать и добавить контент <i class="fas fa-arrow-right"></i>
-                                    </a>
-                                </div>
-                            </li>
-                            {% empty %}
-                            <li>Нет созданных уроков для этого блока.</li>
                             {% endfor %}
-                        </ul>
-                    </div>
-                </div>
-                <a href="{% url 'api:course-constructor' %}?step=2&subject_id={{ subject_id }}"
-                   class="btn btn-secondary mt-4"
-                   style="background:var(--surface);color:var(--t2);border-color:var(--border);"><i
-                        class="fas fa-arrow-left"></i> Назад к выбору блока</a>
-                {% endif %}
-                {% elif current_step == 4 %}
-                <div class="slabel">Шаг 4: Добавьте контент к уроку "{{ selected_items|get_item:lesson_id }}"</div>
-                <div class="form-grid">
-                    <div class="form-section">
-                        <h4>Видео</h4>
-                        {% if lesson.video %}
-                        <div class="info-box"
-                             style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-                            <div>К уроку уже привязано видео: <strong>{{ lesson.video.name }}</strong></div>
-                            <div style="display: flex; gap: 8px;">
-                                <a href="{% url 'admin:api_video_change' lesson.video.id %}" target="_blank"
-                                   class="btn-action">
-                                    <i class="fas fa-edit"></i> Редактировать
-                                </a>
-                                <form method="post"
-                                      action="{% url 'api:course-constructor' %}?step=4&subject_id={{ subject_id }}&block_id={{ block_id }}&lesson_id={{ lesson.id }}"
-                                      style="margin: 0;">
-                                    {% csrf_token %}
-                                    <button type="submit" name="unlink_video" class="btn-action btn-danger"
-                                            onclick="return confirm('Вы уверены, что хотите открепить это видео от урока?');">
-                                        <i class="fas fa-unlink"></i> Открепить
-                                    </button>
-                                </form>
+                        </div>
+                        <div id="lesson-form-template" style="display: none;">
+                            <div class="formset-item">
+                                <h5>Урок #__prefix__ <span class="delete-row" style="float:right;">Удалить</span>
+                                </h5>
+                                {{ formset.empty_form.id }}
+                                {% for field in formset.empty_form.hidden_fields %}{{ field }}{% endfor %}
+                                {% for field in formset.empty_form.visible_fields %}
+                                <p>{{ field.label_tag }} {{ field }}</p>
+                                {% endfor %}
                             </div>
                         </div>
-                        {% else %}
-                        <form method="post"
-                              action="{% url 'api:course-constructor' %}?step=4&subject_id={{ subject_id }}&block_id={{ block_id }}&lesson_id={{ lesson.id }}"
-                              enctype="multipart/form-data" autocomplete="off">
-                            {% csrf_token %}
-                            <h5>Создать новое видео</h5>
-                            {% for field in video_form %}
-                            {% if field.is_hidden %}
-                            {{ field }}
-                            {% else %}
-                            <p>
-                                {{ field.label_tag }}
-                                {{ field }}
-                                {% if field.help_text %}
-                                <span class="helptext">{{ field.help_text }}</span>
-                                {% endif %}
-                                {% for error in field.errors %}
-                                <span class="errorlist">{{ error }}</span>
-                                {% endfor %}
-                            </p>
-                            {% endif %}
-                            {% endfor %}
-                            <button type="submit" name="submit_new_video" class="btn mt-2"><i class="fas fa-plus"></i>
-                                Создать и привязать
-                            </button>
-                        </form>
-                        <hr style="border-top: 1px solid var(--border); margin: 20px 0;">
-                        <form method="post"
-                              action="{% url 'api:course-constructor' %}?step=4&subject_id={{ subject_id }}&block_id={{ block_id }}&lesson_id={{ lesson.id }}"
-                              autocomplete="off">
-                            {% csrf_token %}
-                            <h5>Или выберите существующее</h5>
-                            <p>
-                                <label for="id_existing_video">Существующее видео:</label>
-                                <select name="existing_video" id="id_existing_video">
-                                    {% for video in unassigned_videos %}
-                                    <option value="{{ video.id }}">{{ video.name }}</option>
-                                    {% empty %}
-                                    <option value="">Нет доступных видео</option>
-                                    {% endfor %}
-                                </select>
-                            </p>
-                            <button type="submit" name="submit_existing_video" class="btn mt-2"><i
-                                    class="fas fa-link"></i> Привязать существующее
-                            </button>
-                        </form>
-                        {% endif %}
-                    </div>
-                    <div class="form-section">
-                        <h4>Тест</h4>
-                        {% if lesson.test %}
-                        <div class="info-box"
-                             style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-                            <div>К уроку уже привязан тест: <strong>{{ lesson.test.title }}</strong></div>
+                        <button type="button" class="btn mt-2 add-form-button" id="add-lesson-form"><i
+                                class="fas fa-plus"></i> Добавить еще урок
+                        </button>
+                        <button type="submit" class="btn mt-2" id="save-lessons-btn"><i class="fas fa-save"></i>
+                            Сохранить уроки
+                        </button>
+                    </form>
+                </div>
+                <div class="form-section">
+                    <h4>Существующие уроки в этом блоке</h4>
+                    <ul class="item-list">
+                        {% for lesson in lessons %}
+                        <li>
+                            <span>{{ lesson.title }}</span>
+
                             <div style="display: flex; gap: 8px;">
-                                <a href="{% url 'admin:api_test_change' lesson.test.id %}" target="_blank"
-                                   class="btn-action">
+                                <a href="{% url 'admin:api_lesson_change' lesson.id %}" target="_blank"
+                                   class="btn-select">
                                     <i class="fas fa-edit"></i> Редактировать
                                 </a>
-                                <form method="post"
-                                      action="{% url 'api:course-constructor' %}?step=4&subject_id={{ subject_id }}&block_id={{ block_id }}&lesson_id={{ lesson.id }}"
-                                      style="margin: 0;">
-                                    {% csrf_token %}
-                                    <button type="submit" name="unlink_test" class="btn-action btn-danger"
-                                            onclick="return confirm('Вы уверены, что хотите открепить этот тест от урока?');">
-                                        <i class="fas fa-unlink"></i> Открепить
-                                    </button>
-                                </form>
+
+                                <a href="{% url 'api:course-constructor' %}?step=4&subject_id={{ subject_id }}&block_id={{ block_id }}&lesson_id={{ lesson.id }}"
+                                   class="btn-select">
+                                    Выбрать и добавить контент <i class="fas fa-arrow-right"></i>
+                                </a>
                             </div>
-                        </div>
-                        {% else %}
-                        <form method="post"
-                              action="{% url 'api:course-constructor' %}?step=4&subject_id={{ subject_id }}&block_id={{ block_id }}&lesson_id={{ lesson.id }}"
-                              autocomplete="off">
-                            {% csrf_token %}
-                            <h5>Создать новый тест</h5>
-                            {% for field in test_form %}
-                            {% if field.is_hidden %}
-                            {{ field }}
-                            {% else %}
-                            <p>
-                                {{ field.label_tag }}
-                                {{ field }}
-                                {% if field.help_text %}
-                                <span class="helptext">{{ field.help_text }}</span>
-                                {% endif %}
-                                {% for error in field.errors %}
-                                <span class="errorlist">{{ error }}</span>
-                                {% endfor %}
-                            </p>
-                            {% endif %}
-                            {% endfor %}
-                            <button type="submit" name="submit_new_test" class="btn mt-2"><i class="fas fa-plus"></i>
-                                Создать и привязать
-                            </button>
-                        </form>
-                        <hr style="border-top: 1px solid var(--border); margin: 20px 0;">
-                        <form method="post"
-                              action="{% url 'api:course-constructor' %}?step=4&subject_id={{ subject_id }}&block_id={{ block_id }}&lesson_id={{ lesson.id }}"
-                              autocomplete="off">
-                            {% csrf_token %}
-                            <h5>Или выберите существующий</h5>
-                            <p>
-                                <label for="id_existing_test">Существующий тест:</label>
-                                <select name="existing_test" id="id_existing_test">
-                                    {% for test_item in unassigned_tests %}
-                                    <option value="{{ test_item.id }}">{{ test_item.title }}</option>
-                                    {% empty %}
-                                    <option value="">Нет доступных тестов</option>
-                                    {% endfor %}
-                                </select>
-                            </p>
-                            <button type="submit" name="submit_existing_test" class="btn mt-2"><i
-                                    class="fas fa-link"></i> Привязать существующий
-                            </button>
-                        </form>
-                        {% endif %}
-                    </div>
+                        </li>
+                        {% empty %}
+                        <li>Нет созданных уроков для этого блока.</li>
+                        {% endfor %}
+                    </ul>
                 </div>
-                <div class="mt-4 d-flex justify-content-between">
-                    <a href="{% url 'api:course-constructor' %}?step=3&subject_id={{ subject_id }}&block_id={{ block_id }}"
-                       class="btn btn-secondary"
-                       style="background:var(--surface);color:var(--t2);border-color:var(--border);"><i
-                            class="fas fa-arrow-left"></i> Назад к выбору урока</a>
-                    {% if lesson.test %}
-                    <a href="{% url 'api:course-constructor' %}?step=5&subject_id={{ subject_id }}&block_id={{ block_id }}&lesson_id={{ lesson.id }}"
-                       class="btn btn-primary"><i class="fas fa-arrow-right"></i> Перейти к вопросам</a>
+            </div>
+            <a href="{% url 'api:course-constructor' %}?step=2&subject_id={{ subject_id }}"
+               class="btn btn-secondary mt-4"
+               style="background:var(--surface);color:var(--t2);border-color:var(--border);"><i
+                    class="fas fa-arrow-left"></i> Назад к выбору блока</a>
+            {% endif %}
+            {% elif current_step == 4 %}
+            <div class="slabel">Шаг 4: Добавьте контент к уроку "{{ selected_items|get_item:lesson_id }}"</div>
+            <div class="form-grid">
+                <div class="form-section">
+                    <h4>Видео</h4>
+                    {% if lesson.video %}
+                    <div class="info-box"
+                         style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                        <div>К уроку уже привязано видео: <strong>{{ lesson.video.name }}</strong></div>
+                        <div style="display: flex; gap: 8px;">
+                            <a href="{% url 'admin:api_video_change' lesson.video.id %}" target="_blank"
+                               class="btn-action">
+                                <i class="fas fa-edit"></i> Редактировать
+                            </a>
+                            <form method="post"
+                                  action="{% url 'api:course-constructor' %}?step=4&subject_id={{ subject_id }}&block_id={{ block_id }}&lesson_id={{ lesson.id }}"
+                                  style="margin: 0;">
+                                {% csrf_token %}
+                                <button type="submit" name="unlink_video" class="btn-action btn-danger"
+                                        onclick="return confirm('Вы уверены, что хотите открепить это видео от урока?');">
+                                    <i class="fas fa-unlink"></i> Открепить
+                                </button>
+                            </form>
+                        </div>
+                    </div>
                     {% else %}
-                    <a href="{% url 'admin:index' %}" class="btn btn-success"
-                       style="background:var(--green);border-color:var(--green);"><i class="fas fa-check-circle"></i>
-                        Завершить</a>
+                    <form method="post"
+                          action="{% url 'api:course-constructor' %}?step=4&subject_id={{ subject_id }}&block_id={{ block_id }}&lesson_id={{ lesson.id }}"
+                          enctype="multipart/form-data" autocomplete="off">
+                        {% csrf_token %}
+                        <h5 style="margin-bottom: 20px;">Создать новое видео</h5>
+
+                        <p>
+                            <label>{{ video_form.name.label }}</label>
+                            {{ video_form.name }}
+                            {{ video_form.name.errors }}
+                        </p>
+                        <p>
+                            <label>{{ video_form.description.label }}</label>
+                            {{ video_form.description }}
+                            {{ video_form.description.errors }}
+                        </p>
+
+                        <div style="background: #f8fafc; border: 1px solid var(--border); border-radius: var(--r2); padding: 18px; margin: 20px 0;">
+                            <label style="margin-bottom: 10px; display: block;">Источник видео (выберите один
+                                вариант):</label>
+
+                            <div class="source-switch">
+                                <div class="source-btn active" data-target="panel-file"><i
+                                        class="fas fa-file-upload"></i> Загрузить файл
+                                </div>
+                                <div class="source-btn" data-target="panel-link"><i class="fas fa-link"></i>
+                                    Вставить ссылку
+                                </div>
+                            </div>
+
+                            <div id="panel-file" class="source-panel active">
+                                {{ video_form.video_file }}
+                                {{ video_form.video_file.errors }}
+                                <div style="font-size: 11px; color: var(--t3); margin-top: 6px;"><i
+                                        class="fas fa-info-circle"></i> Поддерживаемые форматы: MP4, AVI, MOV
+                                </div>
+                            </div>
+
+                            <div id="panel-link" class="source-panel">
+                                {{ video_form.link }}
+                                {{ video_form.link.errors }}
+                                <div style="font-size: 11px; color: var(--t3); margin-top: 6px;"><i
+                                        class="fas fa-info-circle"></i> Вставьте ссылку на YouTube, Rutube или VK
+                                    Видео
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-row-2">
+                            <p>
+                                <label>{{ video_form.type.label }}</label>
+                                {{ video_form.type }}
+                                {{ video_form.type.errors }}
+                            </p>
+                            <p>
+                                <label>{{ video_form.duration.label }}</label>
+                                {{ video_form.duration }}
+                                {{ video_form.duration.errors }}
+                            </p>
+                        </div>
+
+                        <button type="submit" name="submit_new_video" class="btn mt-3"
+                                style="width: 100%; justify-content: center; padding: 10px;">
+                            <i class="fas fa-plus"></i> Создать и привязать видео
+                        </button>
+                    </form>
+                    <hr style="border-top: 1px solid var(--border); margin: 20px 0;">
+                    <form method="post"
+                          action="{% url 'api:course-constructor' %}?step=4&subject_id={{ subject_id }}&block_id={{ block_id }}&lesson_id={{ lesson.id }}"
+                          autocomplete="off">
+                        {% csrf_token %}
+                        <h5>Или выберите существующее</h5>
+                        <p>
+                            <label for="id_existing_video">Существующее видео:</label>
+                            <select name="existing_video" id="id_existing_video">
+                                {% for video in unassigned_videos %}
+                                <option value="{{ video.id }}">{{ video.name }}</option>
+                                {% empty %}
+                                <option value="">Нет доступных видео</option>
+                                {% endfor %}
+                            </select>
+                        </p>
+                        <button type="submit" name="submit_existing_video" class="btn mt-2"><i
+                                class="fas fa-link"></i> Привязать существующее
+                        </button>
+                    </form>
                     {% endif %}
                 </div>
-                {% elif current_step == 5 %}
-                <div class="slabel">Шаг 5: Добавьте вопросы и ответы к тесту "{{ test.title }}"</div>
-                <div class="form-grid">
-                    <div class="form-section">
-                        <h4>Создать новый вопрос</h4>
-                        <form method="post"
-                              action="{% url 'api:course-constructor' %}?step=5&subject_id={{ subject_id }}&block_id={{ block_id }}&lesson_id={{ lesson_id }}"
-                              autocomplete="off">
-                            {% csrf_token %}
-                            {{ question_form.as_p }}
-
-                            <h5>Варианты ответов</h5>
-                            {{ answer_formset.management_form }}
-                            <div id="answer-formset-container">
-                                {% for form in answer_formset %}
-                                <div class="formset-item">
-                                    <p>
-                                        <strong class="answer-number">Ответ #{{ forloop.counter }}</strong>
-                                        <span class="delete-row">Удалить</span>
-                                    </p>
-                                    {{ form.id }}
-                                    {% for field in form.hidden_fields %}
-                                    {{ field }}
-                                    {% endfor %}
-                                    {% for field in form.visible_fields %}
-                                    <p>
-                                        {{ field.label_tag }}
-                                        {{ field }}
-                                        {% if field.help_text %}
-                                        <span class="helptext">{{ field.help_text }}</span>
-                                        {% endif %}
-                                        {% for error in field.errors %}
-                                        <span class="errorlist">{{ error }}</span>
-                                        {% endfor %}
-                                    </p>
-                                    {% endfor %}
-                                </div>
-                                {% endfor %}
-                            </div>
-                            {# Скрытый шаблон для новой формы ответа #}
-                            <div id="answer-form-template" style="display: none;">
-                                <div class="formset-item">
-                                    <p>
-                                        <strong class="answer-number"></strong>
-                                        <span class="delete-row">Удалить</span>
-                                    </p>
-                                    {{ answer_formset.empty_form.id }}
-                                    {% for field in answer_formset.empty_form.hidden_fields %}
-                                    {{ field }}
-                                    {% endfor %}
-                                    {% for field in answer_formset.empty_form.visible_fields %}
-                                    <p>
-                                        {{ field.label_tag }}
-                                        {{ field }}
-                                    </p>
-                                    {% endfor %}
-                                </div>
-                            </div>
-                            <button type="button" class="btn mt-2 add-form-button" id="add-answer-form"><i
-                                    class="fas fa-plus"></i> Добавить еще ответ
-                            </button>
-                            <button type="submit" class="btn mt-2" id="save-blocks-btn"><i class="fas fa-save"></i>
-                                Сохранить блоки и перейти к урокам
-                            </button>
-                        </form>
+                <div class="form-section">
+                    <h4>Тест</h4>
+                    {% if lesson.test %}
+                    <div class="info-box"
+                         style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                        <div>К уроку уже привязан тест: <strong>{{ lesson.test.title }}</strong></div>
+                        <div style="display: flex; gap: 8px;">
+                            <a href="{% url 'admin:api_test_change' lesson.test.id %}" target="_blank"
+                               class="btn-action">
+                                <i class="fas fa-edit"></i> Редактировать
+                            </a>
+                            <form method="post"
+                                  action="{% url 'api:course-constructor' %}?step=4&subject_id={{ subject_id }}&block_id={{ block_id }}&lesson_id={{ lesson.id }}"
+                                  style="margin: 0;">
+                                {% csrf_token %}
+                                <button type="submit" name="unlink_test" class="btn-action btn-danger"
+                                        onclick="return confirm('Вы уверены, что хотите открепить этот тест от урока?');">
+                                    <i class="fas fa-unlink"></i> Открепить
+                                </button>
+                            </form>
+                        </div>
                     </div>
-                    <div class="form-section">
-                        <h4>Существующие вопросы</h4>
-                        <ul class="item-list">
-                            {% for question in questions %}
-                            <li>
-                                <span>{{ question.text }}</span>
-                                <a href="{% url 'admin:api_question_change' question.id %}" class="btn-select">Редактировать
-                                    <i class="fas fa-edit"></i></a>
-                            </li>
-                            {% empty %}
-                            <li>Нет созданных вопросов для этого теста.</li>
+                    {% else %}
+                    <form method="post"
+                          action="{% url 'api:course-constructor' %}?step=4&subject_id={{ subject_id }}&block_id={{ block_id }}&lesson_id={{ lesson.id }}"
+                          autocomplete="off">
+                        {% csrf_token %}
+                        <h5>Создать новый тест</h5>
+                        {% for field in test_form %}
+                        {% if field.is_hidden %}
+                        {{ field }}
+                        {% else %}
+                        <p>
+                            {{ field.label_tag }}
+                            {{ field }}
+                            {% if field.help_text %}
+                            <span class="helptext">{{ field.help_text }}</span>
+                            {% endif %}
+                            {% for error in field.errors %}
+                            <span class="errorlist">{{ error }}</span>
                             {% endfor %}
-                        </ul>
-                    </div>
+                        </p>
+                        {% endif %}
+                        {% endfor %}
+                        <button type="submit" name="submit_new_test" class="btn mt-2"><i class="fas fa-plus"></i>
+                            Создать и привязать
+                        </button>
+                    </form>
+                    <hr style="border-top: 1px solid var(--border); margin: 20px 0;">
+                    <form method="post"
+                          action="{% url 'api:course-constructor' %}?step=4&subject_id={{ subject_id }}&block_id={{ block_id }}&lesson_id={{ lesson.id }}"
+                          autocomplete="off">
+                        {% csrf_token %}
+                        <h5>Или выберите существующий</h5>
+                        <p>
+                            <label for="id_existing_test">Существующий тест:</label>
+                            <select name="existing_test" id="id_existing_test">
+                                {% for test_item in unassigned_tests %}
+                                <option value="{{ test_item.id }}">{{ test_item.title }}</option>
+                                {% empty %}
+                                <option value="">Нет доступных тестов</option>
+                                {% endfor %}
+                            </select>
+                        </p>
+                        <button type="submit" name="submit_existing_test" class="btn mt-2"><i
+                                class="fas fa-link"></i> Привязать существующий
+                        </button>
+                    </form>
+                    {% endif %}
                 </div>
-                <div class="mt-4 d-flex justify-content-between">
-                    <a href="{% url 'api:course-constructor' %}?step=4&subject_id={{ subject_id }}&block_id={{ block_id }}&lesson_id={{ lesson_id }}"
-                       class="btn btn-secondary"
-                       style="background:var(--surface);color:var(--t2);border-color:var(--border);"><i
-                            class="fas fa-arrow-left"></i> Назад к контенту</a>
-                    <a href="{% url 'admin:index' %}" class="btn btn-success"
-                       style="background:var(--green);border-color:var(--green);"><i class="fas fa-check-circle"></i>
-                        Завершить</a>
-                </div>
+            </div>
+            <div class="mt-4 d-flex justify-content-between">
+                <a href="{% url 'api:course-constructor' %}?step=3&subject_id={{ subject_id }}&block_id={{ block_id }}"
+                   class="btn btn-secondary"
+                   style="background:var(--surface);color:var(--t2);border-color:var(--border);"><i
+                        class="fas fa-arrow-left"></i> Назад к выбору урока</a>
+                {% if lesson.test %}
+                <a href="{% url 'api:course-constructor' %}?step=5&subject_id={{ subject_id }}&block_id={{ block_id }}&lesson_id={{ lesson.id }}"
+                   class="btn btn-primary"><i class="fas fa-arrow-right"></i> Перейти к вопросам</a>
+                {% else %}
+                <a href="{% url 'admin:index' %}" class="btn btn-success"
+                   style="background:var(--green);border-color:var(--green);"><i class="fas fa-check-circle"></i>
+                    Завершить</a>
                 {% endif %}
             </div>
+            {% elif current_step == 5 %}
+            <div class="slabel">Шаг 5: Добавьте вопросы и ответы к тесту "{{ test.title }}"</div>
+            <div class="form-grid">
+                <div class="form-section">
+                    <h4>Создать новый вопрос</h4>
+                    <form method="post"
+                          action="{% url 'api:course-constructor' %}?step=5&subject_id={{ subject_id }}&block_id={{ block_id }}&lesson_id={{ lesson_id }}"
+                          autocomplete="off">
+                        {% csrf_token %}
+                        {{ question_form.as_p }}
+
+                        <h5>Варианты ответов</h5>
+                        {{ answer_formset.management_form }}
+                        <div id="answer-formset-container">
+                            {% for form in answer_formset %}
+                            <div class="formset-item">
+                                <p>
+                                    <strong class="answer-number">Ответ #{{ forloop.counter }}</strong>
+                                    <span class="delete-row">Удалить</span>
+                                </p>
+                                {{ form.id }}
+                                {% for field in form.hidden_fields %}
+                                {{ field }}
+                                {% endfor %}
+                                {% for field in form.visible_fields %}
+                                <p>
+                                    {{ field.label_tag }}
+                                    {{ field }}
+                                    {% if field.help_text %}
+                                    <span class="helptext">{{ field.help_text }}</span>
+                                    {% endif %}
+                                    {% for error in field.errors %}
+                                    <span class="errorlist">{{ error }}</span>
+                                    {% endfor %}
+                                </p>
+                                {% endfor %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {# Скрытый шаблон для новой формы ответа #}
+                        <div id="answer-form-template" style="display: none;">
+                            <div class="formset-item">
+                                <p>
+                                    <strong class="answer-number"></strong>
+                                    <span class="delete-row">Удалить</span>
+                                </p>
+                                {{ answer_formset.empty_form.id }}
+                                {% for field in answer_formset.empty_form.hidden_fields %}
+                                {{ field }}
+                                {% endfor %}
+                                {% for field in answer_formset.empty_form.visible_fields %}
+                                <p>
+                                    {{ field.label_tag }}
+                                    {{ field }}
+                                </p>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <button type="button" class="btn mt-2 add-form-button" id="add-answer-form"><i
+                                class="fas fa-plus"></i> Добавить еще ответ
+                        </button>
+                        <button type="submit" class="btn mt-2" id="save-questions-btn"><i class="fas fa-save"></i>
+                            Сохранить вопрос
+                        </button>
+                    </form>
+                </div>
+                <div class="form-section">
+                    <h4>Существующие вопросы</h4>
+                    <ul class="item-list">
+                        {% for question in questions %}
+                        <li>
+                            <span>{{ question.text }}</span>
+                            <a href="{% url 'admin:api_question_change' question.id %}" class="btn-select">Редактировать
+                                <i class="fas fa-edit"></i></a>
+                        </li>
+                        {% empty %}
+                        <li>Нет созданных вопросов для этого теста.</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+            <div class="mt-4 d-flex justify-content-between">
+                <a href="{% url 'api:course-constructor' %}?step=4&subject_id={{ subject_id }}&block_id={{ block_id }}&lesson_id={{ lesson_id }}"
+                   class="btn btn-secondary"
+                   style="background:var(--surface);color:var(--t2);border-color:var(--border);"><i
+                        class="fas fa-arrow-left"></i> Назад к контенту</a>
+                <a href="{% url 'admin:index' %}" class="btn btn-success"
+                   style="background:var(--green);border-color:var(--green);"><i class="fas fa-check-circle"></i>
+                    Завершить</a>
+            </div>
+            {% endif %}
         </div>
     </div>
+</div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
 
-            // 1. ОСНОВНАЯ ФУНКЦИЯ СОЗДАНИЯ ФОРМСЕТОВ (Уже с автозаполнением позиций)
-            function setupFormset(containerId, addButtonId, templateId, prefix, existingCount) {
-                const container = document.getElementById(containerId);
-                const addButton = document.getElementById(addButtonId);
-                const template = document.getElementById(templateId);
-                const totalFormsInput = document.getElementById(`id_${prefix}-TOTAL_FORMS`);
+        // 1. ОСНОВНАЯ ФУНКЦИЯ СОЗДАНИЯ ФОРМСЕТОВ (Уже с автозаполнением позиций)
+        function setupFormset(containerId, addButtonId, templateId, prefix, existingCount) {
+            const container = document.getElementById(containerId);
+            const addButton = document.getElementById(addButtonId);
+            const template = document.getElementById(templateId);
+            const totalFormsInput = document.getElementById(`id_${prefix}-TOTAL_FORMS`);
 
-                if (!container || !addButton || !template || !totalFormsInput) return;
+            if (!container || !addButton || !template || !totalFormsInput) return;
 
-                function autoFillPosition() {
-                    const forms = container.querySelectorAll('.formset-item');
-                    let currentPos = existingCount || 0;
-                    forms.forEach(form => {
-                        if (form.style.display !== 'none') {
-                            const posInput = form.querySelector('input[name$="-position"]');
-                            if (posInput && (posInput.value === '' || posInput.value === '0')) {
-                                posInput.value = currentPos;
-                            }
-                            currentPos++;
+            function autoFillPosition() {
+                const forms = container.querySelectorAll('.formset-item');
+                let currentPos = existingCount || 0;
+                forms.forEach(form => {
+                    if (form.style.display !== 'none') {
+                        const posInput = form.querySelector('input[name$="-position"]');
+                        if (posInput && (posInput.value === '' || posInput.value === '0')) {
+                            posInput.value = currentPos;
                         }
-                    });
-                }
+                        currentPos++;
+                    }
+                });
+            }
+
+            updateIndexes();
+            autoFillPosition();
+
+            addButton.addEventListener('click', function() {
+                const newIndex = parseInt(totalFormsInput.value);
+                const newFormHtml = template.innerHTML.replace(/__prefix__/g, newIndex);
+
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = newFormHtml;
+                const newForm = tempDiv.firstElementChild;
+
+                newForm.querySelectorAll('input, textarea').forEach(input => {
+                    if (input.type === 'checkbox') input.checked = false;
+                    else input.value = '';
+                });
+
+                container.appendChild(newForm);
+                totalFormsInput.value = newIndex + 1;
 
                 updateIndexes();
                 autoFillPosition();
+            });
 
-                addButton.addEventListener('click', function() {
-                    const newIndex = parseInt(totalFormsInput.value);
-                    const newFormHtml = template.innerHTML.replace(/__prefix__/g, newIndex);
+            container.addEventListener('click', function(e) {
+                if (e.target && e.target.classList.contains('delete-row')) {
+                    const formToDelete = e.target.closest('.formset-item');
+                    if (!formToDelete) return;
 
-                    const tempDiv = document.createElement('div');
-                    tempDiv.innerHTML = newFormHtml;
-                    const newForm = tempDiv.firstElementChild;
-
-                    newForm.querySelectorAll('input, textarea').forEach(input => {
-                        if (input.type === 'checkbox') input.checked = false;
-                        else input.value = '';
-                    });
-
-                    container.appendChild(newForm);
-                    totalFormsInput.value = newIndex + 1;
+                    const deleteInput = formToDelete.querySelector(`input[name$="-DELETE"]`);
+                    if (deleteInput) {
+                        deleteInput.checked = true;
+                        formToDelete.style.display = 'none';
+                    } else {
+                        formToDelete.remove();
+                    }
 
                     updateIndexes();
                     autoFillPosition();
-                });
+                }
+            });
 
-                container.addEventListener('click', function(e) {
-                    if (e.target && e.target.classList.contains('delete-row')) {
-                        const formToDelete = e.target.closest('.formset-item');
-                        if (!formToDelete) return;
+            function updateIndexes() {
+                const forms = container.querySelectorAll('.formset-item');
+                let visibleFormCount = 0;
+                forms.forEach((form) => {
+                    if (form.style.display === 'none') return;
 
-                        const deleteInput = formToDelete.querySelector(`input[name$="-DELETE"]`);
-                        if (deleteInput) {
-                            deleteInput.checked = true;
-                            formToDelete.style.display = 'none';
-                        } else {
-                            formToDelete.remove();
+                    const numberElement = form.querySelector('h5, .answer-number');
+                    if (numberElement) {
+                        const labelBase = prefix === 'blocks' ? 'Блок' : (prefix === 'lessons' ? 'Урок' : 'Ответ');
+                        numberElement.innerHTML = `${labelBase} #${visibleFormCount + 1} <span class="delete-row" style="float:right;">Удалить</span>`;
+                    }
+
+                    form.querySelectorAll('[name]').forEach(input => {
+                        const newName = input.name.replace(new RegExp(`${prefix}-\\d+-`), `${prefix}-${visibleFormCount}-`);
+                        input.name = newName;
+                        input.id = `id_${newName}`;
+                    });
+                    form.querySelectorAll('label').forEach(label => {
+                        if(label.htmlFor) {
+                            label.htmlFor = label.htmlFor.replace(new RegExp(`${prefix}-\\d+-`), `${prefix}-${visibleFormCount}-`);
                         }
+                    });
+                    visibleFormCount++;
+                });
+                totalFormsInput.value = visibleFormCount;
+            }
+        }
 
-                        updateIndexes();
-                        autoFillPosition();
+        // 2. НОВАЯ ФУНКЦИЯ: БЛОКИРОВКА КНОПКИ СОХРАНЕНИЯ
+        function applySaveButtonBlocking(containerId, btnId, fieldSuffix) {
+            const container = document.getElementById(containerId);
+            const btn = document.getElementById(btnId);
+            if (!container || !btn) return;
+
+            function checkEmpty() {
+                let hasValue = false;
+                // Ищем все поля ввода названий (-title) внутри контейнера
+                const inputs = container.querySelectorAll(`input[name$="${fieldSuffix}"]`);
+                inputs.forEach(input => {
+                    // Игнорируем скрытый шаблон (__prefix__) и удаленные строки (display: none)
+                    if (!input.name.includes('__prefix__') && input.closest('.formset-item').style.display !== 'none') {
+                        if (input.value.trim() !== '') {
+                            hasValue = true; // Нашли хотя бы одно заполненное поле
+                        }
                     }
                 });
 
-                function updateIndexes() {
-                    const forms = container.querySelectorAll('.formset-item');
-                    let visibleFormCount = 0;
-                    forms.forEach((form) => {
-                        if (form.style.display === 'none') return;
-
-                        const numberElement = form.querySelector('h5, .answer-number');
-                        if (numberElement) {
-                            const labelBase = prefix === 'blocks' ? 'Блок' : (prefix === 'lessons' ? 'Урок' : 'Ответ');
-                            numberElement.innerHTML = `${labelBase} #${visibleFormCount + 1} <span class="delete-row" style="float:right;">Удалить</span>`;
-                        }
-
-                        form.querySelectorAll('[name]').forEach(input => {
-                            const newName = input.name.replace(new RegExp(`${prefix}-\\d+-`), `${prefix}-${visibleFormCount}-`);
-                            input.name = newName;
-                            input.id = `id_${newName}`;
-                        });
-                        form.querySelectorAll('label').forEach(label => {
-                            if(label.htmlFor) {
-                                label.htmlFor = label.htmlFor.replace(new RegExp(`${prefix}-\\d+-`), `${prefix}-${visibleFormCount}-`);
-                            }
-                        });
-                        visibleFormCount++;
-                    });
-                    totalFormsInput.value = visibleFormCount;
+                // Включаем или выключаем кнопку
+                if (hasValue) {
+                    btn.disabled = false;
+                    btn.style.opacity = '1';
+                    btn.style.cursor = 'pointer';
+                } else {
+                    btn.disabled = true;
+                    btn.style.opacity = '0.5';
+                    btn.style.cursor = 'not-allowed';
                 }
             }
 
-            // 2. НОВАЯ ФУНКЦИЯ: БЛОКИРОВКА КНОПКИ СОХРАНЕНИЯ
-            function applySaveButtonBlocking(containerId, btnId, fieldSuffix) {
-                const container = document.getElementById(containerId);
-                const btn = document.getElementById(btnId);
-                if (!container || !btn) return;
+            // Проверяем при загрузке страницы
+            checkEmpty();
 
-                function checkEmpty() {
-                    let hasValue = false;
-                    // Ищем все поля ввода названий (-title) внутри контейнера
-                    const inputs = container.querySelectorAll(`input[name$="${fieldSuffix}"]`);
-                    inputs.forEach(input => {
-                        // Игнорируем скрытый шаблон (__prefix__) и удаленные строки (display: none)
-                        if (!input.name.includes('__prefix__') && input.closest('.formset-item').style.display !== 'none') {
-                            if (input.value.trim() !== '') {
-                                hasValue = true; // Нашли хотя бы одно заполненное поле
-                            }
-                        }
-                    });
+            // Проверяем при каждом вводе текста (в реальном времени)
+            container.addEventListener('input', checkEmpty);
 
-                    // Включаем или выключаем кнопку
-                    if (hasValue) {
-                        btn.disabled = false;
-                        btn.style.opacity = '1';
-                        btn.style.cursor = 'pointer';
+            // Проверяем при добавлении новых форм или удалении старых
+            document.addEventListener('click', function(e) {
+                if (e.target && (e.target.id === 'add-block-form' || e.target.id === 'add-lesson-form' || e.target.classList.contains('delete-row'))) {
+                    setTimeout(checkEmpty, 50); // Небольшая задержка, чтобы DOM успел обновиться
+                }
+            });
+        }
+
+        // 3. ИНИЦИАЛИЗАЦИЯ
+        const currentStep = new URLSearchParams(window.location.search).get('step');
+        const existingBlocksCount = parseInt('{{ blocks|length|default:0 }}') || 0;
+        const existingLessonsCount = parseInt('{{ lessons|length|default:0 }}') || 0;
+
+        if (currentStep === '2') {
+            setupFormset('block-formset-container', 'add-block-form', 'block-form-template', 'blocks', existingBlocksCount);
+            // Включаем защиту кнопки для блоков
+            applySaveButtonBlocking('block-formset-container', 'save-blocks-btn', '-title');
+        } else if (currentStep === '3') {
+            setupFormset('lesson-formset-container', 'add-lesson-form', 'lesson-form-template', 'lessons', existingLessonsCount);
+            // Включаем защиту кнопки для уроков
+            applySaveButtonBlocking('lesson-formset-container', 'save-lessons-btn', '-title');
+        } else if (currentStep === '5') {
+            setupFormset('answer-formset-container', 'add-answer-form', 'answer-form-template', 'answers', 0);
+        }
+
+        // 4. ЛОГИКА ПЕРЕКЛЮЧЕНИЯ ИСТОЧНИКА ВИДЕО
+        const sourceBtns = document.querySelectorAll('.source-btn');
+        if (sourceBtns.length > 0) {
+            sourceBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    // Сбрасываем активные классы
+                    document.querySelectorAll('.source-btn').forEach(b => b.classList.remove('active'));
+                    document.querySelectorAll('.source-panel').forEach(p => p.classList.remove('active'));
+
+                    // Активируем нужную вкладку
+                    this.classList.add('active');
+                    const targetId = this.getAttribute('data-target');
+                    document.getElementById(targetId).classList.add('active');
+
+                    // Очищаем значение скрытого поля, чтобы оно не отправилось на сервер
+                    const fileInput = document.querySelector('input[type="file"][name="video_file"]');
+                    const linkInput = document.querySelector('input[type="url"][name="link"], input[type="text"][name="link"]');
+
+                    if (targetId === 'panel-file') {
+                        if (linkInput) linkInput.value = '';
                     } else {
-                        btn.disabled = true;
-                        btn.style.opacity = '0.5';
-                        btn.style.cursor = 'not-allowed';
-                    }
-                }
-
-                // Проверяем при загрузке страницы
-                checkEmpty();
-
-                // Проверяем при каждом вводе текста (в реальном времени)
-                container.addEventListener('input', checkEmpty);
-
-                // Проверяем при добавлении новых форм или удалении старых
-                document.addEventListener('click', function(e) {
-                    if (e.target && (e.target.id === 'add-block-form' || e.target.id === 'add-lesson-form' || e.target.classList.contains('delete-row'))) {
-                        setTimeout(checkEmpty, 50); // Небольшая задержка, чтобы DOM успел обновиться
+                        if (fileInput) fileInput.value = '';
                     }
                 });
-            }
-
-            // 3. ИНИЦИАЛИЗАЦИЯ
-            const currentStep = new URLSearchParams(window.location.search).get('step');
-            const existingBlocksCount = parseInt('{{ blocks|length|default:0 }}') || 0;
-            const existingLessonsCount = parseInt('{{ lessons|length|default:0 }}') || 0;
-
-            if (currentStep === '2') {
-                setupFormset('block-formset-container', 'add-block-form', 'block-form-template', 'blocks', existingBlocksCount);
-                // Включаем защиту кнопки для блоков
-                applySaveButtonBlocking('block-formset-container', 'save-blocks-btn', '-title');
-            } else if (currentStep === '3') {
-                setupFormset('lesson-formset-container', 'add-lesson-form', 'lesson-form-template', 'lessons', existingLessonsCount);
-                // Включаем защиту кнопки для уроков
-                applySaveButtonBlocking('lesson-formset-container', 'save-lessons-btn', '-title');
-            } else if (currentStep === '5') {
-                setupFormset('answer-formset-container', 'add-answer-form', 'answer-form-template', 'answers', 0);
-            }
-        });
-    </script>
-    {% endblock %}
+            });
+        }
+    });
+</script>
+{% endblock %}
