@@ -153,7 +153,7 @@
                 <div class="form-grid">
                     <div class="form-section">
                         <h4>Создать новый предмет</h4>
-                        <form method="post" action="{% url 'api:course-constructor' %}?step=1">
+                        <form method="post" action="{% url 'api:course-constructor' %}?step=1" autocomplete="off">
                             {% csrf_token %}
                             {{ form.as_p }}
                             <button type="submit" class="btn mt-2"><i class="fas fa-plus"></i> Создать и перейти к блокам</button>
