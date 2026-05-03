@@ -9,6 +9,23 @@
 <link href="https://fonts.googleapis.com/css2?family=Onest:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
       rel="stylesheet">
 <style>
+    /* Красивое поле выбора файла */
+        input[type="file"] {
+            display: block;
+            width: 100%;
+            padding: 10px 14px;
+            background: #fff;
+            border: 1px dashed var(--border);
+            border-radius: var(--r2);
+            color: var(--t2);
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        input[type="file"]:hover {
+            border-color: var(--pr);
+            background: #f8fafc;
+        }
     :root{
       --pr:#2563EB;--pr-d:#1D4ED8;--pr-l:#EFF6FF;
       --teal:#0EA5E9;--teal-l:#F0F9FF;
@@ -460,7 +477,9 @@
                             </div>
                             <div id="panel-file-edit"
                                  class="source-panel {% if lesson.video.video_file %}active{% endif %}">
-                                {{ video_form.video_file }}
+                                <div id="django-file-wrapper">
+                                    {{ video_form.video_file }}
+                                </div>
                                 {% if video_form.video_file.errors %}{{ video_form.video_file.errors }}{% endif %}
                             </div>
                             <div id="panel-link-edit"
@@ -1037,6 +1056,46 @@
                 });
             });
         }
+        // 5. ПРЕОБРАЗОВАНИЕ ДЕФОЛТНОГО ПОЛЯ ФАЙЛА В КРАСИВУЮ КАРТОЧКУ
+            const fileWrapper = document.getElementById('django-file-wrapper');
+            if (fileWrapper) {
+                const link = fileWrapper.querySelector('a');
+                const checkbox = fileWrapper.querySelector('input[type="checkbox"]');
+                const fileInput = fileWrapper.querySelector('input[type="file"]');
+
+                if (link && checkbox && fileInput) {
+                    const fileUrl = link.href;
+                    let fileName = link.textContent.trim();
+
+                    // Делаем длинное имя файла с датами более коротким и читаемым
+                    if (fileName.includes('/')) {
+                        fileName = fileName.split('/').pop();
+                    }
+
+                    // Полностью перерисовываем структуру, сохраняя при этом логику работы Django
+                    fileWrapper.innerHTML = `
+                        <div style="display: flex; align-items: center; justify-content: space-between; background: #eff6ff; padding: 12px 16px; border-radius: var(--r2); margin-bottom: 12px; border: 1px solid #bfdbfe;">
+                            <div style="display: flex; align-items: center; gap: 10px; overflow: hidden; margin-right: 15px;">
+                                <div style="background: var(--pr); color: #fff; width: 32px; height: 32px; border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                    <i class="fas fa-file-video"></i>
+                                </div>
+                                <div style="display: flex; flex-direction: column; overflow: hidden;">
+                                    <span style="font-size: 11px; color: var(--pr); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Текущий файл</span>
+                                    <a href="${fileUrl}" target="_blank" style="color: var(--t1); font-weight: 600; text-decoration: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 13px;" title="${fileName}">${fileName}</a>
+                                </div>
+                            </div>
+                            <label style="display: flex; align-items: center; gap: 6px; color: var(--rose); font-size: 12px; font-weight: 600; cursor: pointer; margin: 0; background: #fff; padding: 6px 12px; border-radius: 30px; border: 1px solid #fda4af; flex-shrink: 0; transition: all 0.2s;" onmouseover="this.style.background='var(--rose-l)'" onmouseout="this.style.background='#fff'">
+                                <input type="checkbox" name="${checkbox.name}" id="${checkbox.id}" style="margin: 0; accent-color: var(--rose); cursor: pointer;">
+                                Удалить
+                            </label>
+                        </div>
+                        <div style="font-size: 12px; color: var(--t2); margin-bottom: 8px; font-weight: 500;">Загрузите другой файл, если хотите его заменить:</div>
+                    `;
+
+                    // Возвращаем само поле загрузки файла обратно в DOM
+                    fileWrapper.appendChild(fileInput);
+                }
+            }
     });
 </script>
 {% endblock %}
