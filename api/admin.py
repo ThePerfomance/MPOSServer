@@ -758,43 +758,86 @@ _orig_app_index = _AdminSite.app_index
 def _custom_index(self, request, extra_context=None):
     extra_context = extra_context or {}
     try:
-        from .models import Subject, Test, User, TestResult, Block, Lesson, Video
-        extra_context['subjects_count'] = Subject.objects.count()
-        extra_context['tests_count'] = Test.objects.count()
-        extra_context['students_count'] = User.objects.filter(role='student').count()
-        extra_context['results_count'] = TestResult.objects.count()
-        extra_context['blocks_count'] = Block.objects.count()
-        extra_context['lessons_count'] = Lesson.objects.count()
-        extra_context['videos_count'] = Video.objects.count()
+        from django.db.models import Q
+        from .models import Subject, Test, User, TestResult, Block, Lesson, Video, Group
 
-        extra_context['recent_results'] = TestResult.objects.select_related('user', 'test').order_by('-completed_at')[
-                                          :8]
-        extra_context['subjects_tree'] = Subject.objects.prefetch_related('blocks__lessons__video',
-                                                                          'blocks__final_test').all()
-        extra_context['recent_students'] = User.objects.filter(role='student').order_by('-id')[:6]
+        user = request.user
+        is_adm = getattr(user, 'role', '') == 'admin'
+
+        if is_adm:
+            # Администратор видит вообще всю статистику
+            subjects_qs = Subject.objects.all()
+            tests_qs = Test.objects.all()
+            students_qs = User.objects.filter(role='student')
+            results_qs = TestResult.objects.all()
+            blocks_qs = Block.objects.all()
+            lessons_qs = Lesson.objects.all()
+            videos_qs = Video.objects.all()
+        else:
+            # 1. Получаем группы, к которым привязан преподаватель
+            teacher_groups = Group.objects.filter(group_teachers__teacher=user)
+
+            # 2. Студенты только из этих групп
+            students_qs = User.objects.filter(
+                role='student',
+                memberships__group__in=teacher_groups
+            ).distinct()
+
+            # 3. Предметы: привязанные к группам преподавателя ИЛИ созданные им лично
+            subjects_qs = Subject.objects.filter(
+                Q(subject_groups__group__in=teacher_groups) |
+                Q(creator=user)
+            ).distinct()
+
+            # 4. Блоки и уроки только из доступных предметов
+            blocks_qs = Block.objects.filter(subject__in=subjects_qs)
+            lessons_qs = Lesson.objects.filter(block__subject__in=subjects_qs)
+
+            # 5. Тесты, относящиеся к доступным предметам ИЛИ созданные преподавателем
+            tests_qs = Test.objects.filter(
+                Q(lesson_for__block__subject__in=subjects_qs) |
+                Q(final_block_of__subject__in=subjects_qs) |
+                Q(creator=user)
+            ).distinct()
+
+            # 6. Результаты: только от студентов его групп и только по доступным тестам
+            results_qs = TestResult.objects.filter(
+                user__in=students_qs,
+                test__in=tests_qs
+            )
+
+            # 7. Видео, привязанные к его предметам ИЛИ загруженные им лично
+            videos_qs = Video.objects.filter(
+                Q(creator=user) |
+                Q(lessons__block__subject__in=subjects_qs)
+            ).distinct()
+
+        # Заполняем контекст для шаблона index.html
+        extra_context['subjects_count'] = subjects_qs.count()
+        extra_context['tests_count'] = tests_qs.count()
+        extra_context['students_count'] = students_qs.count()
+        extra_context['results_count'] = results_qs.count()
+        extra_context['blocks_count'] = blocks_qs.count()
+        extra_context['lessons_count'] = lessons_qs.count()
+        extra_context['videos_count'] = videos_qs.count()
+
+        # Последние результаты (только разрешенные)
+        extra_context['recent_results'] = results_qs.select_related('user', 'test').order_by('-completed_at')[:8]
+
+        # Дерево предметов (используем prefetch_related, чтобы избежать десятков лишних SQL-запросов)
+        extra_context['subjects_tree'] = subjects_qs.prefetch_related(
+            'blocks__lessons__video',
+            'blocks__final_test'
+        )
+
+        # Последние студенты (только из его групп)
+        extra_context['recent_students'] = students_qs.order_by('-id')[:6]
+
     except Exception as e:
-        if settings.DEBUG: raise
+        if settings.DEBUG:
+            raise
         logger.error("Ошибка при формировании дашборда: %s", e)
 
     return _orig_index(self, request, extra_context=extra_context)
 
-
-def _custom_app_index(self, request, app_label, extra_context=None):
-    if app_label == 'api':
-        return redirect('admin:index')
-    return _orig_app_index(self, request, app_label, extra_context)
-
-# --- ПЕРЕХВАТ ДОСТУПА К АДМИНКЕ БЕЗ IS_STAFF ---
-def _custom_has_permission(self, request):
-    """
-    Разрешаем доступ в админку, если пользователь активен И
-    (является персоналом ИЛИ у него роль teacher/admin)
-    """
-    if not request.user.is_active:
-        return False
-    return request.user.is_staff or getattr(request.user, 'role', '') in ['teacher', 'admin']
-
-_AdminSite.has_permission = _custom_has_permission
-
 _AdminSite.index = _custom_index
-_AdminSite.app_index = _custom_app_index
