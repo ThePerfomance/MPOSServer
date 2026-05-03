@@ -4,65 +4,84 @@
 {% block extrahead %}
 {{ block.super }}
 <style>
-    /* ── Скрываем пустой раздел Authentication (auth.Group) ── */
+    /* 1. МАКСИМАЛЬНО ЖЕСТКОЕ СКРЫТИЕ ПОИСКА JAZZMIN */
+    /* Скрываем саму форму, контейнер поиска и обертку в навигации */
+    .navbar-search,
+    #navbar-search,
+    .form-inline,
+    [action*="search"],
+    .main-header .navbar-nav:not(.ml-auto) {
+        display: none !important;
+        visibility: hidden !important;
+        width: 0 !important;
+        overflow: hidden !important;
+    }
+
+    /* 2. Скрываем пустой раздел Authentication */
     .app-auth { display: none !important; }
 
-    /* ── Цветовые метки ролей ── */
-    .role-admin   { color: #dc3545; font-weight: 700; }
-    .role-teacher { color: #28a745; font-weight: 700; }
-    .role-student { color: #007bff; }
-
-    /* ── Визуальный разделитель между группами в sidebar (для админа) ── */
-    .nav-item a[href*="api_subject"] .nav-icon::before,
-    .nav-sidebar .nav-item a[href*="subject"] {
-        margin-top: 8px;
-        border-top: 1px solid rgba(255,255,255,.12);
-        padding-top: 8px;
-    }
-    .nav-item a[href*="api_user"] { margin-top: 4px; }
-    .nav-item a[href*="api_video"]:not([href*="type"]) { margin-top: 4px; }
-    .nav-item a[href*="api_testresult"] { margin-top: 4px; }
-    .card-header { font-weight: 600; }
-    .content-header h1 { font-size: 1.4rem; }
-
-    /* ── Стили для наших новых кастомных кнопок ── */
-    .nav-btn-custom {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        padding: 6px 18px !important;
-        margin-top: 6px;
-        margin-left: 10px;
-        border-radius: 20px;
-        font-weight: 600;
-        font-size: 13px;
-        transition: all 0.2s;
-        text-decoration: none !important;
-    }
-    .btn-home { background: rgba(102,126,234,0.1); color: #667eea !important; border: 1px solid rgba(102,126,234,0.2); }
-    .btn-home:hover { background: rgba(102,126,234,0.2); }
-    .btn-logout { background: rgba(244,63,94,0.1); color: #f43f5e !important; border: 1px solid rgba(244,63,94,0.2); }
-    .btn-logout:hover { background: rgba(244,63,94,0.2); }
-
+    /* 3. Очистка для преподавателя: скрываем сайдбар и лишние отступы */
     {% if user.role == 'teacher' %}
-    /* ═════════════════════════════════════════════════════════════════════════ */
-    /* ░░░░░ МИНИМАЛИСТИЧНЫЙ ИНТЕРФЕЙС ПРЕПОДАВАТЕЛЯ (РЕЖИМ ПЕСОЧНИЦЫ) ░░░░░ */
-    /* ═════════════════════════════════════════════════════════════════════════ */
-
-    /* 1. Скрываем левое боковое меню и растягиваем контент */
-    aside.main-sidebar { display: none !important; }
-    .content-wrapper, .main-header, .main-footer { margin-left: 0 !important; }
-
-    /* 2. Скрываем левую часть верхнего меню (Гамбургер, ссылки) */
-    ul.navbar-nav:not(.ml-auto) { display: none !important; }
-
-    /* 3. Гарантированно глушим поиск и стандартную иконку пользователя */
-    form.form-inline, #navbar-search, input[name="q"], li.user-menu { display: none !important; }
-
-    /* 4. Убираем хлебные крошки */
-    .content-header .breadcrumb { display: none !important; }
+        aside.main-sidebar { display: none !important; }
+        .content-wrapper, .main-header, .main-footer { margin-left: 0 !important; }
     {% endif %}
+
+    /* Стили для кнопки "На главную" и имени пользователя */
+    .btn-to-home {
+        background: #f1f5f9;
+        color: #475569 !important;
+        border: 1px solid #e2e8f0;
+        padding: 5px 14px !important;
+        border-radius: 6px;
+        font-weight: 500;
+        font-size: 13px;
+        margin-left: 12px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .user-display-name {
+        font-size: 14px;
+        color: #64748b;
+        margin-left: 8px;
+        font-weight: 500;
+    }
 </style>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    // Принудительное удаление элементов поиска через JS, если CSS не справился
+    const searchSelectors = ['.navbar-search', '#navbar-search', '.form-inline'];
+    searchSelectors.forEach(sel => {
+        const el = document.querySelector(sel);
+        if (el) el.remove();
+    });
+
+    const rightNav = document.querySelector('.main-header .navbar-nav.ml-auto');
+    if (rightNav) {
+        // Добавляем имя к существующей серой иконке
+        const userMenuLink = rightNav.querySelector('.user-menu a.nav-link');
+        if (userMenuLink && !document.querySelector('.user-display-name')) {
+            const nameSpan = document.createElement('span');
+            nameSpan.className = 'user-display-name';
+            nameSpan.innerText = "{{ user.firstname|default:user.email }}";
+            userMenuLink.appendChild(nameSpan);
+        }
+
+        // Добавляем кнопку "На главную" в конец
+        if (!document.querySelector('.btn-to-home')) {
+            const homeLi = document.createElement('li');
+            homeLi.className = 'nav-item d-flex align-items-center';
+            homeLi.innerHTML = `
+                <a href="{% url 'admin:index' %}" class="btn-to-home">
+                    <i class="fas fa-home"></i> На главную
+                </a>
+            `;
+            rightNav.appendChild(homeLi);
+        }
+    }
+});
+</script>
 {% endblock %}
 
 {% block branding %}
@@ -72,35 +91,4 @@
         {% trans 'Учебная платформа' %}
     </span>
 </a>
-{% endblock %}
-
-{% block welcome-msg %}
-    {% if user.role == 'admin' %}
-        <span class="role-admin"><i class="fas fa-shield-alt"></i> Администратор</span>
-    {% elif user.role == 'teacher' %}
-        <span class="role-teacher"><i class="fas fa-chalkboard-teacher"></i> Преподаватель</span>
-    {% else %}
-        <span class="role-student"><i class="fas fa-user-graduate"></i> {{ user.get_full_name|default:user.email }}</span>
-    {% endif %}
-{% endblock %}
-
-{# ── ПЕРЕОПРЕДЕЛЯЕМ ПРАВУЮ ЧАСТЬ ШАПКИ ── #}
-{% block top_nav_right %}
-    {% if user.role == 'teacher' %}
-        <li class="nav-item">
-            <a href="{% url 'admin:index' %}" class="nav-btn-custom btn-home">
-                <i class="fas fa-home"></i> На главную
-            </a>
-        </li>
-        <li class="nav-item" style="margin-right: 15px;">
-            <a href="{% url 'admin:logout' %}" class="nav-btn-custom btn-logout">
-                <i class="fas fa-sign-out-alt"></i> Выйти
-            </a>
-        </li>
-    {% else %}
-        <li class="nav-item d-none d-sm-inline-block">
-            <a href="{% url 'admin:api_testresult_changelist' %}" class="nav-link"><i class="fas fa-chart-bar"></i> Результаты</a>
-        </li>
-        {{ block.super }}
-    {% endif %}
 {% endblock %}

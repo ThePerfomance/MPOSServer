@@ -1284,21 +1284,48 @@ def course_constructor_view(request):
         else:
             context['subjects'] = Subject.objects.all()
 
+
     elif current_step == 2:
+
         if not subject_id: return redirect(base_url + '?step=1')
+
         if request.method == 'POST':
+
             formset = BlockFormSet(request.POST, prefix='blocks')
+
             if formset.is_valid():
+
                 for form in formset:
-                    if form.has_changed():
+
+                    # Убеждаемся, что форма реально заполнена (есть заголовок)
+
+                    if form.has_changed() and form.cleaned_data.get('title'):
                         block_instance = form.save(commit=False)
+
                         block_instance.subject = subject
+
                         block_instance.save()
-                return redirect(base_url + f'?step=3&subject_id={subject.id}')
+
+                # ИСПРАВЛЕНИЕ: Проверяем, есть ли теперь блоки у предмета
+
+                if Block.objects.filter(subject=subject).exists():
+
+                    return redirect(base_url + f'?step=3&subject_id={subject.id}')
+
+                else:
+
+                    # Если ни одного блока нет, не пускаем дальше
+
+                    context['error_message'] = "Пожалуйста, заполните название хотя бы одного блока, чтобы продолжить."
+
             else:
+
                 context['formset'] = formset
+
         else:
+
             context['formset'] = BlockFormSet(prefix='blocks')
+
         context['blocks'] = Block.objects.filter(subject=subject)
 
     elif current_step == 3:
@@ -1318,7 +1345,10 @@ def course_constructor_view(request):
                         lesson_instance = form.save(commit=False)
                         lesson_instance.block = block
                         lesson_instance.save()
-                return redirect(base_url + f'?step=3&subject_id={subject.id}&block_id={block.id}')
+                if Lesson.objects.filter(block=block).exists():
+                    return redirect(base_url + f'?step=3&subject_id={subject.id}&block_id={block.id}')
+                else:
+                    context['error_message'] = "Пожалуйста, заполните название хотя бы одного урока, чтобы продолжить."
             else:
                 context['formset'] = formset
         else:
