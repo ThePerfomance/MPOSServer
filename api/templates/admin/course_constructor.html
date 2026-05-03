@@ -183,7 +183,7 @@
                 <div class="form-grid">
                     <div class="form-section">
                         <h4>Создать новые блоки</h4>
-                        <form method="post" action="{% url 'api:course-constructor' %}?step=2&subject_id={{ subject_id }}" id="block-formset-form">
+                        <form method="post" action="{% url 'api:course-constructor' %}?step=2&subject_id={{ subject_id }}" id="block-formset-form" autocomplete="off">
                             {% csrf_token %}
                             {{ formset.management_form }}
                             <div id="block-formset-container">
@@ -248,7 +248,7 @@
                     <div class="form-grid">
                         <div class="form-section">
                             <h4>Создать новые уроки</h4>
-                            <form method="post" action="{% url 'api:course-constructor' %}?step=3&subject_id={{ subject_id }}&block_id={{ block_id }}" id="lesson-formset-form">
+                            <form method="post" action="{% url 'api:course-constructor' %}?step=3&subject_id={{ subject_id }}&block_id={{ block_id }}" id="lesson-formset-form" autocomplete="off">
                                 {% csrf_token %}
                                 {{ formset.management_form }}
                                 <div id="lesson-formset-container">
@@ -300,7 +300,7 @@
                         {% if lesson.video %}
                             <div class="info-box">К уроку уже привязано видео: <a href="{% url 'admin:api_video_change' lesson.video.id %}">{{ lesson.video.name }}</a></div>
                         {% else %}
-                            <form method="post" action="{% url 'api:course-constructor' %}?step=4&subject_id={{ subject_id }}&block_id={{ block_id }}&lesson_id={{ lesson.id }}" enctype="multipart/form-data">
+                            <form method="post" action="{% url 'api:course-constructor' %}?step=4&subject_id={{ subject_id }}&block_id={{ block_id }}&lesson_id={{ lesson.id }}" enctype="multipart/form-data" autocomplete="off">
                                 {% csrf_token %}
                                 <h5>Создать новое видео</h5>
                                 {% for field in video_form %}
@@ -322,7 +322,7 @@
                                 <button type="submit" name="submit_new_video" class="btn mt-2"><i class="fas fa-plus"></i> Создать и привязать</button>
                             </form>
                             <hr style="border-top: 1px solid var(--border); margin: 20px 0;">
-                            <form method="post" action="{% url 'api:course-constructor' %}?step=4&subject_id={{ subject_id }}&block_id={{ block_id }}&lesson_id={{ lesson.id }}">
+                            <form method="post" action="{% url 'api:course-constructor' %}?step=4&subject_id={{ subject_id }}&block_id={{ block_id }}&lesson_id={{ lesson.id }}" autocomplete="off">
                                 {% csrf_token %}
                                 <h5>Или выберите существующее</h5>
                                 <p>
@@ -344,7 +344,7 @@
                         {% if lesson.test %}
                             <div class="info-box">К уроку уже привязан тест: <a href="{% url 'admin:api_test_change' lesson.test.id %}">{{ lesson.test.title }}</a></div>
                         {% else %}
-                            <form method="post" action="{% url 'api:course-constructor' %}?step=4&subject_id={{ subject_id }}&block_id={{ block_id }}&lesson_id={{ lesson.id }}">
+                            <form method="post" action="{% url 'api:course-constructor' %}?step=4&subject_id={{ subject_id }}&block_id={{ block_id }}&lesson_id={{ lesson.id }}" autocomplete="off">
                                 {% csrf_token %}
                                 <h5>Создать новый тест</h5>
                                 {% for field in test_form %}
@@ -366,7 +366,7 @@
                                 <button type="submit" name="submit_new_test" class="btn mt-2"><i class="fas fa-plus"></i> Создать и привязать</button>
                             </form>
                             <hr style="border-top: 1px solid var(--border); margin: 20px 0;">
-                            <form method="post" action="{% url 'api:course-constructor' %}?step=4&subject_id={{ subject_id }}&block_id={{ block_id }}&lesson_id={{ lesson.id }}">
+                            <form method="post" action="{% url 'api:course-constructor' %}?step=4&subject_id={{ subject_id }}&block_id={{ block_id }}&lesson_id={{ lesson.id }}" autocomplete="off">
                                 {% csrf_token %}
                                 <h5>Или выберите существующий</h5>
                                 <p>
@@ -397,7 +397,7 @@
                 <div class="form-grid">
                     <div class="form-section">
                         <h4>Создать новый вопрос</h4>
-                        <form method="post" action="{% url 'api:course-constructor' %}?step=5&subject_id={{ subject_id }}&block_id={{ block_id }}&lesson_id={{ lesson.id }}">
+                        <form method="post" action="{% url 'api:course-constructor' %}?step=5&subject_id={{ subject_id }}&block_id={{ block_id }}&lesson_id={{ lesson_id }}" autocomplete="off">
                             {% csrf_token %}
                             {{ question_form.as_p }}
 
