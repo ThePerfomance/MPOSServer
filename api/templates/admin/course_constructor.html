@@ -308,6 +308,13 @@
             <!-- Содержимое шага -->
             {% if current_step == 1 %}
             <div class="slabel">Шаг 1: Создайте или выберите предмет</div>
+
+            <div class="info-box" style="display: flex; gap: 12px; align-items: flex-start; margin-bottom: 25px;">
+                <i class="fas fa-lightbulb" style="margin-top: 2px; font-size: 16px; color: var(--pr);"></i>
+                <div>
+                    <strong>Совет:</strong> Предмет — это главная «обертка» вашего курса (например, «Компьютерные сети» или «Алгебра 9 класс»). После его создания вы сможете разбить курс на тематические блоки.
+                </div>
+            </div>
             <div class="form-grid">
                 <div class="form-section">
                     <h4>Создать новый предмет</h4>
@@ -340,6 +347,12 @@
                 <i class="fas fa-exclamation-triangle"></i> {{ error_message }}
             </div>
             {% endif %}
+            <div class="info-box" style="display: flex; gap: 12px; align-items: flex-start; margin-bottom: 25px;">
+                <i class="fas fa-lightbulb" style="margin-top: 2px; font-size: 16px; color: var(--pr);"></i>
+                <div>
+                    <strong>Совет:</strong> Блоки помогают структурировать предмет (например, разбить его по главам или четвертям). Используйте поле <strong>«Позиция»</strong>, чтобы задать правильный порядок их отображения.
+                </div>
+            </div>
             <div class="form-grid">
                 <div class="form-section">
                     <h4>Создать новые блоки</h4>
@@ -408,6 +421,12 @@
             {% elif current_step == 3 %}
             {% if blocks_to_select %}
             <div class="slabel">Шаг 3: Выберите блок для предмета "{{ selected_items|get_item:subject_id }}"</div>
+            <div class="info-box" style="display: flex; gap: 12px; align-items: flex-start; margin-bottom: 25px;">
+                <i class="fas fa-lightbulb" style="margin-top: 2px; font-size: 16px; color: var(--pr);"></i>
+                <div>
+                    <strong>Совет:</strong> Выберите блок из списка ниже, в который вы хотите добавить новые уроки.
+                </div>
+            </div>
             <div class="form-grid">
                 <div class="form-section full-width">
                     <h4>Выберите один из существующих блоков</h4>
@@ -428,6 +447,12 @@
                     class="fas fa-arrow-left"></i> Назад к выбору блока</a>
             {% else %}
             <div class="slabel">Шаг 3: Создайте или выберите урок для блока "{{ selected_items|get_item:block_id }}"</div>
+            <div class="info-box" style="display: flex; gap: 12px; align-items: flex-start; margin-bottom: 25px;">
+                <i class="fas fa-lightbulb" style="margin-top: 2px; font-size: 16px; color: var(--pr);"></i>
+                <div>
+                    <strong>Совет:</strong> Внутри блоков находятся конкретные темы занятий. На этом этапе мы создаем только "каркас" (названия уроков). Прикрепить видео и тесты можно будет на следующем этапе.
+                </div>
+            </div>
             <div class="form-grid">
                 <div class="form-section">
                     <h4>Создать новые уроки</h4>
@@ -501,6 +526,12 @@
             {% endif %}
             {% elif current_step == 4 %}
             <div class="slabel">Шаг 4: Добавьте контент к уроку "{{ selected_items|get_item:lesson_id }}"</div>
+            <div class="info-box" style="display: flex; gap: 12px; align-items: flex-start; margin-bottom: 25px;">
+                <i class="fas fa-lightbulb" style="margin-top: 2px; font-size: 16px; color: var(--pr);"></i>
+                <div>
+                    <strong>Совет:</strong> Здесь вы наполняете урок материалами: привязываете видеолекцию и проверочный тест. Для видео можно загрузить файл напрямую или указать ссылку на YouTube/Rutube/VK Видео. Видео у урока может не быть, как и теста
+                </div>
+            </div>
             <div class="form-grid">
                 <div class="form-section">
                     <h4>Видео</h4>
