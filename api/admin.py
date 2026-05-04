@@ -758,7 +758,6 @@ _orig_index = _AdminSite.index
 def _custom_index(self, request, extra_context=None):
     extra_context = extra_context or {}
     try:
-        from django.db.models import Q
         from .models import Subject, Test, User, TestResult, Block, Lesson, Video, Group
 
         user = request.user
@@ -773,19 +772,27 @@ def _custom_index(self, request, extra_context=None):
             blocks_qs = Block.objects.all()
             lessons_qs = Lesson.objects.all()
             videos_qs = Video.objects.all()
+            groups_qs = Group.objects.all()
         else:
-            # Преподаватель видит только свои данные
+            # Преподаватель видит СТРОГО свои объекты (как в конструкторе и таблицах)
             teacher_groups = Group.objects.filter(group_teachers__teacher=user)
+            groups_qs = teacher_groups
+
+            # Студенты только из прикрепленных групп
             students_qs = User.objects.filter(role='student', memberships__group__in=teacher_groups).distinct()
-            subjects_qs = Subject.objects.filter(
-                Q(subject_groups__group__in=teacher_groups) | Q(creator=user)).distinct()
-            blocks_qs = Block.objects.filter(subject__in=subjects_qs)
-            lessons_qs = Lesson.objects.filter(block__subject__in=subjects_qs)
-            tests_qs = Test.objects.filter(
-                Q(lesson_for__block__subject__in=subjects_qs) | Q(final_block_of__subject__in=subjects_qs) | Q(
-                    creator=user)).distinct()
-            results_qs = TestResult.objects.filter(user__in=students_qs, test__in=tests_qs)
-            videos_qs = Video.objects.filter(Q(creator=user) | Q(lessons__block__subject__in=subjects_qs)).distinct()
+
+            # Предметы, созданные лично преподавателем
+            subjects_qs = Subject.objects.filter(creator=user)
+            # Блоки и уроки внутри своих предметов
+            blocks_qs = Block.objects.filter(subject__creator=user)
+            lessons_qs = Lesson.objects.filter(block__subject__creator=user)
+
+            # Тесты и видео, созданные лично преподавателем
+            tests_qs = Test.objects.filter(creator=user)
+            videos_qs = Video.objects.filter(creator=user)
+
+            # Результаты по тестам этого преподавателя
+            results_qs = TestResult.objects.filter(test__creator=user)
 
         # Заполняем счетчики
         extra_context.update({
@@ -808,8 +815,12 @@ def _custom_index(self, request, extra_context=None):
         extra_context['recent_results'] = recent_results
         extra_context['subjects_tree'] = subjects_qs.prefetch_related('blocks__lessons__video', 'blocks__final_test')
         extra_context['recent_students'] = students_qs.order_by('-id')[:6]
+        extra_context['groups'] = groups_qs.order_by('-id')[:5]
 
     except Exception as e:
+        from django.conf import settings
+        import logging
+        logger = logging.getLogger(__name__)
         if settings.DEBUG:
             raise
         logger.error("Ошибка при формировании дашборда: %s", e)

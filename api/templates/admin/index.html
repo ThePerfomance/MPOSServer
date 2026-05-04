@@ -18,9 +18,9 @@
   --rose:#F43F5E;--rose-l:#FFF1F2;
   --surface:#F1F5F9;--card:#FFFFFF;--border:#E2E8F0;
   --t1:#0F172A;--t2:#475569;--t3:#94A3B8;
-  --sh1:0 1px 3px rgba(15,23,42,.07),0 1px 2px rgba(15,23,42,.04);
-  --sh2:0 4px 16px rgba(15,23,42,.09),0 2px 6px rgba(15,23,42,.04);
-  --r:14px;--r2:8px;
+  --sh1:0 2px 8px rgba(15,23,42,.05),0 1px 2px rgba(15,23,42,.02); /* Смягчили тени */
+  --sh2:0 10px 25px rgba(15,23,42,.08),0 4px 10px rgba(15,23,42,.03);
+  --r:16px;--r2:10px; /* Сделали углы чуть круглее */
   --font:'Onest',sans-serif;--mono:'JetBrains Mono',monospace;
 }
 #content{background:var(--surface)!important;padding:0!important;font-family:var(--font)!important}
@@ -32,92 +32,102 @@ h1#site-name,.breadcrumbs{display:none}
 .dw{max-width:1380px;margin:0 auto;padding:28px 26px 60px}
 
 /* Hero */
-.hero{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;gap:16px;flex-wrap:wrap}
-.hero-l{display:flex;align-items:center;gap:16px}
-.av{width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,var(--pr),var(--teal));
-  display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;color:#fff;
-  box-shadow:0 6px 20px rgba(37,99,235,.3);flex-shrink:0}
-.hero-sub{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--pr);margin-bottom:3px}
-.hero-name{font-size:21px;font-weight:700;color:var(--t1);line-height:1.2}
+.hero{display:flex;align-items:center;justify-content:space-between;margin-bottom:32px;gap:16px;flex-wrap:wrap}
+.hero-l{display:flex;align-items:center;gap:18px}
+.av{width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--pr),var(--teal));
+  display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:#fff;
+  box-shadow:0 6px 20px rgba(37,99,235,.25);flex-shrink:0}
+.hero-sub{font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--pr);margin-bottom:3px}
+.hero-name{font-size:24px;font-weight:700;color:var(--t1);line-height:1.2}
 .clock{font-size:13px;color:var(--t2);background:var(--card);border:1px solid var(--border);
-  border-radius:30px;padding:8px 18px;box-shadow:var(--sh1);display:flex;align-items:center;gap:8px;font-family:var(--mono)}
+  border-radius:30px;padding:10px 20px;box-shadow:var(--sh1);display:flex;align-items:center;gap:8px;font-family:var(--mono)}
 .clock i{color:var(--pr)}
 
 /* Section label */
 .slabel{font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--t3);
-  margin-bottom:12px;display:flex;align-items:center;gap:8px}
+  margin-bottom:16px;display:flex;align-items:center;gap:8px}
 .slabel::after{content:'';flex:1;height:1px;background:var(--border)}
 
 /* Stats */
-.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
-.sc{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:22px 20px 18px;
+.stats{display:grid;grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));gap:16px;margin-bottom:28px}
+.sc{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:24px 20px;
   box-shadow:var(--sh1);position:relative;overflow:hidden;text-decoration:none!important;
   transition:transform .2s,box-shadow .2s;display:block}
-.sc:hover{transform:translateY(-3px);box-shadow:var(--sh2)}
-.sc::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:var(--r) var(--r) 0 0}
+.sc:hover{transform:translateY(-4px);box-shadow:var(--sh2)}
+.sc::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;border-radius:var(--r) var(--r) 0 0}
 .sc.bl::before{background:linear-gradient(90deg,#2563EB,#60A5FA)}
 .sc.tl::before{background:linear-gradient(90deg,#0EA5E9,#38BDF8)}
 .sc.am::before{background:linear-gradient(90deg,#F59E0B,#FCD34D)}
 .sc.gn::before{background:linear-gradient(90deg,#10B981,#6EE7B7)}
-.sico{width:40px;height:40px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;margin-bottom:14px}
+.sico{width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;margin-bottom:16px}
 .sc.bl .sico{background:var(--pr-l);color:var(--pr)}
 .sc.tl .sico{background:var(--teal-l);color:var(--teal)}
 .sc.am .sico{background:var(--amber-l);color:var(--amber)}
 .sc.gn .sico{background:var(--green-l);color:var(--green)}
-.sval{font-size:34px;font-weight:700;color:var(--t1);line-height:1;font-family:var(--mono);letter-spacing:-.02em;margin-bottom:4px}
-.slb{font-size:13px;color:var(--t2);font-weight:500}
+.sval{font-size:36px;font-weight:700;color:var(--t1);line-height:1;font-family:var(--mono);letter-spacing:-.02em;margin-bottom:6px}
+.slb{font-size:14px;color:var(--t2);font-weight:500}
 
 /* Progress */
-.prog-row{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px}
-.prog-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r2);padding:14px 16px;box-shadow:var(--sh1)}
-.prog-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
-.prog-label{font-size:12px;font-weight:600;color:var(--t2)}
-.prog-num{font-size:13px;font-weight:700;color:var(--t1);font-family:var(--mono)}
-.prog-bar{height:5px;background:#F1F5F9;border-radius:3px;overflow:hidden}
-.prog-fill{height:100%;border-radius:3px}
+.prog-row{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:28px}
+.prog-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r2);padding:16px 20px;box-shadow:var(--sh1)}
+.prog-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.prog-label{font-size:13px;font-weight:600;color:var(--t2)}
+.prog-num{font-size:14px;font-weight:700;color:var(--t1);font-family:var(--mono)}
+.prog-bar{height:6px;background:#F1F5F9;border-radius:4px;overflow:hidden}
+.prog-fill{height:100%;border-radius:4px}
 .pf-bl{background:linear-gradient(90deg,var(--pr),var(--teal))}
 .pf-am{background:linear-gradient(90deg,var(--amber),#FCD34D)}
 .pf-gn{background:linear-gradient(90deg,var(--green),#6EE7B7)}
 
 /* Main grid */
-.mg{display:grid;grid-template-columns:1fr 358px;gap:20px}
+.mg{display:grid;grid-template-columns:1fr 380px;gap:24px}
 
 /* Panel */
-.panel{background:var(--card);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--sh1);overflow:hidden;margin-bottom:20px}
+.panel{background:var(--card);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--sh1);overflow:hidden;margin-bottom:24px;display:flex;flex-direction:column}
 .panel:last-child{margin-bottom:0}
-.ph{display:flex;align-items:center;gap:10px;padding:15px 20px;border-bottom:1px solid var(--border)}
-.phi{width:30px;height:30px;border-radius:var(--r2);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
-.pht{font-size:14px;font-weight:600;color:var(--t1)}
+.ph{display:flex;align-items:center;gap:12px;padding:18px 22px;border-bottom:1px solid #f1f5f9;background:#fff}
+.phi{width:34px;height:34px;border-radius:var(--r2);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.pht{font-size:15px;font-weight:600;color:var(--t1)}
 .phs{font-size:12px;color:var(--t3);margin-left:auto;font-family:var(--mono)}
-.pb{padding:20px}
+.pb{padding:22px;flex:1}
 
-/* Constructor */
-.con-panel .phi{background:var(--pr-l);color:var(--pr)}
-.flow{display:flex;align-items:flex-start;gap:0;overflow-x:auto;padding:10px 4px;margin-bottom:20px}
-.fstep{display:flex;flex-direction:column;align-items:center;gap:8px;flex-shrink:0}
-.fbtn{display:inline-flex;align-items:center;gap:7px;padding:9px 17px;border-radius:30px;
-  font-size:13px;font-weight:700;text-decoration:none!important;transition:all .18s;
-  white-space:nowrap;border:none}
-.fbtn:hover{transform:translateY(-2px);box-shadow:var(--sh2)}
-.fbtn.s0{background:var(--violet)!important;color:#fff!important}
-.fbtn.s0 *{color:#fff!important}
-.fbtn.s1{background:var(--pr)     !important;color:#fff!important}
-.fbtn.s2{background:var(--teal)   !important;color:#fff!important}
-.fbtn.s3{background:var(--amber)  !important;color:#fff!important}
-.fbtn.s4{background:var(--violet) !important;color:#fff!important}
-.fbtn.s5{background:var(--green)  !important;color:#fff!important}
-.fbtn *{color:#fff!important}
-.fnum{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--t3);font-family:var(--mono)}
-.farr{font-size:13px;color:var(--border);margin:0 6px;padding-bottom:22px;flex-shrink:0}
-.vsec{background:var(--surface);border:1px dashed var(--border);border-radius:var(--r2);
-  padding:14px 18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
-.vslb{font-size:11px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.09em;
-  white-space:nowrap;display:flex;align-items:center;gap:6px;flex-shrink:0}
+/* НОВЫЙ КОНСТРУКТОР (УЛУЧШЕННЫЙ UX) */
+.step-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+    margin-bottom: 24px;
+}
+.step-card {
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px 12px;
+    text-align: center;
+    text-decoration: none !important;
+    transition: all 0.2s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.step-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--sh2);
+    background: #fff;
+}
+.step-card-ic { font-size: 26px; margin-bottom: 12px; }
+.step-card-t { font-weight: 700; font-size: 14px; margin-bottom: 4px; }
+.step-card-d { font-size: 11px; color: var(--t3); line-height: 1.3; font-weight: 500; }
+
+.vsec{background:#fff;border:1px dashed var(--border);border-radius:var(--r2);
+  padding:16px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px}
+.vslb{font-size:12px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.09em;
+  display:flex;align-items:center;gap:8px;flex-shrink:0}
 .vbtns{display:flex;gap:10px;flex-wrap:wrap}
-.vbtn{display:inline-flex;align-items:center;gap:7px;padding:8px 16px;border-radius:30px;
-  font-size:12px;font-weight:700;text-decoration:none!important;transition:all .18s;border:1px solid var(--border)}
-.vbtn.vt{background:#fff!important;color:var(--t1)!important}
-.vbtn.vt:hover{border-color:var(--pr);color:var(--pr)!important}
+.vbtn{display:inline-flex;align-items:center;gap:7px;padding:10px 18px;border-radius:30px;
+  font-size:13px;font-weight:600;text-decoration:none!important;transition:all .2s;border:1px solid var(--border)}
+.vbtn.vt{background:var(--surface)!important;color:var(--t2)!important}
+.vbtn.vt:hover{background:#fff!important;border-color:var(--pr);color:var(--pr)!important}
 .vbtn.va{background:var(--pr)!important;color:#fff!important;border-color:var(--pr)!important}
 .vbtn.va *{color:#fff!important}
 
@@ -125,86 +135,91 @@ h1#site-name,.breadcrumbs{display:none}
 .tree-panel .phi{background:var(--violet-l);color:var(--violet)}
 .sj-item{border-bottom:1px solid #F1F5F9}
 .sj-item:last-child{border-bottom:none}
-.sj-head{display:flex;align-items:center;gap:10px;padding:13px 20px;cursor:pointer;transition:background .15s;user-select:none}
+.sj-head{display:flex;align-items:center;gap:12px;padding:16px 22px;cursor:pointer;transition:background .15s;user-select:none}
 .sj-head:hover{background:#FAFBFF}
-.sj-ico{width:28px;height:28px;border-radius:6px;background:var(--pr-l);color:var(--pr);
-  display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0}
-.sj-name{font-size:13px;font-weight:600;color:var(--t1);flex:1}
-.sj-meta{font-size:11px;color:var(--t3);font-family:var(--mono);margin-right:6px}
-.edit-badge{font-size:10px;color:var(--pr)!important;text-decoration:none!important;
-  background:var(--pr-l);padding:3px 8px;border-radius:20px;font-weight:600;margin-right:6px}
-.sj-arr{font-size:10px;color:var(--t3);transition:transform .2s}
+.sj-ico{width:30px;height:30px;border-radius:8px;background:var(--pr-l);color:var(--pr);
+  display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0}
+.sj-name{font-size:14px;font-weight:600;color:var(--t1);flex:1}
+.sj-meta{font-size:12px;color:var(--t3);font-family:var(--mono);margin-right:10px}
+.edit-badge{font-size:11px;color:var(--pr)!important;text-decoration:none!important;
+  background:var(--pr-l);padding:4px 10px;border-radius:20px;font-weight:600;margin-right:8px}
+.sj-arr{font-size:11px;color:var(--t3);transition:transform .2s}
 .sj-head.open .sj-arr{transform:rotate(90deg)}
-.sj-body{display:none;background:#FAFBFF;padding:0 20px 14px 58px}
+.sj-body{display:none;background:#FAFBFF;padding:0 22px 18px 64px}
 .sj-body.show{display:block}
-.bl-item{margin-bottom:12px}
-.bl-name{font-size:12px;font-weight:600;color:var(--t2);margin-bottom:6px;
-  display:flex;align-items:center;gap:6px}
-.bl-name i{color:var(--teal);font-size:10px}
-.bl-edit{font-size:10px;color:var(--t3)!important;text-decoration:none!important;
-  background:#F1F5F9;padding:2px 7px;border-radius:20px;font-weight:600;margin-left:auto}
+.bl-item{margin-bottom:14px}
+.bl-name{font-size:13px;font-weight:600;color:var(--t2);margin-bottom:8px;
+  display:flex;align-items:center;gap:8px}
+.bl-name i{color:var(--teal);font-size:11px}
+.bl-edit{font-size:11px;color:var(--t3)!important;text-decoration:none!important;
+  background:#F1F5F9;padding:3px 9px;border-radius:20px;font-weight:600;margin-left:auto}
 .ll{list-style:none;margin:0;padding:0}
-.ll li{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--t2);
-  padding:5px 0;border-bottom:1px dashed #EEF2F7}
+.ll li{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--t2);
+  padding:6px 0;border-bottom:1px dashed #EEF2F7}
 .ll li:last-child{border-bottom:none}
 .ll a{color:var(--t1);text-decoration:none;flex:1}
 .ll a:hover{color:var(--pr)}
-.pub{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:600;
-  padding:2px 7px;border-radius:30px;margin-left:auto;white-space:nowrap}
+.pub{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;
+  padding:3px 8px;border-radius:30px;margin-left:auto;white-space:nowrap}
 .pub.y{background:var(--green-l);color:#065F46}
 .pub.n{background:#F8FAFC;color:var(--t3)}
-.tree-empty{text-align:center;padding:32px;color:var(--t3);font-size:13px}
-.tree-empty i{font-size:28px;margin-bottom:8px;display:block;color:var(--border)}
+.tree-empty{text-align:center;padding:40px;color:var(--t3);font-size:14px}
+.tree-empty i{font-size:32px;margin-bottom:12px;display:block;color:var(--border)}
 
 /* Results */
 .res-panel .phi{background:var(--green-l);color:var(--green)}
 .rt{width:100%;border-collapse:collapse}
-.rt th{font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;
-  letter-spacing:.08em;padding:0 12px 10px;text-align:left;border-bottom:1px solid var(--border)}
-.rt td{padding:11px 12px;font-size:13px;color:var(--t1);border-bottom:1px solid #F1F5F9;vertical-align:middle}
+.rt th{font-size:12px;font-weight:600;color:var(--t3);text-transform:uppercase;
+  letter-spacing:.08em;padding:0 14px 12px;text-align:left;border-bottom:1px solid var(--border)}
+.rt td{padding:14px;font-size:14px;color:var(--t1);border-bottom:1px solid #F1F5F9;vertical-align:middle}
 .rt tr:last-child td{border-bottom:none}
 .rt tr:hover td{background:#FAFBFF}
-.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:30px;
+.badge{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:30px;
   font-size:12px;font-weight:700;font-family:var(--mono)}
 .badge.gd{background:var(--green-l);color:#065F46}
 .badge.ok{background:var(--amber-l);color:#92400E}
 .badge.bd{background:var(--rose-l);color:#9F1239}
-.all-link{display:block;text-align:center;padding:11px;font-size:12px;font-weight:600;
-  color:var(--pr);text-decoration:none;border-top:1px solid var(--border);letter-spacing:.04em;transition:background .15s}
+.all-link{display:block;text-align:center;padding:14px;font-size:13px;font-weight:600;
+  color:var(--pr);text-decoration:none;background:#FAFBFF;border-top:1px solid #F1F5F9;letter-spacing:.04em;transition:background .15s}
 .all-link:hover{background:var(--pr-l)}
-.empty-box{text-align:center;padding:28px;color:var(--t3);font-size:13px}
-.empty-box i{font-size:26px;margin-bottom:8px;display:block;color:var(--border)}
+.empty-box{text-align:center;padding:32px;color:var(--t3);font-size:13px}
+.empty-box i{font-size:28px;margin-bottom:10px;display:block;color:var(--border)}
 
 /* Right col */
-.rc{display:flex;flex-direction:column}
+.rc{display:flex;flex-direction:column;gap:0;} /* Gap is handled by panel margin-bottom */
 .navl{list-style:none;margin:0;padding:0}
 .navl li{border-bottom:1px solid #F1F5F9}
 .navl li:last-child{border-bottom:none}
-.navl a{display:flex;align-items:center;gap:10px;padding:11px 20px;
-  text-decoration:none!important;color:var(--t1)!important;font-size:13px;font-weight:500;transition:all .15s}
+.navl a{display:flex;align-items:center;gap:12px;padding:14px 22px;
+  text-decoration:none!important;color:var(--t1)!important;font-size:14px;font-weight:500;transition:all .15s}
 .navl a:hover{background:#FAFBFF;color:var(--pr)!important}
 .navl a:hover .ni{color:var(--pr)}
-.ni{width:26px;height:26px;background:var(--surface);border-radius:6px;
-  display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--t2);transition:color .15s;flex-shrink:0}
-.na{margin-left:auto;color:var(--border);font-size:10px}
+.ni{width:30px;height:30px;background:var(--surface);border-radius:8px;
+  display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--t2);transition:color .15s;flex-shrink:0}
+.na{margin-left:auto;color:var(--border);font-size:11px}
 .nav-panel .phi{background:var(--violet-l);color:var(--violet)}
+
+/* Groups panel (НОВОЕ) */
+.grp-panel .phi{background:var(--teal-l);color:var(--teal)}
+
 .stu-panel .phi{background:var(--amber-l);color:var(--amber)}
 .stu-list{list-style:none;margin:0;padding:0}
-.stu-li{display:flex;align-items:center;gap:10px;padding:10px 20px;border-bottom:1px solid #F1F5F9}
+.stu-li{display:flex;align-items:center;gap:12px;padding:12px 22px;border-bottom:1px solid #F1F5F9}
 .stu-li:last-child{border-bottom:none}
-.stu-av{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--pr),var(--teal));
-  display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0}
-.stu-name{font-size:13px;font-weight:500;color:var(--t1)}
-.stu-email{font-size:11px;color:var(--t3);font-family:var(--mono)}
+.stu-av{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--pr),var(--teal));
+  display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff;flex-shrink:0}
+.stu-name{font-size:14px;font-weight:600;color:var(--t1);margin-bottom:2px}
+.stu-email{font-size:12px;color:var(--t3);font-family:var(--mono)}
+
 .act-panel .phi{background:var(--amber-l);color:#B45309}
 .actl{list-style:none;margin:0;padding:0}
-.acti{display:flex;align-items:flex-start;gap:10px;padding:11px 20px;border-bottom:1px solid #F1F5F9}
+.acti{display:flex;align-items:flex-start;gap:12px;padding:14px 22px;border-bottom:1px solid #F1F5F9}
 .acti:last-child{border-bottom:none}
-.adot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:5px}
-.acti-t{font-size:12px;color:var(--t1);line-height:1.5}
-.acti-t a{color:var(--pr)!important;text-decoration:none}
+.adot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:6px}
+.acti-t{font-size:13px;color:var(--t1);line-height:1.5}
+.acti-t a{color:var(--pr)!important;text-decoration:none;font-weight:500}
 .acti-t a:hover{text-decoration:underline}
-.acti-d{font-size:11px;color:var(--t3);font-family:var(--mono);margin-top:2px}
+.acti-d{font-size:11px;color:var(--t3);font-family:var(--mono);margin-top:4px}
 
 @keyframes fu{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
 .sc{animation:fu .4s ease both}
@@ -212,8 +227,9 @@ h1#site-name,.breadcrumbs{display:none}
 .sc:nth-child(3){animation-delay:.15s}.sc:nth-child(4){animation-delay:.2s}
 .panel{animation:fu .4s ease .2s both}
 
-@media(max-width:1120px){.mg{grid-template-columns:1fr}.rc{display:grid;grid-template-columns:1fr 1fr}}
-@media(max-width:700px){.stats{grid-template-columns:repeat(2,1fr)}.prog-row{grid-template-columns:repeat(2,1fr)}.rc{grid-template-columns:1fr}.dw{padding:16px 12px 40px}}
+@media(max-width:1120px){.mg{grid-template-columns:1fr}.rc{display:grid;grid-template-columns:1fr 1fr;gap:24px}.panel{margin-bottom:0}}
+@media(max-width:900px){.step-grid {grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));}}
+@media(max-width:700px){.stats{grid-template-columns:repeat(2,1fr)}.prog-row{grid-template-columns:repeat(2,1fr)}.rc{grid-template-columns:1fr}.dw{padding:20px 16px 40px}}
 </style>
 {% endblock %}
 
@@ -262,21 +278,21 @@ h1#site-name,.breadcrumbs{display:none}
 <div class="prog-row">
   <div class="prog-card">
     <div class="prog-head">
-      <span class="prog-label"><i class="fas fa-layer-group" style="color:var(--pr);margin-right:5px"></i> Блоков</span>
+      <span class="prog-label"><i class="fas fa-layer-group" style="color:var(--pr);margin-right:6px"></i> Блоков</span>
       <span class="prog-num">{{ blocks_count|default:"0" }}</span>
     </div>
     <div class="prog-bar"><div class="prog-fill pf-bl" style="width:{% if blocks_count and subjects_count %}{% widthratio blocks_count subjects_count 100 %}{% else %}0{% endif %}%"></div></div>
   </div>
   <div class="prog-card">
     <div class="prog-head">
-      <span class="prog-label"><i class="fas fa-chalkboard-teacher" style="color:var(--amber);margin-right:5px"></i> Уроков</span>
+      <span class="prog-label"><i class="fas fa-chalkboard-teacher" style="color:var(--amber);margin-right:6px"></i> Уроков</span>
       <span class="prog-num">{{ lessons_count|default:"0" }}</span>
     </div>
     <div class="prog-bar"><div class="prog-fill pf-am" style="width:{% if lessons_count and blocks_count %}{% widthratio lessons_count blocks_count 100 %}{% else %}0{% endif %}%"></div></div>
   </div>
   <div class="prog-card">
     <div class="prog-head">
-      <span class="prog-label"><i class="fas fa-video" style="color:var(--green);margin-right:5px"></i> Видеоматериалов</span>
+      <span class="prog-label"><i class="fas fa-video" style="color:var(--green);margin-right:6px"></i> Видеоматериалов</span>
       <span class="prog-num">{{ videos_count|default:"0" }}</span>
     </div>
     <div class="prog-bar"><div class="prog-fill pf-gn" style="width:{% if videos_count and lessons_count %}{% widthratio videos_count lessons_count 100 %}{% else %}0{% endif %}%"></div></div>
@@ -287,34 +303,50 @@ h1#site-name,.breadcrumbs{display:none}
 <div class="slabel">Рабочее пространство</div>
 <div class="mg">
 
-  {# LEFT #}
+  {# LEFT COLUMN #}
   <div>
-    {# Constructor #}
+    {# УЛУЧШЕННЫЙ КОНСТРУКТОР #}
     <div class="panel con-panel">
       <div class="ph">
         <div class="phi"><i class="fas fa-layer-group"></i></div>
         <div class="pht">Конструктор курса</div>
-        <div class="phs">5 шагов к готовому курсу</div>
+        <div class="phs">Каждый шаг строится на предыдущем</div>
       </div>
       <div class="pb">
-        <div class="flow">
-          <div class="fstep"><a href="{% url 'api:course-constructor' %}" class="fbtn s0"><i class="fas fa-rocket"></i> Начать конструктор</a><span class="fnum">Старт</span></div>
-          <div class="farr"><i class="fas fa-chevron-right"></i></div>
-          <div class="fstep"><a href="{% url 'admin:api_subject_add' %}" class="fbtn s1"><i class="fas fa-plus"></i> Предмет</a><span class="fnum">Шаг 1</span></div>
-          <div class="farr"><i class="fas fa-chevron-right"></i></div>
-          <div class="fstep"><a href="{% url 'admin:api_block_add' %}" class="fbtn s2"><i class="fas fa-plus"></i> Блок</a><span class="fnum">Шаг 2</span></div>
-          <div class="farr"><i class="fas fa-chevron-right"></i></div>
-          <div class="fstep"><a href="{% url 'admin:api_lesson_add' %}" class="fbtn s3"><i class="fas fa-plus"></i> Урок</a><span class="fnum">Шаг 3</span></div>
-          <div class="farr"><i class="fas fa-chevron-right"></i></div>
-          <div class="fstep"><a href="{% url 'admin:api_test_add' %}" class="fbtn s4"><i class="fas fa-plus"></i> Тест</a><span class="fnum">Шаг 4</span></div>
-          <div class="farr"><i class="fas fa-chevron-right"></i></div>
-          <div class="fstep"><a href="{% url 'admin:api_question_add' %}" class="fbtn s5"><i class="fas fa-plus"></i> Вопросы</a><span class="fnum">Шаг 5</span></div>
+
+        <div class="step-grid">
+            <a href="{% url 'api:course-constructor' %}?step=1" class="step-card" style="border-top: 3px solid #667eea;">
+                <div class="step-card-ic">📖</div>
+                <div class="step-card-t" style="color: #667eea;">1. Предмет</div>
+                <div class="step-card-d">Основа курса<br>(математика, физика)</div>
+            </a>
+            <a href="{% url 'api:course-constructor' %}?step=2" class="step-card" style="border-top: 3px solid #f5576c;">
+                <div class="step-card-ic">📦</div>
+                <div class="step-card-t" style="color: #f5576c;">2. Блок</div>
+                <div class="step-card-d">Главы и модули<br>предмета</div>
+            </a>
+            <a href="{% url 'api:course-constructor' %}?step=3" class="step-card" style="border-top: 3px solid #4facfe;">
+                <div class="step-card-ic">🎬</div>
+                <div class="step-card-t" style="color: #4facfe;">3. Урок</div>
+                <div class="step-card-d">Названия тем<br>внутри блоков</div>
+            </a>
+            <a href="{% url 'api:course-constructor' %}?step=4" class="step-card" style="border-top: 3px solid #43e97b;">
+                <div class="step-card-ic">🧩</div>
+                <div class="step-card-t" style="color: #43e97b;">4. Контент</div>
+                <div class="step-card-d">Привязка видео<br>и тестов</div>
+            </a>
+            <a href="{% url 'api:course-constructor' %}?step=5" class="step-card" style="border-top: 3px solid #f093fb;">
+                <div class="step-card-ic">❓</div>
+                <div class="step-card-t" style="color: #f093fb;">5. Вопросы</div>
+                <div class="step-card-d">Варианты ответов<br>для тестов</div>
+            </a>
         </div>
+
         <div class="vsec">
-          <div class="vslb"><i class="fas fa-film"></i> Видеоматериалы</div>
+          <div class="vslb"><i class="fas fa-film" style="color: var(--pr); font-size: 16px;"></i> Библиотека медиа</div>
           <div class="vbtns">
             <a href="{% url 'admin:api_videotype_changelist' %}" class="vbtn vt"><i class="fas fa-tag"></i> Типы видео</a>
-            <a href="{% url 'admin:api_video_add' %}" class="vbtn va"><i class="fas fa-plus"></i> Добавить видео</a>
+            <a href="{% url 'admin:api_video_add' %}" class="vbtn va"><i class="fas fa-upload"></i> Загрузить видео</a>
           </div>
         </div>
       </div>
@@ -349,8 +381,8 @@ h1#site-name,.breadcrumbs{display:none}
                 <li>
                   <i class="fas fa-circle" style="font-size:5px;color:var(--t3);flex-shrink:0"></i>
                   <a href="{% url 'admin:api_lesson_change' lesson.pk %}">{{ lesson.title }}</a>
-                  {% if lesson.video %}<i class="fas fa-video" style="color:var(--teal);font-size:10px" title="Есть видео"></i>{% endif %}
-                  {% if lesson.test %}<i class="fas fa-clipboard-check" style="color:var(--violet);font-size:10px" title="Есть тест"></i>{% endif %}
+                  {% if lesson.video %}<i class="fas fa-video" style="color:var(--teal);font-size:11px" title="Есть видео"></i>{% endif %}
+                  {% if lesson.test %}<i class="fas fa-clipboard-check" style="color:var(--violet);font-size:11px" title="Есть тест"></i>{% endif %}
                   <span class="pub {% if lesson.is_published %}y{% else %}n{% endif %}">{% if lesson.is_published %}✓ Опубл.{% else %}Черновик{% endif %}</span>
                 </li>
                 {% empty %}
@@ -362,7 +394,7 @@ h1#site-name,.breadcrumbs{display:none}
               </ul>
             </div>
             {% empty %}
-            <p style="color:var(--t3);font-size:12px;margin:0">
+            <p style="color:var(--t3);font-size:13px;margin:0">
               Нет блоков — <a href="{% url 'admin:api_block_add' %}" style="color:var(--pr)">добавить блок</a>
             </p>
             {% endfor %}
@@ -390,7 +422,7 @@ h1#site-name,.breadcrumbs{display:none}
           <tbody>
             {% for r in recent_results %}
             <tr>
-              <td style="font-weight:500">{{ r.user.firstname|default:"" }} {{ r.user.lastname|default:r.user.email }}</td>
+              <td style="font-weight:600">{{ r.user.firstname|default:"" }} {{ r.user.lastname|default:r.user.email }}</td>
               <td style="color:var(--t2)">{{ r.test.title|truncatechars:30 }}</td>
               <td>
                 {% if r.score >= 80 %}<span class="badge gd">● {{ r.score }}%</span>
@@ -406,12 +438,13 @@ h1#site-name,.breadcrumbs{display:none}
       {% else %}
       <div class="empty-box"><i class="fas fa-inbox"></i>Результатов пока нет</div>
       {% endif %}
-      <a href="{% url 'admin:api_testresult_changelist' %}" class="all-link">Все результаты <i class="fas fa-arrow-right" style="font-size:10px;margin-left:3px"></i></a>
+      <a href="{% url 'admin:api_testresult_changelist' %}" class="all-link">Все результаты <i class="fas fa-arrow-right" style="font-size:11px;margin-left:4px"></i></a>
     </div>
   </div>
 
-  {# RIGHT #}
+  {# RIGHT COLUMN #}
   <div class="rc">
+
     {# Quick nav #}
     <div class="panel nav-panel">
       <div class="ph"><div class="phi"><i class="fas fa-compass"></i></div><div class="pht">Быстрый доступ</div></div>
@@ -422,11 +455,35 @@ h1#site-name,.breadcrumbs{display:none}
         <li><a href="{% url 'admin:api_test_changelist' %}"><span class="ni"><i class="fas fa-clipboard-check"></i></span>Тесты<span class="na"><i class="fas fa-chevron-right"></i></span></a></li>
         <li><a href="{% url 'admin:api_question_changelist' %}"><span class="ni"><i class="fas fa-question-circle"></i></span>Вопросы<span class="na"><i class="fas fa-chevron-right"></i></span></a></li>
         <li><a href="{% url 'admin:api_video_changelist' %}"><span class="ni"><i class="fas fa-video"></i></span>Видеоматериалы<span class="na"><i class="fas fa-chevron-right"></i></span></a></li>
-        <li><a href="{% url 'admin:api_group_changelist' %}"><span class="ni"><i class="fas fa-users"></i></span>Группы<span class="na"><i class="fas fa-chevron-right"></i></span></a></li>
+        <li><a href="{% url 'admin:api_trainingsession_changelist' %}"><span class="ni" style="color: #f59e0b;"><i class="fas fa-dumbbell"></i></span>Тренажер<span class="na"><i class="fas fa-chevron-right"></i></span></a></li>
         {% if request.user.role == 'admin' %}
         <li><a href="{% url 'admin:api_user_changelist' %}"><span class="ni"><i class="fas fa-user-cog"></i></span>Пользователи<span class="na"><i class="fas fa-chevron-right"></i></span></a></li>
         {% endif %}
       </ul>
+    </div>
+
+    {# Groups Panel (НОВОЕ) #}
+    <div class="panel grp-panel">
+      <div class="ph"><div class="phi"><i class="fas fa-users"></i></div><div class="pht">Учебные группы</div></div>
+      {% if groups %}
+      <ul class="navl">
+        {% for g in groups %}
+        <li>
+          <a href="{% url 'admin:api_group_change' g.pk %}">
+            <div class="ni" style="background:var(--teal-l); color:var(--teal)"><i class="fas fa-users"></i></div>
+            <div style="flex:1">
+              <div style="font-weight:600; color:var(--t1); font-size:14px; margin-bottom: 2px;">{{ g.name }}</div>
+              <div style="font-size:12px; color:var(--t3)">{% if g.members.count %}Студентов: {{ g.members.count }}{% else %}Нет студентов{% endif %}</div>
+            </div>
+            <span class="na"><i class="fas fa-chevron-right"></i></span>
+          </a>
+        </li>
+        {% endfor %}
+      </ul>
+      <a href="{% url 'admin:api_group_changelist' %}" class="all-link" style="color:var(--teal)">Все группы <i class="fas fa-arrow-right" style="font-size:11px;margin-left:4px"></i></a>
+      {% else %}
+      <div class="empty-box" style="padding:24px"><i class="fas fa-users-slash"></i>Группы не назначены</div>
+      {% endif %}
     </div>
 
     {# Students #}
@@ -445,7 +502,7 @@ h1#site-name,.breadcrumbs{display:none}
         {% endfor %}
       </ul>
       {% else %}
-      <div class="empty-box" style="padding:18px"><i class="fas fa-user-plus"></i>Студентов пока нет</div>
+      <div class="empty-box" style="padding:24px"><i class="fas fa-user-plus"></i>Студентов пока нет</div>
       {% endif %}
     </div>
 
@@ -469,10 +526,11 @@ h1#site-name,.breadcrumbs{display:none}
           </li>
           {% endfor %}
         {% else %}
-          <li class="acti"><div style="color:var(--t3);font-size:13px;width:100%;text-align:center;padding:14px 0">Нет недавних действий</div></li>
+          <li class="acti"><div style="color:var(--t3);font-size:14px;width:100%;text-align:center;padding:16px 0">Нет недавних действий</div></li>
         {% endif %}
       </ul>
     </div>
+
   </div>
 </div>
 </div>
