@@ -334,9 +334,7 @@
                 </div>
             </div>
             {% elif current_step == 2 %}
-            <div class="slabel">Шаг 2: Создайте или выберите блок для предмета "{{ selected_items|get_item:subject_id
-                }}"
-            </div>
+            <div class="slabel">Шаг 2: Создайте или выберите блок для предмета "{{ selected_items|get_item:subject_id }}"</div>
             {% if error_message %}
             <div class="info-box" style="background:var(--rose-l); color:var(--rose); border: 1px solid var(--rose);">
                 <i class="fas fa-exclamation-triangle"></i> {{ error_message }}
@@ -429,9 +427,7 @@
                style="background:var(--surface);color:var(--t2);border-color:var(--border);"><i
                     class="fas fa-arrow-left"></i> Назад к выбору блока</a>
             {% else %}
-            <div class="slabel">Шаг 3: Создайте или выберите урок для блока "{{ selected_items|get_item:block_id
-                }}"
-            </div>
+            <div class="slabel">Шаг 3: Создайте или выберите урок для блока "{{ selected_items|get_item:block_id }}"</div>
             <div class="form-grid">
                 <div class="form-section">
                     <h4>Создать новые уроки</h4>
