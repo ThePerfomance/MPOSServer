@@ -22,7 +22,7 @@ from .serializers import (
     StudentClusterSerializer, TestDifficultySerializer,
     ScorePredictionSerializer, RecommendationSerializer, VideoTypeSerializer, VideoSerializer, UserAnswerSerializer,
     TrainingSessionSerializer, TrainingQuestionSerializer,
-    TeacherGroupSerializer, GroupSubjectSerializer  # <--- ДОБАВЛЕНО
+    TeacherGroupSerializer, GroupSubjectSerializer
 )
 from .forms import (
     SubjectForm, BlockForm, LessonForm, VideoForm, TestForm, BlockFormSet, LessonFormSet,
@@ -54,19 +54,7 @@ def users_list(request):
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def user_register(request):
-    """
-    Регистрация нового пользователя из мобильного приложения.
 
-    Требуемые поля:
-    - email: уникальный email пользователя
-    - password: пароль (минимум 4 символа)
-    - firstname: имя
-    - lastname: фамилия
-    - patronymic: отчество
-    - role: роль ('student' или 'teacher')
-
-    Возвращает данные созданного пользователя без пароля.
-    """
     serializer = UserRegistrationSerializer(data=request.data)
 
     if not serializer.is_valid():
@@ -290,9 +278,6 @@ def subject_by_name(request, name):
 
 @api_view(["POST"])
 def test_start(request, test_id):
-    """
-    Шаг 1: Создание объекта TestResult и получение вопросов.
-    """
     test = get_object_or_404(Test, pk=test_id)
     user = request.user if request.user.is_authenticated else None
 
@@ -325,10 +310,6 @@ def test_start(request, test_id):
 
 @api_view(["POST"])
 def test_submit(request, result_id):
-    """
-    Шаг 3: Прием ответов, расчет баллов и завершение теста.
-    (ML-анализ отключен)
-    """
     test_result = get_object_or_404(TestResult, pk=result_id)
 
     # Защита: если тест уже завершен, не даем перезаписать результаты
@@ -384,8 +365,6 @@ def test_submit(request, result_id):
     test_result.completed_at = timezone.now()
     test_result.save()
 
-    # --- ЗДЕСЬ БЫЛ ML-АНАЛИЗ. СЕЙЧАС ОН ОТКЛЮЧЕН ---
-
     # Возвращаем детализированный результат
     user_answers = UserAnswer.objects.filter(test_result=test_result)
 
@@ -436,11 +415,6 @@ def questions_for_test(request, test_id):
 
 @api_view(["GET", "POST"])
 def test_results_list(request):
-    """
-    Список результатов тестирования.
-    POST: Создание нового результата теста с ответами пользователя.
-          После сохранения ответов автоматически запускается ML-анализ слабых тем.
-    """
     if request.method == "GET":
         return Response(TestResultSerializer(TestResult.objects.all(), many=True).data)
 
@@ -579,8 +553,6 @@ def answer_detail(request, pk):
 # ═══════════════════════════════════════════════════════════════════════
 
 def _collect_student_stats(students):
-    """Собирает 5 признаков для каждого студента — как в Android KMeans.kt."""
-    from datetime import datetime
     stats = []
     for student in students:
         qs = TestResult.objects.filter(user=student)
@@ -777,23 +749,6 @@ def final_test_by_block(request, block_id):
 
 @api_view(["POST"])
 def ml_analyze_weak_topics(request, user_id):
-    """
-    POST /ml/analyze-weak-topics/<user_id>/
-    
-    Анализирует ответы пользователя и определяет слабые темы.
-    
-    Body (опционально):
-    {
-        "limit_days": 30  // Анализировать только последние N дней (по умолчанию все)
-    }
-    
-    Возвращает:
-    {
-        "weak_topics": [...],
-        "topic_details": {...},
-        "overall_stats": {...}
-    }
-    """
     user = get_object_or_404(User, pk=user_id)
 
     # Получаем все ответы пользователя
@@ -850,35 +805,7 @@ def ml_analyze_weak_topics(request, user_id):
 
 @api_view(["GET"])
 def ml_personalized_recommendations(request, user_id):
-    """
-    GET /ml/personalized-recommendations/<user_id>/
-    
-    Генерирует персонализированные рекомендации с ссылками на материалы.
-    
-    Query params:
-    - limit_days: анализировать ответы за последние N дней
-    - max_recommendations: максимальное количество рекомендаций (по умолчанию 10)
-    
-    Возвращает:
-    {
-        "user_id": str,
-        "recommendations": [
-            {
-                "topic": str,
-                "priority": int,
-                "recommendation_text": str,
-                "resources": [
-                    {"type": "lesson", "title": str, "url": str},
-                    {"type": "video", "title": str, "url": str},
-                    ...
-                ],
-                "practice_questions": [int, ...]
-            },
-            ...
-        ],
-        "progress_analysis": {...}
-    }
-    """
+
     user = get_object_or_404(User, pk=user_id)
 
     limit_days = request.query_params.get('limit_days', None)
@@ -1000,16 +927,6 @@ def ml_personalized_recommendations(request, user_id):
         "learning_path": learning_path,
         "total_estimated_time_minutes": total_time,
     })
-
-
-# ═══════════════════════════════════════════════════════════════════════
-# СТАРЫЕ ML ENDPOINTS (ОТКЛЮЧЕНЫ, НО СОХРАНЕНЫ ДЛЯ СРАВНЕНИЯ)
-# ═══════════════════════════════════════════════════════════════════════
-
-# @api_view(["GET"])
-# def ml_recommendations_old(request, user_id):
-#     ...
-
 
 # ═══════════════════════════════════════════════════════════════════════
 # VIDEO & VIDEO TYPES
@@ -1214,14 +1131,12 @@ def answer_training_question(request, pk):
     # 1. Получаем сессию
     session = tq.session
 
-    # 2. ИСПРАВЛЕНИЕ: Закрываем сессию ТОЛЬКО если НЕТ вопросов со статусом, отличным от 'correct'
-    # То есть и 'pending', и 'wrong' будут удерживать сессию открытой
+    #Закрываем сессию ТОЛЬКО если НЕТ вопросов со статусом, отличным от 'correct'
     if not session.training_questions.exclude(status='correct').exists():
         session.status = 'completed'
         session.completed_at = timezone.now()
         session.save()
     else:
-        # Защита: Если сессия случайно была закрыта раньше времени, открываем обратно
         if session.status == 'completed':
             session.status = 'active'
             session.completed_at = None
@@ -1268,6 +1183,9 @@ def course_constructor_view(request):
         'subject_id': subject_id,
         'block_id': block_id,
         'lesson_id': lesson_id,
+        'subject': subject,
+        'current_block': block,
+        'lesson': lesson,
         'selected_items': selected_items,
         'test': test,
     }
@@ -1281,7 +1199,7 @@ def course_constructor_view(request):
                 # БЫЛО: subject = form.save()
                 # СТАЛО:
                 subject = form.save(commit=False)
-                subject.creator = request.user  # <--- ЗАПИСЫВАЕМ АВТОРА
+                subject.creator = request.user
                 subject.save()
 
                 query_string = f'?step=2&subject_id={subject.id}'
@@ -1291,7 +1209,7 @@ def course_constructor_view(request):
 
         context['form'] = form
 
-        # ФИЛЬТРАЦИЯ: Преподаватель видит только свои предметы
+        #Преподаватель видит только свои предметы
         if getattr(request.user, 'role', '') == 'teacher':
             context['subjects'] = Subject.objects.filter(creator=request.user)
         else:
@@ -1319,7 +1237,7 @@ def course_constructor_view(request):
 
                         block_instance.save()
 
-                # ИСПРАВЛЕНИЕ: Проверяем, есть ли теперь блоки у предмета
+                #Проверяем, есть ли теперь блоки у предмета
 
                 if Block.objects.filter(subject=subject).exists():
 
@@ -1374,7 +1292,7 @@ def course_constructor_view(request):
 
         if not lesson_id: return redirect(base_url + f'?step=3&subject_id={subject_id}&block_id={block_id}')
 
-        # НОВОЕ: Проверяем, нажал ли пользователь кнопку редактирования
+        #Проверяем, нажал ли пользователь кнопку редактирования
 
         edit_mode = request.GET.get('edit')
 
@@ -1397,7 +1315,7 @@ def course_constructor_view(request):
                 return redirect(request.get_full_path())
 
 
-            # --- НОВОЕ: Обработка сохранения отредактированного видео ---
+            #Обработка сохранения отредактированного видео
 
             elif 'update_video' in request.POST:
 
@@ -1410,7 +1328,7 @@ def course_constructor_view(request):
                         base_url + f'?step=4&subject_id={subject.id}&block_id={block.id}&lesson_id={lesson.id}')
 
 
-            # --- НОВОЕ: Обработка сохранения отредактированного теста ---
+            # Обработка сохранения отредактированного теста
 
             elif 'update_test' in request.POST:
 
@@ -1493,8 +1411,6 @@ def course_constructor_view(request):
 
             unassigned_tests = unassigned_tests.filter(creator=user)
 
-        # --- ИЗМЕНЕНО: Инициализируем формы с данными (если мы в режиме редактирования) ---
-
         if edit_mode == 'video' and lesson.video:
 
             context['video_form'] = VideoForm(instance=lesson.video)
@@ -1535,7 +1451,7 @@ def course_constructor_view(request):
 
             base_url + f'?step=4&subject_id={subject_id}&block_id={block_id}&lesson_id={lesson_id}')
 
-        # НОВОЕ: Проверяем, редактируем ли мы существующий вопрос
+        #Проверяем, редактируем ли мы существующий вопрос
 
         edit_q_id = request.GET.get('edit_q')
 

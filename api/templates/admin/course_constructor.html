@@ -9,6 +9,40 @@
 <link href="https://fonts.googleapis.com/css2?family=Onest:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
       rel="stylesheet">
 <style>
+    /* Стили для цепочки контекста (хлебные крошки) */
+        .context-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding: 2px 0;
+        }
+        .context-tag {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 14px;
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--t2);
+            box-shadow: var(--sh1);
+        }
+        .context-tag i {
+            color: var(--pr);
+            font-size: 11px;
+        }
+        .context-tag strong {
+            color: var(--t1);
+            font-weight: 600;
+        }
+        .context-sep {
+            color: var(--t3);
+            align-self: center;
+            font-size: 10px;
+        }
     /* Красивый чекбокс "Верный ответ" */
         .correct-toggle {
             display: inline-flex !important;
@@ -341,7 +375,10 @@
                 </div>
             </div>
             {% elif current_step == 2 %}
-            <div class="slabel">Шаг 2: Создайте или выберите блок для предмета "{{ selected_items|get_item:subject_id }}"</div>
+            <div class="slabel">Шаг 2: Работа с блоками</div>
+                <div class="context-bar">
+                    <div class="context-tag"><i class="fas fa-book"></i> Предмет: <strong>{{ subject.name }}</strong></div>
+                </div>
             {% if error_message %}
             <div class="info-box" style="background:var(--rose-l); color:var(--rose); border: 1px solid var(--rose);">
                 <i class="fas fa-exclamation-triangle"></i> {{ error_message }}
@@ -420,7 +457,10 @@
                     class="fas fa-arrow-left"></i> Назад к выбору предмета</a>
             {% elif current_step == 3 %}
             {% if blocks_to_select %}
-            <div class="slabel">Шаг 3: Выберите блок для предмета "{{ selected_items|get_item:subject_id }}"</div>
+            <div class="slabel">Шаг 3: Выбор блока</div>
+                <div class="context-bar">
+                    <div class="context-tag"><i class="fas fa-book"></i> Предмет: <strong>{{ subject.name }}</strong></div>
+                </div>
             <div class="info-box" style="display: flex; gap: 12px; align-items: flex-start; margin-bottom: 25px;">
                 <i class="fas fa-lightbulb" style="margin-top: 2px; font-size: 16px; color: var(--pr);"></i>
                 <div>
@@ -446,7 +486,12 @@
                style="background:var(--surface);color:var(--t2);border-color:var(--border);"><i
                     class="fas fa-arrow-left"></i> Назад к выбору блока</a>
             {% else %}
-            <div class="slabel">Шаг 3: Создайте или выберите урок для блока "{{ selected_items|get_item:block_id }}"</div>
+            <div class="slabel">Шаг 3: Наполнение урока</div>
+                <div class="context-bar">
+                    <div class="context-tag"><i class="fas fa-book"></i> Предмет: <strong>{{ subject.name }}</strong></div>
+                    <div class="context-sep"><i class="fas fa-chevron-right"></i></div>
+                    <div class="context-tag"><i class="fas fa-cube"></i> Блок: <strong>{{ current_block.title }}</strong></div>
+                </div>
             <div class="info-box" style="display: flex; gap: 12px; align-items: flex-start; margin-bottom: 25px;">
                 <i class="fas fa-lightbulb" style="margin-top: 2px; font-size: 16px; color: var(--pr);"></i>
                 <div>
@@ -525,7 +570,14 @@
                     class="fas fa-arrow-left"></i> Назад к выбору блока</a>
             {% endif %}
             {% elif current_step == 4 %}
-            <div class="slabel">Шаг 4: Добавьте контент к уроку "{{ selected_items|get_item:lesson_id }}"</div>
+            <div class="slabel">Шаг 4: Привязка материалов</div>
+                <div class="context-bar">
+                    <div class="context-tag"><i class="fas fa-book"></i> Предмет: <strong>{{ subject.name }}</strong></div>
+                    <div class="context-sep"><i class="fas fa-chevron-right"></i></div>
+                    <div class="context-tag"><i class="fas fa-cube"></i> Блок: <strong>{{ current_block.title }}</strong></div>
+                    <div class="context-sep"><i class="fas fa-chevron-right"></i></div>
+                    <div class="context-tag"><i class="fas fa-film"></i> Урок: <strong>{{ lesson.title }}</strong></div>
+                </div>
             <div class="info-box" style="display: flex; gap: 12px; align-items: flex-start; margin-bottom: 25px;">
                 <i class="fas fa-lightbulb" style="margin-top: 2px; font-size: 16px; color: var(--pr);"></i>
                 <div>
@@ -875,7 +927,16 @@
                 {% endif %}
             </div>
             {% elif current_step == 5 %}
-            <div class="slabel">Шаг 5: Вопросы и ответы к тесту "{{ test.title }}"</div>
+            <div class="slabel">Шаг 5: Создание вопросов</div>
+                <div class="context-bar">
+                    <div class="context-tag"><i class="fas fa-book"></i> Предмет: <strong>{{ subject.name }}</strong></div>
+                    <div class="context-sep"><i class="fas fa-chevron-right"></i></div>
+                    <div class="context-tag"><i class="fas fa-cube"></i> Блок: <strong>{{ current_block.title }}</strong></div>
+                    <div class="context-sep"><i class="fas fa-chevron-right"></i></div>
+                    <div class="context-tag"><i class="fas fa-film"></i> Урок: <strong>{{ lesson.title }}</strong></div>
+                    <div class="context-sep"><i class="fas fa-chevron-right"></i></div>
+                    <div class="context-tag"><i class="fas fa-clipboard-check"></i> Тест: <strong>{{ test.title }}</strong></div>
+                </div>
             <div class="form-grid">
 
                 <div class="form-section">
