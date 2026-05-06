@@ -8,6 +8,8 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from django.utils import timezone
 from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
 
 from .models import (
     User, Group, GroupMember, Subject, Block, Lesson, Test, Question, Answer, TestResult,
@@ -1148,6 +1150,22 @@ def answer_training_question(request, pk):
 # ═══════════════════════════════════════════════════════════════════════
 # COURSE CONSTRUCTOR VIEW
 # ═══════════════════════════════════════════════════════════════════════
+@login_required
+@require_POST
+def create_test_ajax(request):
+    """AJAX endpoint для создания теста из модального окна конструктора"""
+    form = TestForm(request.POST)
+    if form.is_valid():
+        test = form.save(commit=False)
+        test.creator = request.user
+        test.save()
+        return JsonResponse({
+            'success': True,
+            'test': {'id': test.id, 'title': test.title}
+        })
+    else:
+        return JsonResponse({'success': False, 'errors': form.errors})
+
 
 @login_required
 def course_constructor_view(request):
@@ -1155,6 +1173,7 @@ def course_constructor_view(request):
     subject_id = request.GET.get('subject_id')
     block_id = request.GET.get('block_id')
     lesson_id = request.GET.get('lesson_id')
+    test_id = request.GET.get('test_id')  # ДОБАВЛЕНО
 
     user = request.user
     is_teacher = getattr(user, 'role', '') == 'teacher'
@@ -1162,19 +1181,25 @@ def course_constructor_view(request):
     selected_items = {}
     subject, block, lesson, test = None, None, None, None
 
-    # Проверка прав доступа к объектам при их получении
     if subject_id:
         subject = get_object_or_404(Subject, id=subject_id)
         if is_teacher and subject.creator != user:
-            return redirect('admin:index')  # Запрет доступа к чужому предмету
+            return redirect('admin:index')
         selected_items[str(subject.id)] = subject.name
     if block_id:
         block = get_object_or_404(Block, id=block_id)
         selected_items[str(block.id)] = block.title
+
+    # НОВАЯ ЛОГИКА ОПРЕДЕЛЕНИЯ ТЕСТА
+    if test_id:
+        test = get_object_or_404(Test, id=test_id)
+        selected_items[f"test_{test.id}"] = test.title
+
     if lesson_id:
         lesson = get_object_or_404(Lesson, id=lesson_id)
         selected_items[str(lesson.id)] = lesson.title
-        if lesson.test:
+        # Если тест не передали напрямую, но есть урок с тестом — берем его
+        if lesson.test and not test:
             test = lesson.test
             selected_items[f"test_{test.id}"] = test.title
 
@@ -1257,6 +1282,8 @@ def course_constructor_view(request):
 
             context['formset'] = BlockFormSet(prefix='blocks')
 
+        context['blocks'] = Block.objects.filter(subject=subject)
+        context['test_form'] = TestForm()
         context['blocks'] = Block.objects.filter(subject=subject)
 
     elif current_step == 3:
@@ -1447,9 +1474,8 @@ def course_constructor_view(request):
 
     elif current_step == 5:
 
-        if not test: return redirect(
-
-            base_url + f'?step=4&subject_id={subject_id}&block_id={block_id}&lesson_id={lesson_id}')
+        if not test:
+            return redirect(base_url + '?step=1')  # Универсальный возврат, если что-то пошло не так
 
         #Проверяем, редактируем ли мы существующий вопрос
 

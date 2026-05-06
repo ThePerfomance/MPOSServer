@@ -404,8 +404,25 @@
                                                                       style="float:right;">Удалить</span></h5>
                                 {% for field in form.hidden_fields %}{{ field }}{% endfor %}
                                 {% for field in form.visible_fields %}
-                                <p>{{ field.label_tag }} {{ field }} {% for error in field.errors %}<span
-                                        class="errorlist">{{ error }}</span>{% endfor %}</p>
+                                {% if field.name == 'final_test' %}
+                                <div style="margin-bottom: 15px;">
+                                    <label style="display:block;margin-bottom:5px;font-weight:500;font-size:13px;color:var(--t2)">{{ field.label }}</label>
+                                    <div style="display: flex; gap: 10px; align-items: center;">
+                                        <div style="flex-grow: 1;">
+                                            {{ field }}
+                                        </div>
+                                        <button type="button" class="btn-action" onclick="openCreateTestModal(this)" style="height: 37px; border-color: var(--pr); color: var(--pr); padding: 0 15px;" title="Создать новый тест">
+                                            <i class="fas fa-plus"></i>
+                                        </button>
+                                        <a href="#" class="btn-action btn-edit-questions" target="_blank" style="height: 37px; display: none; border-color: var(--teal); color: var(--teal);" title="Настроить вопросы">
+                                            <i class="fas fa-list-ul"></i> Вопросы
+                                        </a>
+                                    </div>
+                                    {% for error in field.errors %}<span class="errorlist">{{ error }}</span>{% endfor %}
+                                </div>
+                                {% else %}
+                                <p>{{ field.label_tag }} {{ field }} {% for error in field.errors %}<span class="errorlist">{{ error }}</span>{% endfor %}</p>
+                                {% endif %}
                                 {% endfor %}
                             </div>
                             {% endfor %}
@@ -514,8 +531,25 @@
                                 </h5>
                                 {% for field in form.hidden_fields %}{{ field }}{% endfor %}
                                 {% for field in form.visible_fields %}
-                                <p>{{ field.label_tag }} {{ field }} {% for error in field.errors %}<span
-                                        class="errorlist">{{ error }}</span>{% endfor %}</p>
+                                {% if field.name == 'final_test' %}
+                                <div style="margin-bottom: 15px;">
+                                    <label style="display:block;margin-bottom:5px;font-weight:500;font-size:13px;color:var(--t2)">{{ field.label }}</label>
+                                    <div style="display: flex; gap: 10px; align-items: center;">
+                                        <div style="flex-grow: 1;">
+                                            {{ field }}
+                                        </div>
+                                        <button type="button" class="btn-action" onclick="openCreateTestModal(this)" style="height: 37px; border-color: var(--pr); color: var(--pr); padding: 0 15px;" title="Создать новый тест">
+                                            <i class="fas fa-plus"></i>
+                                        </button>
+                                        <a href="#" class="btn-action btn-edit-questions" target="_blank" style="height: 37px; display: none; border-color: var(--teal); color: var(--teal);" title="Настроить вопросы">
+                                            <i class="fas fa-list-ul"></i> Вопросы
+                                        </a>
+                                    </div>
+                                    {% for error in field.errors %}<span class="errorlist">{{ error }}</span>{% endfor %}
+                                </div>
+                                {% else %}
+                                <p>{{ field.label_tag }} {{ field }} {% for error in field.errors %}<span class="errorlist">{{ error }}</span>{% endfor %}</p>
+                                {% endif %}
                                 {% endfor %}
                             </div>
                             {% endfor %}
@@ -1070,12 +1104,19 @@
             </div>
 
             <div class="mt-4 d-flex justify-content-between">
+                {% if lesson_id %}
                 <a href="{% url 'api:course-constructor' %}?step=4&subject_id={{ subject_id }}&block_id={{ block_id }}&lesson_id={{ lesson_id }}"
                    class="btn btn-secondary" style="background:var(--surface);color:var(--t2);border-color:var(--border);">
-                   <i class="fas fa-arrow-left"></i> Назад к контенту
+                    <i class="fas fa-arrow-left"></i> Назад к контенту
                 </a>
+                {% else %}
+                <button type="button" onclick="window.close()" class="btn btn-secondary" style="background:var(--surface);color:var(--t2);border-color:var(--border);">
+                    <i class="fas fa-times"></i> Закрыть вкладку
+                </button>
+                {% endif %}
+
                 <a href="{% url 'admin:index' %}" class="btn btn-success" style="background:var(--green);border-color:var(--green);">
-                   <i class="fas fa-check-circle"></i> Завершить сборку курса
+                    <i class="fas fa-check-circle"></i> Завершить сборку
                 </a>
             </div>
             {% endif %}
@@ -1314,5 +1355,143 @@
                 }
             }
     });
+</script>
+<style>
+    .modal-overlay {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(4px);
+        display: none; align-items: center; justify-content: center; z-index: 1000;
+        opacity: 0; transition: opacity 0.2s ease;
+    }
+    .modal-overlay.active { display: flex; opacity: 1; }
+    .modal-box {
+        background: var(--card); border-radius: var(--r); width: 100%; max-width: 500px;
+        box-shadow: var(--sh2); transform: translateY(20px); transition: transform 0.3s ease;
+    }
+    .modal-overlay.active .modal-box { transform: translateY(0); }
+    .modal-header {
+        padding: 16px 20px; border-bottom: 1px solid var(--border);
+        display: flex; justify-content: space-between; align-items: center;
+    }
+    .modal-header h3 { margin: 0; font-size: 16px; color: var(--t1); }
+    .modal-close {
+        background: none; border: none; font-size: 18px; color: var(--t3); cursor: pointer; transition: 0.2s;
+    }
+    .modal-close:hover { color: var(--rose); }
+    .modal-body { padding: 20px; max-height: 70vh; overflow-y: auto; }
+    .modal-footer {
+        padding: 16px 20px; border-top: 1px solid var(--border); background: var(--surface);
+        display: flex; justify-content: flex-end; gap: 10px;
+    }
+</style>
+
+<div class="modal-overlay" id="createTestModal">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3><i class="fas fa-file-alt" style="color: var(--pr); margin-right: 6px;"></i> Создание теста</h3>
+            <button class="modal-close" onclick="closeTestModal()"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body form-section" style="border: none; padding: 0 20px; margin: 20px 0;">
+            <form id="ajaxCreateTestForm">
+                {% csrf_token %}
+                {{ test_form.as_p }}
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeTestModal()" style="background: #fff; color: var(--t2); border: 1px solid var(--border);">Отмена</button>
+            <button class="btn" id="saveAjaxTestBtn" onclick="submitAjaxTest()"><i class="fas fa-check"></i> Создать</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Функция для обновления видимости и ссылки кнопки "Вопросы"
+function updateQuestionButton(selectElement) {
+    const btnContainer = selectElement.closest('div');
+    // Ищем соседнюю кнопку "Вопросы"
+    const btn = btnContainer.parentElement.querySelector('.btn-edit-questions');
+    if (btn) {
+        if (selectElement.value) {
+            btn.style.display = 'inline-flex';
+            // Генерируем ссылку на Шаг 5, передавая напрямую ID теста
+            btn.href = `{% url 'api:course-constructor' %}?step=5&test_id=${selectElement.value}&subject_id={{ subject_id }}`;
+        } else {
+            btn.style.display = 'none';
+        }
+    }
+}
+
+// Привязываем слушатели ко всем селектам при загрузке страницы
+document.addEventListener('DOMContentLoaded', function() {
+    const testSelects = document.querySelectorAll('select[name$="-final_test"]');
+    testSelects.forEach(select => {
+        updateQuestionButton(select); // Проверяем при загрузке
+        select.addEventListener('change', () => updateQuestionButton(select)); // Проверяем при изменении
+    });
+});
+    let currentTestSelect = null;
+
+    function openCreateTestModal(btnElement) {
+        currentTestSelect = btnElement.parentElement.querySelector('select');
+        document.getElementById('createTestModal').classList.add('active');
+    }
+
+    function closeTestModal() {
+        document.getElementById('createTestModal').classList.remove('active');
+        document.getElementById('ajaxCreateTestForm').reset();
+        currentTestSelect = null;
+    }
+
+    async function submitAjaxTest() {
+        const formElement = document.getElementById('ajaxCreateTestForm');
+        const formData = new FormData(formElement); // Автоматически собирает все поля формы
+        const saveBtn = document.getElementById('saveAjaxTestBtn');
+
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Сохранение...';
+
+        try {
+            // Укажи здесь правильный URL, который добавил в urls.py
+            const response = await fetch('{% url "api:create_test_ajax" %}', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                // Создаем и выбираем новый тест в нужном селекте
+                const newOption = new Option(data.test.title, data.test.id, false, true);
+if (currentTestSelect) {
+    currentTestSelect.appendChild(newOption);
+    currentTestSelect.value = data.test.id; // АВТОВЫБОР НОВОГО ТЕСТА
+    updateQuestionButton(currentTestSelect); // ОБНОВЛЯЕМ КНОПКУ
+} else {
+                    // На всякий случай обновляем все селекты тестов
+                    document.querySelectorAll('select[name$="-final_test"]').forEach(select => {
+                        const clonedOption = new Option(data.test.title, data.test.id, false, select === currentTestSelect);
+                        select.appendChild(clonedOption);
+                    });
+                }
+                closeTestModal();
+            } else {
+                // Выводим ошибки валидации оригинальной формы
+                let errorMsg = 'Ошибки заполнения:\n';
+                for (const [field, errors] of Object.entries(data.errors)) {
+                    errorMsg += `- ${field}: ${errors.join(', ')}\n`;
+                }
+                alert(errorMsg);
+            }
+        } catch (error) {
+            console.error('Ошибка:', error);
+            alert('Сетевая ошибка при создании теста.');
+        } finally {
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = '<i class="fas fa-check"></i> Создать';
+        }
+    }
 </script>
 {% endblock %}
