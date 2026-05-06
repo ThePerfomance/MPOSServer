@@ -10,6 +10,8 @@ from django.utils import timezone
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
+import json
+from .models import User
 
 from .models import (
     User, Group, GroupMember, Subject, Block, Lesson, Test, Question, Answer, TestResult,
@@ -37,6 +39,54 @@ from ml.engine import (
     build_learning_path
 )
 
+# ═══════════════════════════════════════════════════════════════════════
+# Admin panel (Web)
+# ═══════════════════════════════════════════════════════════════════════
+
+@login_required
+@require_POST
+def admin_quick_register(request):
+    """AJAX endpoint для быстрого создания пользователей администратором"""
+
+    # Жесткая проверка: только админ может создавать пользователей таким образом
+    if getattr(request.user, 'role', '') != 'admin':
+        return JsonResponse({'success': False, 'error': 'У вас нет прав для выполнения этого действия.'})
+
+    try:
+        data = json.loads(request.body)
+        email = data.get('email', '').strip().lower()
+        password = data.get('password', '')
+        firstname = data.get('firstname', '').strip()
+        lastname = data.get('lastname', '').strip()
+        patronymic = data.get('patronymic', '').strip()
+        role = data.get('role', 'student')
+
+        # Базовая валидация
+        if not all([email, password, firstname, lastname]):
+            return JsonResponse(
+                {'success': False, 'error': 'Заполните все обязательные поля (Имя, Фамилия, Email, Пароль).'})
+
+        if User.objects.filter(email=email).exists():
+            return JsonResponse({'success': False, 'error': f'Пользователь с email {email} уже существует.'})
+
+        # Создаем пользователя через менеджер (чтобы пароль правильно захешировался)
+        user = User.objects.create_user(
+            email=email,
+            password=password,
+            firstname=firstname,
+            lastname=lastname,
+            patronymic=patronymic,
+            role=role,
+            is_active=True
+        )
+
+        return JsonResponse({
+            'success': True,
+            'message': f'{"Преподаватель" if role == "teacher" else "Студент"} {firstname} {lastname} успешно зарегистрирован!'
+        })
+
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': f'Системная ошибка: {str(e)}'})
 
 # ═══════════════════════════════════════════════════════════════════════
 # USERS

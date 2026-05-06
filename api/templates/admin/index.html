@@ -245,7 +245,16 @@ h1#site-name,.breadcrumbs{display:none}
       <div class="hero-name">{% if request.user.firstname %}{{ request.user.firstname }} {{ request.user.lastname }}{% else %}{{ request.user.email }}{% endif %}</div>
     </div>
   </div>
-  <div class="clock"><i class="fas fa-calendar-alt"></i><span id="dd">—</span></div>
+
+  <div style="display: flex; gap: 15px; align-items: center;">
+      {% if request.user.is_authenticated and request.user.role == 'admin' %}
+          <button type="button" class="btn" onclick="openRegisterModal()" style="background: var(--pr); color: #fff; border-radius: 30px; padding: 10px 20px; border: none; cursor: pointer; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; box-shadow: var(--sh1);">
+              <i class="fas fa-user-plus"></i> Быстрая регистрация
+          </button>
+      {% endif %}
+
+      <div class="clock"><i class="fas fa-calendar-alt"></i><span id="dd">—</span></div>
+  </div>
 </div>
 
 {# STATS #}
@@ -552,4 +561,192 @@ function toggleSj(h){
   h.nextElementSibling.classList.toggle('show');
 }
 </script>
+{% if request.user.role == 'admin' %}
+<style>
+    .modal-overlay {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(4px);
+        display: none; align-items: center; justify-content: center; z-index: 1000;
+        opacity: 0; transition: opacity 0.2s ease;
+    }
+    .modal-overlay.active { display: flex; opacity: 1; }
+    .modal-box {
+        background: #ffffff; border-radius: 14px; width: 100%; max-width: 480px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1); transform: translateY(20px); transition: transform 0.3s ease;
+    }
+    .modal-overlay.active .modal-box { transform: translateY(0); }
+    .modal-header {
+        padding: 18px 24px; border-bottom: 1px solid #e2e8f0;
+        display: flex; justify-content: space-between; align-items: center;
+    }
+    .modal-header h3 { margin: 0; font-size: 16px; color: #0f172a; }
+    .modal-close { background: none; border: none; font-size: 18px; color: #94a3b8; cursor: pointer; transition: 0.2s; }
+    .modal-close:hover { color: #f43f5e; }
+    .modal-body { padding: 24px; }
+    .form-group { margin-bottom: 16px; }
+    .form-group label { display: block; margin-bottom: 6px; font-size: 13px; font-weight: 500; color: #475569; }
+    .form-group input, .form-group select {
+        width: 100%; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; outline: none; transition: border-color 0.2s;
+    }
+    .form-group input:focus, .form-group select:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .modal-footer {
+        padding: 16px 24px; border-top: 1px solid #e2e8f0; background: #f8fafc;
+        display: flex; justify-content: flex-end; gap: 12px; border-radius: 0 0 14px 14px;
+    }
+    .btn-save { background: #2563eb; color: #fff; border: none; padding: 10px 20px; border-radius: 30px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+    .btn-save:hover { background: #1d4ed8; }
+    .btn-cancel { background: #fff; color: #475569; border: 1px solid #cbd5e1; padding: 10px 20px; border-radius: 30px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+    .btn-cancel:hover { background: #f1f5f9; }
+</style>
+
+<div class="modal-overlay" id="quickRegisterModal">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3><i class="fas fa-user-plus" style="color: #2563eb; margin-right: 8px;"></i> Регистрация пользователя</h3>
+            <button class="modal-close" onclick="closeRegisterModal()"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+            <form id="quickRegisterForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Роль</label>
+                        <select id="reg_role">
+                            <option value="student">Студент</option>
+                            <option value="teacher">Преподаватель</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Email <span style="color: #f43f5e;">*</span></label>
+                        <input type="email" id="reg_email" required placeholder="example@mail.com">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Имя <span style="color: #f43f5e;">*</span></label>
+                        <input type="text" id="reg_firstname" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Фамилия <span style="color: #f43f5e;">*</span></label>
+                        <input type="text" id="reg_lastname" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Отчество</label>
+                        <input type="text" id="reg_patronymic">
+                    </div>
+                    <div class="form-group">
+                        <label>Временный пароль <span style="color: #f43f5e;">*</span></label>
+                        <div style="display: flex; gap: 8px;">
+                            <input type="text" id="reg_password" required placeholder="Пароль">
+                            <button type="button" onclick="generatePassword()" style="background: #e2e8f0; border: none; border-radius: 8px; padding: 0 12px; cursor: pointer; color: #475569;" title="Сгенерировать">
+                                <i class="fas fa-dice"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div id="reg_message" style="display: none; font-size: 13px; font-weight: 500; margin-top: 10px; padding: 10px; border-radius: 8px;"></div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-cancel" onclick="closeRegisterModal()">Отмена</button>
+            <button class="btn-save" id="btnRegisterSubmit" onclick="submitRegistration()">Зарегистрировать</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    function openRegisterModal() {
+        document.getElementById('quickRegisterModal').classList.add('active');
+        document.getElementById('reg_message').style.display = 'none';
+        generatePassword(); // Генерируем пароль сразу при открытии
+    }
+
+    function closeRegisterModal() {
+        document.getElementById('quickRegisterModal').classList.remove('active');
+        document.getElementById('quickRegisterForm').reset();
+    }
+
+    function generatePassword() {
+        const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
+        let pass = "";
+        for (let i = 0; i < 10; i++) {
+            pass += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        document.getElementById('reg_password').value = pass;
+    }
+
+    function showMessage(text, isError) {
+        const msgBox = document.getElementById('reg_message');
+        msgBox.style.display = 'block';
+        msgBox.textContent = text;
+        if (isError) {
+            msgBox.style.background = '#fff1f2';
+            msgBox.style.color = '#e11d48';
+            msgBox.style.border = '1px solid #fecdd3';
+        } else {
+            msgBox.style.background = '#ecfdf5';
+            msgBox.style.color = '#059669';
+            msgBox.style.border = '1px solid #a7f3d0';
+        }
+    }
+
+    async function submitRegistration() {
+        const btn = document.getElementById('btnRegisterSubmit');
+
+        const data = {
+            role: document.getElementById('reg_role').value,
+            email: document.getElementById('reg_email').value,
+            firstname: document.getElementById('reg_firstname').value,
+            lastname: document.getElementById('reg_lastname').value,
+            patronymic: document.getElementById('reg_patronymic').value,
+            password: document.getElementById('reg_password').value
+        };
+
+        if (!data.email || !data.firstname || !data.lastname || !data.password) {
+            showMessage("Пожалуйста, заполните все обязательные поля со звездочкой.", true);
+            return;
+        }
+
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Загрузка...';
+
+        try {
+            // Замени 'api:admin_quick_register' на правильное имя твоего маршрута
+            const response = await fetch('{% url "api:admin_quick_register" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: JSON.stringify(data)
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                showMessage(result.message, false);
+                // Очищаем форму, но оставляем окно открытым на пару секунд, чтобы увидеть успех
+                document.getElementById('quickRegisterForm').reset();
+                setTimeout(() => {
+                    closeRegisterModal();
+                    // Опционально: перезагрузить страницу, чтобы обновить счетчики в дашборде
+                    window.location.reload();
+                }, 2000);
+            } else {
+                showMessage(result.error, true);
+            }
+        } catch (error) {
+            showMessage('Сетевая ошибка. Попробуйте еще раз.', true);
+            console.error(error);
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = 'Зарегистрировать';
+        }
+    }
+</script>
+{% endif %}
 {% endblock %}

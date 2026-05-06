@@ -95,4 +95,6 @@ urlpatterns = [
 
     #constructor
     path('create-test-ajax/', views.create_test_ajax, name='create_test_ajax'),
+    #admin panel (web)
+    path('admin-quick-register/', views.admin_quick_register, name='admin_quick_register'),
 ]
