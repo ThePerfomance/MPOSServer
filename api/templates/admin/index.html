@@ -324,30 +324,34 @@ h1#site-name,.breadcrumbs{display:none}
       <div class="pb">
 
         <div class="step-grid">
-            <a href="{% url 'api:course-constructor' %}?step=1" class="step-card" style="border-top: 3px solid #667eea;">
+            <a href="{% url 'api:course-constructor' %}?step=1" class="step-card" style="cursor:pointer; border-top: 3px solid #667eea;">
                 <div class="step-card-ic">📖</div>
                 <div class="step-card-t" style="color: #667eea;">1. Предмет</div>
-                <div class="step-card-d">Основа курса<br>(математика, физика)</div>
+                <div class="step-card-d">Основа курса</div>
             </a>
-            <a href="{% url 'api:course-constructor' %}?step=2" class="step-card" style="border-top: 3px solid #f5576c;">
+
+            <a onclick="openContextModal(2, 'Блок', '#f5576c')" class="step-card" style="cursor:pointer; border-top: 3px solid #f5576c;">
                 <div class="step-card-ic">📦</div>
                 <div class="step-card-t" style="color: #f5576c;">2. Блок</div>
-                <div class="step-card-d">Главы и модули<br>предмета</div>
+                <div class="step-card-d">Главы и модули</div>
             </a>
-            <a href="{% url 'api:course-constructor' %}?step=3" class="step-card" style="border-top: 3px solid #4facfe;">
+
+            <a onclick="openContextModal(3, 'Урок', '#4facfe')" class="step-card" style="cursor:pointer; border-top: 3px solid #4facfe;">
                 <div class="step-card-ic">🎬</div>
                 <div class="step-card-t" style="color: #4facfe;">3. Урок</div>
-                <div class="step-card-d">Названия тем<br>внутри блоков</div>
+                <div class="step-card-d">Темы внутри блоков</div>
             </a>
-            <a href="{% url 'api:course-constructor' %}?step=4" class="step-card" style="border-top: 3px solid #43e97b;">
+
+            <a onclick="openContextModal(4, 'Контент', '#43e97b')" class="step-card" style="cursor:pointer; border-top: 3px solid #43e97b;">
                 <div class="step-card-ic">🧩</div>
                 <div class="step-card-t" style="color: #43e97b;">4. Контент</div>
-                <div class="step-card-d">Привязка видео<br>и тестов</div>
+                <div class="step-card-d">Привязка видео и тестов</div>
             </a>
-            <a href="{% url 'api:course-constructor' %}?step=5" class="step-card" style="border-top: 3px solid #f093fb;">
+
+            <a onclick="openContextModal(5, 'Вопросы', '#f093fb')" class="step-card" style="cursor:pointer; border-top: 3px solid #f093fb;">
                 <div class="step-card-ic">❓</div>
                 <div class="step-card-t" style="color: #f093fb;">5. Вопросы</div>
-                <div class="step-card-d">Варианты ответов<br>для тестов</div>
+                <div class="step-card-d">Варианты ответов</div>
             </a>
         </div>
 
@@ -749,4 +753,251 @@ function toggleSj(h){
     }
 </script>
 {% endif %}
+<style>
+    /* Стили модального окна контекста */
+    .ctx-modal-overlay {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(15, 23, 42, 0.5); backdrop-filter: blur(5px);
+        display: none; align-items: center; justify-content: center; z-index: 2000;
+        opacity: 0; transition: opacity 0.3s ease;
+    }
+    .ctx-modal-overlay.active { display: flex; opacity: 1; }
+    .ctx-modal-box {
+        background: #ffffff; border-radius: 16px; width: 100%; max-width: 420px;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.15); transform: translateY(20px) scale(0.95);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); overflow: hidden;
+    }
+    .ctx-modal-overlay.active .ctx-modal-box { transform: translateY(0) scale(1); }
+    .ctx-modal-header {
+        padding: 20px 24px; border-bottom: 1px solid #f1f5f9; display: flex;
+        justify-content: space-between; align-items: center;
+    }
+    .ctx-modal-title { font-size: 18px; font-weight: 700; color: #0f172a; display:flex; align-items:center; gap:10px; }
+    .ctx-modal-close { background: none; border: none; font-size: 20px; color: #94a3b8; cursor: pointer; transition: 0.2s; }
+    .ctx-modal-close:hover { color: #f43f5e; }
+    .ctx-modal-body { padding: 24px; }
+
+    .ctx-select-group { margin-bottom: 16px; display: none; animation: fadeInDown 0.3s ease; }
+    .ctx-select-group.visible { display: block; }
+    .ctx-select-group label { display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 8px; }
+    .ctx-select {
+        width: 100%; padding: 12px 14px; border: 2px solid #e2e8f0; border-radius: 10px;
+        font-size: 14px; color: #1e293b; background: #f8fafc; outline: none; transition: 0.2s;
+        cursor: pointer; appearance: none;
+    }
+    .ctx-select:focus { border-color: #2563eb; background: #fff; box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+    .ctx-select:disabled { background: #f1f5f9; color: #94a3b8; cursor: not-allowed; }
+
+    .ctx-modal-footer { padding: 16px 24px; background: #f8fafc; border-top: 1px solid #f1f5f9; display: flex; justify-content: flex-end; }
+    .ctx-btn-go {
+        background: #2563eb; color: #fff; border: none; padding: 12px 24px; border-radius: 30px;
+        font-weight: 600; cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 8px;
+    }
+    .ctx-btn-go:disabled { background: #94a3b8; cursor: not-allowed; opacity: 0.7; }
+    .ctx-btn-go:not(:disabled):hover { background: #1d4ed8; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(37,99,235,0.3); }
+
+    @keyframes fadeInDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+
+<div class="ctx-modal-overlay" id="contextModal">
+    <div class="ctx-modal-box">
+        <div class="ctx-modal-header">
+            <div class="ctx-modal-title" id="ctxModalTitle">Выбор контекста</div>
+            <button class="ctx-modal-close" onclick="closeContextModal()"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="ctx-modal-body">
+            <p style="font-size: 13px; color: #64748b; margin-top: 0; margin-bottom: 20px;">
+                Перед переходом к этому шагу, выберите, к чему он будет относиться:
+            </p>
+
+            <div class="ctx-select-group" id="grpSubject">
+                <label>1. Выберите предмет</label>
+                <select class="ctx-select" id="selSubject" onchange="handleSubjectChange()">
+                    <option value="">Загрузка...</option>
+                </select>
+            </div>
+
+            <div class="ctx-select-group" id="grpBlock">
+                <label>2. Выберите блок</label>
+                <select class="ctx-select" id="selBlock" onchange="handleBlockChange()">
+                    <option value="">Сначала выберите предмет</option>
+                </select>
+            </div>
+
+            <div class="ctx-select-group" id="grpLesson">
+                <label>3. Выберите урок</label>
+                <select class="ctx-select" id="selLesson" onchange="checkReadiness()">
+                    <option value="">Сначала выберите блок</option>
+                </select>
+            </div>
+        </div>
+        <div class="ctx-modal-footer">
+            <button class="ctx-btn-go" id="ctxBtnGo" onclick="goToConstructor()" disabled>
+                Перейти в конструктор <i class="fas fa-arrow-right"></i>
+            </button>
+        </div>
+    </div>
+</div>
+<script>
+    // 1. URL-шаблоны из вашего Django urls.py
+    const urls = {
+        constructor: "{% url 'api:course-constructor' %}",
+        subjects: "{% url 'api:subjects-list' %}",
+        // Используем нули как заглушку UUID, которую потом заменим в JS
+        blocks: "{% url 'api:blocks-by-subject-via-subject' subject_id='00000000-0000-0000-0000-000000000000' %}",
+        lessons: "{% url 'api:lessons-by-block' block_id='00000000-0000-0000-0000-000000000000' %}"
+    };
+
+    let targetStep = 1;
+
+    // 2. Открытие модального окна
+    async function openContextModal(step, titleName, color) {
+        targetStep = step;
+
+        // Настраиваем заголовок
+        const titleEl = document.getElementById('ctxModalTitle');
+        titleEl.innerHTML = `<span style="color:${color}">Шаг ${step}: ${titleName}</span>`;
+
+        // Сброс состояния всех селектов
+        document.getElementById('selSubject').innerHTML = '<option value="">Загрузка...</option>';
+        document.getElementById('selBlock').innerHTML = '<option value="">Сначала выберите предмет</option>';
+        document.getElementById('selBlock').disabled = true;
+        document.getElementById('selLesson').innerHTML = '<option value="">Сначала выберите блок</option>';
+        document.getElementById('selLesson').disabled = true;
+        document.getElementById('ctxBtnGo').disabled = true;
+
+        // Показываем только те поля, которые нужны для выбранного шага
+        document.getElementById('grpSubject').classList.add('visible');
+        document.getElementById('grpBlock').classList.toggle('visible', step >= 3);
+        document.getElementById('grpLesson').classList.toggle('visible', step >= 4);
+
+        // Открываем окно
+        document.getElementById('contextModal').classList.add('active');
+
+        // Загружаем список предметов
+        try {
+            const res = await fetch(urls.subjects);
+            const data = await res.json();
+            const sel = document.getElementById('selSubject');
+
+            if (data.length === 0) {
+                sel.innerHTML = '<option value="">Нет доступных предметов</option>';
+                return;
+            }
+
+            sel.innerHTML = '<option value="">-- Выберите предмет --</option>' +
+                data.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+        } catch (e) {
+            console.error('Ошибка загрузки предметов:', e);
+            document.getElementById('selSubject').innerHTML = '<option value="">Ошибка загрузки</option>';
+        }
+    }
+
+    // 3. Закрытие окна
+    function closeContextModal() {
+        document.getElementById('contextModal').classList.remove('active');
+    }
+
+    // 4. Реакция на выбор предмета (подгрузка блоков)
+    async function handleSubjectChange() {
+        const subjectId = document.getElementById('selSubject').value;
+        const blockSel = document.getElementById('selBlock');
+        const lessonSel = document.getElementById('selLesson');
+
+        // Сброс дочерних полей
+        blockSel.innerHTML = '<option value="">-- Выберите блок --</option>';
+        lessonSel.innerHTML = '<option value="">Сначала выберите блок</option>';
+        lessonSel.disabled = true;
+        checkReadiness();
+
+        if (!subjectId) {
+            blockSel.disabled = true;
+            return;
+        }
+
+        // Если нам нужны блоки (шаг 3 и дальше)
+        if (targetStep >= 3) {
+            blockSel.disabled = false;
+            blockSel.innerHTML = '<option value="">Загрузка...</option>';
+            try {
+                // Подставляем реальный ID предмета вместо нулей
+                const url = urls.blocks.replace('00000000-0000-0000-0000-000000000000', subjectId);
+                const res = await fetch(url);
+                const data = await res.json();
+
+                if (data.length === 0) {
+                    blockSel.innerHTML = '<option value="">В этом предмете нет блоков</option>';
+                    return;
+                }
+
+                blockSel.innerHTML = '<option value="">-- Выберите блок --</option>' +
+                    data.map(b => `<option value="${b.id}">${b.title}</option>`).join('');
+            } catch (e) {
+                blockSel.innerHTML = '<option value="">Ошибка загрузки</option>';
+            }
+        }
+    }
+
+    // 5. Реакция на выбор блока (подгрузка уроков)
+    async function handleBlockChange() {
+        const blockId = document.getElementById('selBlock').value;
+        const lessonSel = document.getElementById('selLesson');
+
+        checkReadiness();
+
+        if (!blockId) {
+            lessonSel.disabled = true;
+            lessonSel.innerHTML = '<option value="">-- Выберите блок --</option>';
+            return;
+        }
+
+        // Если нам нужны уроки (шаг 4 и дальше)
+        if (targetStep >= 4) {
+            lessonSel.disabled = false;
+            lessonSel.innerHTML = '<option value="">Загрузка...</option>';
+            try {
+                // Подставляем реальный ID блока вместо нулей
+                const url = urls.lessons.replace('00000000-0000-0000-0000-000000000000', blockId);
+                const res = await fetch(url);
+                const data = await res.json();
+
+                if (data.length === 0) {
+                    lessonSel.innerHTML = '<option value="">В этом блоке нет уроков</option>';
+                    return;
+                }
+
+                lessonSel.innerHTML = '<option value="">-- Выберите урок --</option>' +
+                    data.map(l => `<option value="${l.id}">${l.title}</option>`).join('');
+            } catch (e) {
+                lessonSel.innerHTML = '<option value="">Ошибка загрузки</option>';
+            }
+        }
+    }
+
+    // 6. Проверка: можно ли разблокировать кнопку перехода?
+    function checkReadiness() {
+        const sId = document.getElementById('selSubject').value;
+        const bId = document.getElementById('selBlock').value;
+        const lId = document.getElementById('selLesson').value;
+        const btn = document.getElementById('ctxBtnGo');
+
+        if (targetStep === 2) btn.disabled = !sId;
+        else if (targetStep === 3) btn.disabled = !(sId && bId);
+        else if (targetStep >= 4) btn.disabled = !(sId && bId && lId);
+    }
+
+    // 7. Переход в конструктор со всеми параметрами
+    function goToConstructor() {
+        const sId = document.getElementById('selSubject').value;
+        const bId = document.getElementById('selBlock').value;
+        const lId = document.getElementById('selLesson').value;
+
+        let finalUrl = `${urls.constructor}?step=${targetStep}`;
+        if (sId) finalUrl += `&subject_id=${sId}`;
+        if (bId) finalUrl += `&block_id=${bId}`;
+        if (lId) finalUrl += `&lesson_id=${lId}`;
+
+        window.location.href = finalUrl;
+    }
+</script>
 {% endblock %}

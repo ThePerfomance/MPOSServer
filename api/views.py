@@ -3,9 +3,12 @@ from django.db.models import Avg, Count
 from django.shortcuts import get_object_or_404, render, redirect
 from django.urls import reverse
 from rest_framework import status
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, authentication_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
+from rest_framework.authentication import SessionAuthentication
+from rest_framework.permissions import IsAuthenticated
+from rest_framework_simplejwt.authentication import JWTAuthentication
 from django.utils import timezone
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
@@ -295,6 +298,8 @@ def group_member_detail(request, pk):
 # ═══════════════════════════════════════════════════════════════════════
 
 @api_view(["GET", "POST"])
+@authentication_classes([SessionAuthentication, JWTAuthentication]) # Читаем куку из админки
+@permission_classes([IsAuthenticated])         # Только для авторизованных
 def subjects_list(request):
     if request.method == "GET":
         return Response(SubjectSerializer(Subject.objects.all(), many=True).data)
@@ -681,6 +686,8 @@ def block_detail(request, pk):
 
 
 @api_view(["GET"])
+@authentication_classes([SessionAuthentication, JWTAuthentication])
+@permission_classes([IsAuthenticated])
 def blocks_by_subject(request, subject_id):
     blocks = Block.objects.filter(subject_id=subject_id).order_by('position')
     serializer = BlockSerializer(blocks, many=True)
@@ -727,6 +734,8 @@ def lesson_detail(request, pk):
 
 
 @api_view(["GET"])
+@authentication_classes([SessionAuthentication, JWTAuthentication])
+@permission_classes([IsAuthenticated])
 def lessons_by_block(request, block_id):
     lessons = Lesson.objects.filter(block_id=block_id).order_by('position')
     serializer = LessonSerializer(lessons, many=True)
