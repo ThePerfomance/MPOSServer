@@ -183,7 +183,12 @@ class SubjectAdmin(admin.ModelAdmin):
     def has_view_permission(self, request, obj=None):   return is_teacher_or_admin(request.user)
     def has_add_permission(self, request):              return is_teacher_or_admin(request.user)
     def has_change_permission(self, request, obj=None): return is_teacher_or_admin(request.user)
-    def has_delete_permission(self, request, obj=None): return is_admin(request.user)
+    def has_delete_permission(self, request, obj=None):
+        if is_admin(request.user):
+            return True
+        if obj is not None and obj.creator == request.user:
+            return True
+        return False
 
 
 @admin.register(Block)
@@ -229,7 +234,12 @@ class BlockAdmin(admin.ModelAdmin):
         return is_teacher_or_admin(request.user)
 
     def has_delete_permission(self, request, obj=None):
-        return is_admin(request.user)
+        if is_admin(request.user):
+            return True
+        # Преподаватель может удалить блок, если он создатель родительского предмета
+        if obj is not None and obj.subject.creator == request.user:
+            return True
+        return False
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
@@ -285,7 +295,12 @@ class LessonAdmin(admin.ModelAdmin):
         return is_teacher_or_admin(request.user)
 
     def has_delete_permission(self, request, obj=None):
-        return is_admin(request.user)
+        if is_admin(request.user):
+            return True
+        # Преподаватель может удалить урок, если он создатель предмета, к которому относится блок
+        if obj is not None and obj.block.subject.creator == request.user:
+            return True
+        return False
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
@@ -350,7 +365,12 @@ class TestAdmin(admin.ModelAdmin):
         return is_teacher_or_admin(request.user)
 
     def has_delete_permission(self, request, obj=None):
-        return is_admin(request.user)
+        if is_admin(request.user):
+            return True
+        # Преподаватель может удалить урок, если он создатель предмета, к которому относится блок
+        if obj is not None and obj.creator == request.user:
+            return True
+        return False
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
@@ -582,7 +602,12 @@ class VideoAdmin(admin.ModelAdmin):
         return is_teacher_or_admin(request.user)
 
     def has_delete_permission(self, request, obj=None):
-        return is_admin(request.user)
+        if is_admin(request.user):
+            return True
+        # Преподаватель может удалить урок, если он создатель предмета, к которому относится блок
+        if obj is not None and obj.creator == request.user:
+            return True
+        return False
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)

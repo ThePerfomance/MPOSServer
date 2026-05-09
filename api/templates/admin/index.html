@@ -230,6 +230,25 @@ h1#site-name,.breadcrumbs{display:none}
 @media(max-width:1120px){.mg{grid-template-columns:1fr}.rc{display:grid;grid-template-columns:1fr 1fr;gap:24px}.panel{margin-bottom:0}}
 @media(max-width:900px){.step-grid {grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));}}
 @media(max-width:700px){.stats{grid-template-columns:repeat(2,1fr)}.prog-row{grid-template-columns:repeat(2,1fr)}.rc{grid-template-columns:1fr}.dw{padding:20px 16px 40px}}
+    /* Стили для кнопок удаления */
+.del-badge {
+  font-size:11px; color:var(--rose)!important; text-decoration:none!important;
+  background:var(--rose-l); padding:4px 10px; border-radius:20px; font-weight:600; margin-right:8px;
+  transition: all 0.2s;
+}
+.del-badge:hover { background: var(--rose); color: #fff!important; }
+
+.bl-del {
+  font-size:11px; color:var(--rose)!important; text-decoration:none!important;
+  background:var(--rose-l); padding:3px 9px; border-radius:20px; font-weight:600; margin-left:6px;
+  transition: all 0.2s;
+}
+.bl-del:hover { background: var(--rose); color: #fff!important; }
+
+.ll-del {
+  color: #f43f5e!important; font-size: 12px; margin-left: 8px; opacity: 0.6; transition: opacity 0.2s;
+}
+.ll-del:hover { opacity: 1; }
 </style>
 {% endblock %}
 
@@ -379,7 +398,11 @@ h1#site-name,.breadcrumbs{display:none}
             <div class="sj-ico"><i class="fas fa-book"></i></div>
             <div class="sj-name">{{ subj.name }}</div>
             <span class="sj-meta">{{ subj.blocks.count }} бл.</span>
+
             <a href="{% url 'admin:api_subject_change' subj.pk %}" class="edit-badge" onclick="event.stopPropagation()"><i class="fas fa-pen"></i></a>
+
+            <a href="{% url 'admin:api_subject_delete' subj.pk %}" class="del-badge" onclick="event.stopPropagation()"><i class="fas fa-trash"></i></a>
+
             <i class="fas fa-chevron-right sj-arr"></i>
           </div>
           <div class="sj-body">
@@ -387,15 +410,23 @@ h1#site-name,.breadcrumbs{display:none}
             <div class="bl-item">
               <div class="bl-name">
                 <i class="fas fa-layer-group"></i>{{ bl.title }}
-                <a href="{% url 'admin:api_block_change' bl.pk %}" class="bl-edit"><i class="fas fa-pen"></i></a>
+
+                <div style="margin-left:auto; display:flex;">
+                    <a href="{% url 'admin:api_block_change' bl.pk %}" class="bl-edit"><i class="fas fa-pen"></i></a>
+
+                    <a href="{% url 'admin:api_block_delete' bl.pk %}" class="bl-del"><i class="fas fa-trash"></i></a>
+                </div>
               </div>
               <ul class="ll">
                 {% for lesson in bl.lessons.all %}
                 <li>
                   <i class="fas fa-circle" style="font-size:5px;color:var(--t3);flex-shrink:0"></i>
                   <a href="{% url 'admin:api_lesson_change' lesson.pk %}">{{ lesson.title }}</a>
-                  {% if lesson.video %}<i class="fas fa-video" style="color:var(--teal);font-size:11px" title="Есть видео"></i>{% endif %}
-                  {% if lesson.test %}<i class="fas fa-clipboard-check" style="color:var(--violet);font-size:11px" title="Есть тест"></i>{% endif %}
+
+                  <a href="{% url 'admin:api_lesson_delete' lesson.pk %}" class="ll-del"><i class="fas fa-trash"></i></a>
+
+                  {% if lesson.video %}<i class="fas fa-video" style="color:var(--teal);font-size:11px; margin-left:8px;" title="Есть видео"></i>{% endif %}
+                  {% if lesson.test %}<i class="fas fa-clipboard-check" style="color:var(--violet);font-size:11px; margin-left:8px;" title="Есть тест"></i>{% endif %}
                   <span class="pub {% if lesson.is_published %}y{% else %}n{% endif %}">{% if lesson.is_published %}✓ Опубл.{% else %}Черновик{% endif %}</span>
                 </li>
                 {% empty %}
