@@ -118,12 +118,12 @@
     .fstep{display:flex;flex-direction:column;align-items:center;gap:8px;flex-shrink:0}
     .fbtn{display:inline-flex;align-items:center;gap:7px;padding:9px 17px;border-radius:30px;font-size:13px;font-weight:700;text-decoration:none!important;transition:all .18s;white-space:nowrap;border:none}
     .fbtn:hover{transform:translateY(-2px);box-shadow:var(--sh2)}
-    .fbtn.s0{background:var(--pr)!important;color:#fff!important}
-    .fbtn.s1{background:var(--pr)!important;color:#fff!important}
-    .fbtn.s2{background:var(--teal)!important;color:#fff!important}
-    .fbtn.s3{background:var(--amber)!important;color:#fff!important}
-    .fbtn.s4{background:var(--violet)!important;color:#fff!important}
-    .fbtn.s5{background:var(--rose)!important;color:#fff!important}
+    .fbtn.s0{background:#667eea!important;color:#fff!important}
+    .fbtn.s1{background:#667eea!important;color:#fff!important}
+    .fbtn.s2{background:#f5576c!important;color:#fff!important}
+    .fbtn.s3{background:#4facfe!important;color:#fff!important}
+    .fbtn.s4{background:#43e97b!important;color:#fff!important; text-shadow: 0 1px 2px rgba(0,0,0,0.1);}
+    .fbtn.s5{background:#f093fb!important;color:#fff!important}
     .fbtn.s-inactive{background:#F1F5F9!important;color:var(--t3)!important;pointer-events:none}
     .fbtn *{color:#fff!important}
     .fnum{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--t3);font-family:var(--mono)}
@@ -285,6 +285,44 @@
         }
         .q-exist-text { font-size: 14px; color: var(--t1); font-weight: 500; line-height: 1.4; }
         .q-exist-meta { display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed var(--border); padding-top: 10px; margin-top: 5px; }
+    /* ========================================================
+       ЦВЕТОВЫЕ ТЕМЫ ДЛЯ КАЖДОГО ШАГА КОНСТРУКТОРА
+       ======================================================== */
+
+    /* Шаг 1: Предмет (#667eea) */
+    .theme-step-1 .form-section { border-top: 4px solid #667eea; background: linear-gradient(180deg, #f4f7ff 0%, #ffffff 120px); }
+    .theme-step-1 .form-section .btn { background: #667eea !important; border-color: #667eea !important; color: #fff !important; }
+
+    /* Шаг 2: Блоки (#f5576c) */
+    .theme-step-2 .form-section { border-top: 4px solid #f5576c; background: linear-gradient(180deg, #fff0f2 0%, #ffffff 120px); }
+    .theme-step-2 .formset-item { border-left: 5px solid #f5576c; border-radius: 6px 10px 10px 6px; box-shadow: 0 4px 15px rgba(245, 87, 108, 0.08); background: #fff; }
+    .theme-step-2 .form-section h4 { color: #f5576c; }
+    .theme-step-2 .form-section h5 { color: #f5576c; font-weight: 700; }
+    .theme-step-2 .form-section .btn[type="submit"] { background: #f5576c !important; border-color: #f5576c !important; color: #fff !important; }
+    .theme-step-2 .form-section .add-form-button { background: #fff !important; color: #f5576c !important; border: 2px dashed #f5576c !important; }
+    .theme-step-2 .form-section .add-form-button:hover { background: #fff0f2 !important; }
+
+    /* Шаг 3: Уроки (#4facfe) */
+    .theme-step-3 .form-section { border-top: 4px solid #4facfe; background: linear-gradient(180deg, #f0f9ff 0%, #ffffff 120px); }
+    .theme-step-3 .formset-item { border-left: 5px solid #4facfe; border-radius: 6px 10px 10px 6px; box-shadow: 0 4px 15px rgba(79, 172, 254, 0.08); background: #fff; }
+    .theme-step-3 .form-section h4 { color: #4facfe; }
+    .theme-step-3 .form-section h5 { color: #4facfe; font-weight: 700; }
+    .theme-step-3 .form-section .btn[type="submit"] { background: #4facfe !important; border-color: #4facfe !important; color: #fff !important; }
+    .theme-step-3 .form-section .add-form-button { background: #fff !important; color: #4facfe !important; border: 2px dashed #4facfe !important; }
+    .theme-step-3 .form-section .add-form-button:hover { background: #f0f9ff !important; }
+
+    /* Шаг 4: Контент (#43e97b) */
+    .theme-step-4 .form-section { border-top: 4px solid #43e97b; background: linear-gradient(180deg, #f0fdf4 0%, #ffffff 120px); }
+    .theme-step-4 .form-section h4 { color: #28a745; } /* Чуть темнее для читаемости на белом */
+    .theme-step-4 .form-section .btn[type="submit"], .theme-step-4 .form-section .btn[name="submit_new_video"], .theme-step-4 .form-section .btn[name="submit_new_test"] { background: #43e97b !important; border-color: #43e97b !important; color: #fff !important; text-shadow: 0 1px 1px rgba(0,0,0,0.15); }
+
+    /* Шаг 5: Вопросы (#f093fb) */
+    .theme-step-5 .form-section { border-top: 4px solid #f093fb; background: linear-gradient(180deg, #fdf4ff 0%, #ffffff 120px); }
+    .theme-step-5 .form-section h4 { color: #d946ef; } /* Чуть темнее для контраста */
+    .theme-step-5 .formset-item.answer-card { border-left: 5px solid #f093fb; border-radius: 6px 10px 10px 6px; box-shadow: 0 4px 15px rgba(240, 147, 251, 0.1); }
+    .theme-step-5 .form-section .btn[type="submit"] { background: #f093fb !important; border-color: #f093fb !important; color: #fff !important;}
+    .theme-step-5 .form-section .add-form-button { background: #fff !important; color: #d946ef !important; border: 2px dashed #f093fb !important; }
+    .theme-step-5 .form-section .add-form-button:hover { background: #fdf4ff !important; }
 </style>
 {% endblock %}
 
@@ -349,7 +387,7 @@
                     <strong>Совет:</strong> Предмет — это главная «обертка» вашего курса (например, «Компьютерные сети» или «Алгебра 9 класс»). После его создания вы сможете разбить курс на тематические блоки.
                 </div>
             </div>
-            <div class="form-grid">
+            <div class="form-grid theme-step-1">
                 <div class="form-section">
                     <h4>Создать новый предмет</h4>
                     <form method="post" action="{% url 'api:course-constructor' %}?step=1" autocomplete="off">
@@ -396,7 +434,7 @@
                     <strong>Совет:</strong> Блоки помогают структурировать предмет (например, разбить его по главам или четвертям). Используйте поле <strong>«Позиция»</strong>, чтобы задать правильный порядок их отображения.
                 </div>
             </div>
-            <div class="form-grid">
+            <div class="form-grid theme-step-2">
                 <div class="form-section">
                     <h4>Создать новые блоки</h4>
                     <form method="post" action="{% url 'api:course-constructor' %}?step=2&subject_id={{ subject_id }}"
@@ -524,7 +562,7 @@
                     <strong>Совет:</strong> Выберите блок из списка ниже, в который вы хотите добавить новые уроки.
                 </div>
             </div>
-            <div class="form-grid">
+            <div class="form-grid theme-step-3">
                 <div class="form-section full-width">
                     <h4>Выберите один из существующих блоков</h4>
                     <ul class="item-list">
@@ -555,7 +593,7 @@
                     <strong>Совет:</strong> Внутри блоков находятся конкретные темы занятий. На этом этапе мы создаем только "каркас" (названия уроков). Прикрепить видео и тесты можно будет на следующем этапе.
                 </div>
             </div>
-            <div class="form-grid">
+            <div class="form-grid theme-step-3">
                 <div class="form-section">
                     <h4>Создать новые уроки</h4>
                     <form method="post"
@@ -693,7 +731,7 @@
                     <strong>Совет:</strong> Здесь вы наполняете урок материалами: привязываете видеолекцию и проверочный тест. Для видео можно загрузить файл напрямую или указать ссылку на YouTube/Rutube/VK Видео. Видео у урока может не быть, как и теста
                 </div>
             </div>
-            <div class="form-grid">
+            <div class="form-grid theme-step-4">
                 <div class="form-section">
                     <h4>Видео</h4>
                     {% if lesson.video %}
@@ -1044,7 +1082,7 @@
                     <div class="context-sep"><i class="fas fa-chevron-right"></i></div>
                     <div class="context-tag"><i class="fas fa-clipboard-check"></i> Тест: <strong>{{ test.title }}</strong></div>
                 </div>
-            <div class="form-grid">
+            <div class="form-grid theme-step-5">
 
                 <div class="form-section">
                     {% if edit_q %}
