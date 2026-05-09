@@ -365,8 +365,14 @@
                         {% for subject in subjects %}
                         <li>
                             <span>{{ subject.name }}</span>
-                            <a href="{% url 'api:course-constructor' %}?step=2&subject_id={{ subject.id }}"
-                               class="btn-select">Выбрать <i class="fas fa-arrow-right"></i></a>
+                            <div style="display: flex; gap: 8px;">
+                                <a href="{% url 'admin:api_subject_delete' subject.id %}" target="_blank" class="btn-select" style="color: var(--rose); border-color: #fda4af;" title="Удалить предмет со всем содержимым">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+
+                                <a href="{% url 'api:course-constructor' %}?step=2&subject_id={{ subject.id }}"
+                                   class="btn-select">Выбрать <i class="fas fa-arrow-right"></i></a>
+                            </div>
                         </li>
                         {% empty %}
                         <li>Нет созданных предметов.</li>
@@ -484,13 +490,15 @@
                         <li>
                             <span>{{ block.title }}</span>
                             <div style="display: flex; gap: 8px;">
-                                <a href="{% url 'admin:api_block_change' block.id %}" target="_blank"
-                                   class="btn-select">
+                                <a href="{% url 'admin:api_block_change' block.id %}" target="_blank" class="btn-select">
                                     <i class="fas fa-edit"></i> Редактировать
                                 </a>
 
-                                <a href="{% url 'api:course-constructor' %}?step=3&subject_id={{ subject_id }}&block_id={{ block.id }}"
-                                   class="btn-select">
+                                <a href="{% url 'admin:api_block_delete' block.id %}" target="_blank" class="btn-select" style="color: var(--rose); border-color: #fda4af;" title="Удалить блок">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+
+                                <a href="{% url 'api:course-constructor' %}?step=3&subject_id={{ subject_id }}&block_id={{ block.id }}" class="btn-select">
                                     Выбрать <i class="fas fa-arrow-right"></i>
                                 </a>
                             </div>
@@ -645,16 +653,17 @@
                         {% for lesson in lessons %}
                         <li>
                             <span>{{ lesson.title }}</span>
-
                             <div style="display: flex; gap: 8px;">
-                                <a href="{% url 'admin:api_lesson_change' lesson.id %}" target="_blank"
-                                   class="btn-select">
+                                <a href="{% url 'admin:api_lesson_change' lesson.id %}" target="_blank" class="btn-select">
                                     <i class="fas fa-edit"></i> Редактировать
                                 </a>
 
-                                <a href="{% url 'api:course-constructor' %}?step=4&subject_id={{ subject_id }}&block_id={{ block_id }}&lesson_id={{ lesson.id }}"
-                                   class="btn-select">
-                                    Выбрать и добавить контент <i class="fas fa-arrow-right"></i>
+                                <a href="{% url 'admin:api_lesson_delete' lesson.id %}" target="_blank" class="btn-select" style="color: var(--rose); border-color: #fda4af;" title="Удалить урок">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+
+                                <a href="{% url 'api:course-constructor' %}?step=4&subject_id={{ subject_id }}&block_id={{ block_id }}&lesson_id={{ lesson.id }}" class="btn-select">
+                                    Контент <i class="fas fa-arrow-right"></i>
                                 </a>
                             </div>
                         </li>
@@ -760,19 +769,18 @@
                          style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
                         <div>К уроку уже привязано видео: <strong>{{ lesson.video.name }}</strong></div>
                         <div style="display: flex; gap: 8px;">
-                            <a href="{% url 'api:course-constructor' %}?step=4&subject_id={{ subject_id }}&block_id={{ block_id }}&lesson_id={{ lesson.id }}&edit=video"
-                               class="btn-action">
+                            <a href="{% url 'api:course-constructor' %}?step=4&subject_id={{ subject_id }}&block_id={{ block_id }}&lesson_id={{ lesson.id }}&edit=video" class="btn-action">
                                 <i class="fas fa-edit"></i> Редактировать
                             </a>
-                            <form method="post"
-                                  action="{% url 'api:course-constructor' %}?step=4&subject_id={{ subject_id }}&block_id={{ block_id }}&lesson_id={{ lesson.id }}"
-                                  style="margin: 0;">
+                            <form method="post" action="{% url 'api:course-constructor' %}?step=4&subject_id={{ subject_id }}&block_id={{ block_id }}&lesson_id={{ lesson.id }}" style="margin: 0;">
                                 {% csrf_token %}
-                                <button type="submit" name="unlink_video" class="btn-action btn-danger"
-                                        onclick="return confirm('Вы уверены, что хотите открепить это видео от урока?');">
+                                <button type="submit" name="unlink_video" class="btn-action" style="border-color: var(--amber); color: var(--amber);" onclick="return confirm('Открепить видео от урока (оно останется в базе)?');">
                                     <i class="fas fa-unlink"></i> Открепить
                                 </button>
                             </form>
+                            <a href="{% url 'admin:api_video_delete' lesson.video.id %}" target="_blank" class="btn-action btn-danger" title="Полностью удалить из базы">
+                                <i class="fas fa-trash"></i> Удалить
+                            </a>
                         </div>
                     </div>
                     {% endif %}
@@ -920,19 +928,18 @@
                          style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
                         <div>К уроку уже привязан тест: <strong>{{ lesson.test.title }}</strong></div>
                         <div style="display: flex; gap: 8px;">
-                            <a href="{% url 'api:course-constructor' %}?step=4&subject_id={{ subject_id }}&block_id={{ block_id }}&lesson_id={{ lesson.id }}&edit=test"
-                               class="btn-action">
+                            <a href="{% url 'api:course-constructor' %}?step=4&subject_id={{ subject_id }}&block_id={{ block_id }}&lesson_id={{ lesson.id }}&edit=test" class="btn-action">
                                 <i class="fas fa-edit"></i> Редактировать
                             </a>
-                            <form method="post"
-                                  action="{% url 'api:course-constructor' %}?step=4&subject_id={{ subject_id }}&block_id={{ block_id }}&lesson_id={{ lesson.id }}"
-                                  style="margin: 0;">
+                            <form method="post" action="{% url 'api:course-constructor' %}?step=4&subject_id={{ subject_id }}&block_id={{ block_id }}&lesson_id={{ lesson.id }}" style="margin: 0;">
                                 {% csrf_token %}
-                                <button type="submit" name="unlink_test" class="btn-action btn-danger"
-                                        onclick="return confirm('Вы уверены, что хотите открепить этот тест от урока?');">
+                                <button type="submit" name="unlink_test" class="btn-action" style="border-color: var(--amber); color: var(--amber);" onclick="return confirm('Открепить тест от урока (он останется в базе)?');">
                                     <i class="fas fa-unlink"></i> Открепить
                                 </button>
                             </form>
+                            <a href="{% url 'admin:api_test_delete' lesson.test.id %}" target="_blank" class="btn-action btn-danger" title="Полностью удалить тест">
+                                <i class="fas fa-trash"></i> Удалить
+                            </a>
                         </div>
                     </div>
                     {% endif %}
@@ -1154,9 +1161,15 @@
                             <div class="q-exist-text">{{ question.text }}</div>
                             <div class="q-exist-meta">
                                 <span style="font-size: 12px; color: var(--t3);"><i class="fas fa-list"></i> Вариантов: {{ question.answers.count }}</span>
-                                <a href="{% url 'api:course-constructor' %}?step=5&subject_id={{ subject_id }}&block_id={{ block_id }}&lesson_id={{ lesson_id }}&edit_q={{ question.id }}" class="btn-action" style="padding: 4px 10px; font-size: 11px;">
-                                    <i class="fas fa-edit"></i> Редактировать
-                                </a>
+                                <div style="display: flex; gap: 8px;">
+                                    <a href="{% url 'admin:api_question_delete' question.id %}" target="_blank" class="btn-action btn-danger" style="padding: 4px 10px; font-size: 11px;">
+                                        <i class="fas fa-trash"></i> Удалить
+                                    </a>
+
+                                    <a href="{% url 'api:course-constructor' %}?step=5&subject_id={{ subject_id }}&block_id={{ block_id }}&lesson_id={{ lesson_id }}&edit_q={{ question.id }}" class="btn-action" style="padding: 4px 10px; font-size: 11px;">
+                                        <i class="fas fa-edit"></i> Редактировать
+                                    </a>
+                                </div>
                             </div>
                         </div>
                         {% empty %}
