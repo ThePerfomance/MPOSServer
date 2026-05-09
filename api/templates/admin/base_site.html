@@ -9,8 +9,7 @@
     .navbar-search,
     #navbar-search,
     .form-inline,
-    [action*="search"],
-    .main-header .navbar-nav:not(.ml-auto) {
+    [action*="search"] {
         display: none !important;
         visibility: hidden !important;
         width: 0 !important;
@@ -56,7 +55,16 @@ document.addEventListener("DOMContentLoaded", function() {
         const el = document.querySelector(sel);
         if (el) el.remove();
     });
-
+// === ГЛОБАЛЬНОЕ МЕНЮ ПРЕПОДАВАТЕЛЯ ===
+    const leftNav = document.querySelector('.main-header .navbar-nav:not(.ml-auto)');
+    if (leftNav) {
+        leftNav.innerHTML = `
+            <li class="nav-item"><a href="{% url 'admin:index' %}" class="nav-link" style="color: #2563eb; font-weight: 600;"><i class="fas fa-rocket"></i> Дашборд</a></li>
+            <li class="nav-item"><a href="{% url 'admin:api_subject_changelist' %}" class="nav-link"><i class="fas fa-book"></i> Предметы</a></li>
+            <li class="nav-item"><a href="{% url 'admin:api_group_changelist' %}" class="nav-link"><i class="fas fa-users"></i> Мои группы</a></li>
+            <li class="nav-item"><a href="{% url 'admin:api_testresult_changelist' %}" class="nav-link"><i class="fas fa-chart-pie"></i> Результаты</a></li>
+        `;
+    }
     const rightNav = document.querySelector('.main-header .navbar-nav.ml-auto');
     if (rightNav) {
         // Добавляем имя к существующей серой иконке

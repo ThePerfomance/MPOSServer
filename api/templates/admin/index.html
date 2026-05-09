@@ -91,31 +91,26 @@ h1#site-name,.breadcrumbs{display:none}
 .phs{font-size:12px;color:var(--t3);margin-left:auto;font-family:var(--mono)}
 .pb{padding:22px;flex:1}
 
-/* НОВЫЙ КОНСТРУКТОР (УЛУЧШЕННЫЙ UX) */
+/* УЛУЧШЕННЫЙ КОНСТРУКТОР */
+.pipeline-container { position: relative; padding: 20px 0; }
+.pipeline-line {
+    position: absolute; top: 50%; left: 10%; right: 10%; height: 3px;
+    background: #e2e8f0; z-index: 1; transform: translateY(-50%); border-radius: 3px;
+}
 .step-grid {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 12px;
-    margin-bottom: 24px;
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 15px; position: relative; z-index: 2;
 }
 .step-card {
-    background: #f8fafc;
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 18px 12px;
-    text-align: center;
-    text-decoration: none !important;
-    transition: all 0.2s;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+    background: #ffffff; border: 2px solid var(--border); border-radius: 16px;
+    padding: 20px 12px; text-align: center; text-decoration: none !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: flex; flex-direction: column; align-items: center;
 }
 .step-card:hover {
-    transform: translateY(-4px);
-    box-shadow: var(--sh2);
+    transform: translateY(-6px) scale(1.02); box-shadow: 0 12px 24px rgba(37,99,235,0.15);
     background: #fff;
 }
-.step-card-ic { font-size: 26px; margin-bottom: 12px; }
+.step-card-ic { font-size: 28px; margin-bottom: 12px; transition: transform 0.3s; }
+.step-card:hover .step-card-ic { transform: scale(1.15) rotate(-5deg); }
 .step-card-t { font-weight: 700; font-size: 14px; margin-bottom: 4px; }
 .step-card-d { font-size: 11px; color: var(--t3); line-height: 1.3; font-weight: 500; }
 
@@ -255,29 +250,49 @@ h1#site-name,.breadcrumbs{display:none}
 {% block content %}
 <div class="dw">
 
-{# HERO #}
-<div class="hero">
-  <div class="hero-l">
-    <div class="av">{% if request.user.firstname %}{{ request.user.firstname|first|upper }}{% else %}{{ request.user.email|first|upper }}{% endif %}</div>
-    <div>
-      <div class="hero-sub">{% if request.user.role == 'admin' %}Администратор{% else %}Преподаватель{% endif %}</div>
-      <div class="hero-name">{% if request.user.firstname %}{{ request.user.firstname }} {{ request.user.lastname }}{% else %}{{ request.user.email }}{% endif %}</div>
-    </div>
+{# === КОНСТРУКТОР КУРСОВ (ГЛАВНЫЙ БЛОК) === #}
+<div class="panel con-panel" style="background: linear-gradient(to bottom right, #ffffff, #f8fafc); border-color: #cbd5e1; overflow: visible;">
+  <div class="ph" style="border-bottom: none; padding-bottom: 0;">
+    <div class="phi" style="background: var(--pr-l); color: var(--pr);"><i class="fas fa-rocket"></i></div>
+    <div class="pht" style="font-size: 18px;">Сборка курса (Конструктор)</div>
+    <div class="phs" style="font-size: 13px;">Пройдите 5 шагов слева направо для создания полноценного учебного материала</div>
   </div>
-
-  <div style="display: flex; gap: 15px; align-items: center;">
-      {% if request.user.is_authenticated and request.user.role == 'admin' %}
-          <button type="button" class="btn" onclick="openRegisterModal()" style="background: var(--pr); color: #fff; border-radius: 30px; padding: 10px 20px; border: none; cursor: pointer; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; box-shadow: var(--sh1);">
-              <i class="fas fa-user-plus"></i> Быстрая регистрация
-          </button>
-      {% endif %}
-
-      <div class="clock"><i class="fas fa-calendar-alt"></i><span id="dd">—</span></div>
+  <div class="pb">
+    <div class="pipeline-container">
+        <div class="pipeline-line"></div>
+        <div class="step-grid">
+            <a href="{% url 'api:course-constructor' %}?step=1" class="step-card" style="border-color: #667eea;">
+                <div class="step-card-ic">📖</div>
+                <div class="step-card-t" style="color: #667eea;">1. Предмет</div>
+                <div class="step-card-d">Основа курса</div>
+            </a>
+            <a onclick="openContextModal(2, 'Блок', '#f5576c')" class="step-card" style="cursor:pointer; border-color: #f5576c;">
+                <div class="step-card-ic">📦</div>
+                <div class="step-card-t" style="color: #f5576c;">2. Блок</div>
+                <div class="step-card-d">Главы и модули</div>
+            </a>
+            <a onclick="openContextModal(3, 'Урок', '#4facfe')" class="step-card" style="cursor:pointer; border-color: #4facfe;">
+                <div class="step-card-ic">🎬</div>
+                <div class="step-card-t" style="color: #4facfe;">3. Урок</div>
+                <div class="step-card-d">Темы внутри блоков</div>
+            </a>
+            <a onclick="openContextModal(4, 'Контент', '#43e97b')" class="step-card" style="cursor:pointer; border-color: #43e97b;">
+                <div class="step-card-ic">🧩</div>
+                <div class="step-card-t" style="color: #43e97b;">4. Контент</div>
+                <div class="step-card-d">Привязка видео и тестов</div>
+            </a>
+            <a onclick="openContextModal(5, 'Вопросы', '#f093fb')" class="step-card" style="cursor:pointer; border-color: #f093fb;">
+                <div class="step-card-ic">❓</div>
+                <div class="step-card-t" style="color: #f093fb;">5. Вопросы</div>
+                <div class="step-card-d">Варианты ответов</div>
+            </a>
+        </div>
+    </div>
   </div>
 </div>
 
 {# STATS #}
-<div class="slabel">Общая статистика</div>
+<div class="slabel">Обзор платформы</div>
 <div class="stats">
   <a href="{% url 'admin:api_subject_changelist' %}" class="sc bl">
     <div class="sico"><i class="fas fa-book-open"></i></div>
@@ -333,57 +348,6 @@ h1#site-name,.breadcrumbs{display:none}
 
   {# LEFT COLUMN #}
   <div>
-    {# УЛУЧШЕННЫЙ КОНСТРУКТОР #}
-    <div class="panel con-panel">
-      <div class="ph">
-        <div class="phi"><i class="fas fa-layer-group"></i></div>
-        <div class="pht">Конструктор курса</div>
-        <div class="phs">Каждый шаг строится на предыдущем</div>
-      </div>
-      <div class="pb">
-
-        <div class="step-grid">
-            <a href="{% url 'api:course-constructor' %}?step=1" class="step-card" style="cursor:pointer; border-top: 3px solid #667eea;">
-                <div class="step-card-ic">📖</div>
-                <div class="step-card-t" style="color: #667eea;">1. Предмет</div>
-                <div class="step-card-d">Основа курса</div>
-            </a>
-
-            <a onclick="openContextModal(2, 'Блок', '#f5576c')" class="step-card" style="cursor:pointer; border-top: 3px solid #f5576c;">
-                <div class="step-card-ic">📦</div>
-                <div class="step-card-t" style="color: #f5576c;">2. Блок</div>
-                <div class="step-card-d">Главы и модули</div>
-            </a>
-
-            <a onclick="openContextModal(3, 'Урок', '#4facfe')" class="step-card" style="cursor:pointer; border-top: 3px solid #4facfe;">
-                <div class="step-card-ic">🎬</div>
-                <div class="step-card-t" style="color: #4facfe;">3. Урок</div>
-                <div class="step-card-d">Темы внутри блоков</div>
-            </a>
-
-            <a onclick="openContextModal(4, 'Контент', '#43e97b')" class="step-card" style="cursor:pointer; border-top: 3px solid #43e97b;">
-                <div class="step-card-ic">🧩</div>
-                <div class="step-card-t" style="color: #43e97b;">4. Контент</div>
-                <div class="step-card-d">Привязка видео и тестов</div>
-            </a>
-
-            <a onclick="openContextModal(5, 'Вопросы', '#f093fb')" class="step-card" style="cursor:pointer; border-top: 3px solid #f093fb;">
-                <div class="step-card-ic">❓</div>
-                <div class="step-card-t" style="color: #f093fb;">5. Вопросы</div>
-                <div class="step-card-d">Варианты ответов</div>
-            </a>
-        </div>
-
-        <div class="vsec">
-          <div class="vslb"><i class="fas fa-film" style="color: var(--pr); font-size: 16px;"></i> Библиотека медиа</div>
-          <div class="vbtns">
-            <a href="{% url 'admin:api_videotype_changelist' %}" class="vbtn vt"><i class="fas fa-tag"></i> Типы видео</a>
-            <a href="{% url 'admin:api_video_add' %}" class="vbtn va"><i class="fas fa-upload"></i> Загрузить видео</a>
-          </div>
-        </div>
-      </div>
-    </div>
-
     {# Content tree #}
     <div class="panel tree-panel">
       <div class="ph">
