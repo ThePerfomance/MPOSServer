@@ -408,9 +408,7 @@
                                 <div style="margin-bottom: 15px;">
                                     <label style="display:block;margin-bottom:5px;font-weight:500;font-size:13px;color:var(--t2)">{{ field.label }}</label>
                                     <div style="display: flex; gap: 10px; align-items: center;">
-                                        <div style="flex-grow: 1;">
-                                            {{ field }}
-                                        </div>
+                                        <div style="flex-grow: 1;">{{ field }}</div>
                                         <button type="button" class="btn-action" onclick="openCreateTestModal(this)" style="height: 37px; border-color: var(--pr); color: var(--pr); padding: 0 15px;" title="Создать новый тест">
                                             <i class="fas fa-plus"></i>
                                         </button>
@@ -418,6 +416,18 @@
                                             <i class="fas fa-list-ul"></i> Вопросы
                                         </a>
                                     </div>
+                                    {% for error in field.errors %}<span class="errorlist">{{ error }}</span>{% endfor %}
+                                </div>
+                                {% elif field.name == 'is_published' %}
+                                <div style="margin-bottom: 15px;">
+                                    <label class="correct-toggle" style="width: 100%; border-color: #cbd5e1; height: auto; padding: 10px 14px;">
+                                        {% if not form.instance.pk %}
+                                        <input type="checkbox" name="{{ field.html_name }}" checked>
+                                        {% else %}
+                                        {{ field }}
+                                        {% endif %}
+                                        <span style="font-weight: 600; font-size: 13px; color: var(--t1);">Опубликовать (сделать видимым)</span>
+                                    </label>
                                     {% for error in field.errors %}<span class="errorlist">{{ error }}</span>{% endfor %}
                                 </div>
                                 {% else %}
@@ -430,10 +440,32 @@
                         <div id="block-form-template" style="display: none;">
                             <div class="formset-item">
                                 <h5>Блок #__prefix__ <span class="delete-row" style="float:right;">Удалить</span></h5>
-                                {{ formset.empty_form.id }}
                                 {% for field in formset.empty_form.hidden_fields %}{{ field }}{% endfor %}
+
                                 {% for field in formset.empty_form.visible_fields %}
-                                <p>{{ field.label_tag }} {{ field }}</p>
+                                    {% if field.name == 'final_test' %}
+                                    <div style="margin-bottom: 15px;">
+                                        <label style="display:block;margin-bottom:5px;font-weight:500;font-size:13px;color:var(--t2)">{{ field.label }}</label>
+                                        <div style="display: flex; gap: 10px; align-items: center;">
+                                            <div style="flex-grow: 1;">{{ field }}</div>
+                                            <button type="button" class="btn-action" onclick="openCreateTestModal(this)" style="height: 37px; border-color: var(--pr); color: var(--pr); padding: 0 15px;" title="Создать новый тест">
+                                                <i class="fas fa-plus"></i>
+                                            </button>
+                                            <a href="#" class="btn-action btn-edit-questions" target="_blank" style="height: 37px; display: none; border-color: var(--teal); color: var(--teal);" title="Настроить вопросы">
+                                                <i class="fas fa-list-ul"></i> Вопросы
+                                            </a>
+                                        </div>
+                                    </div>
+                                    {% elif field.name == 'is_published' %}
+                                    <div style="margin-bottom: 15px;">
+                                        <label class="correct-toggle" style="width: 100%; border-color: #cbd5e1; height: auto; padding: 10px 14px;">
+                                            <input type="checkbox" name="{{ field.html_name }}" checked>
+                                            <span style="font-weight: 600; font-size: 13px; color: var(--t1);">Опубликовать (сделать видимым)</span>
+                                        </label>
+                                    </div>
+                                    {% else %}
+                                    <p>{{ field.label_tag }} {{ field }}</p>
+                                    {% endif %}
                                 {% endfor %}
                             </div>
                         </div>
@@ -530,38 +562,72 @@
                                                                       style="float:right;">Удалить</span>
                                 </h5>
                                 {% for field in form.hidden_fields %}{{ field }}{% endfor %}
+
                                 {% for field in form.visible_fields %}
-                                {% if field.name == 'final_test' %}
-                                <div style="margin-bottom: 15px;">
-                                    <label style="display:block;margin-bottom:5px;font-weight:500;font-size:13px;color:var(--t2)">{{ field.label }}</label>
-                                    <div style="display: flex; gap: 10px; align-items: center;">
-                                        <div style="flex-grow: 1;">
-                                            {{ field }}
+                                    {% if field.name == 'test' %}
+                                    <div style="margin-bottom: 15px;">
+                                        <label style="display:block;margin-bottom:5px;font-weight:500;font-size:13px;color:var(--t2)">{{ field.label }}</label>
+                                        <div style="display: flex; gap: 10px; align-items: center;">
+                                            <div style="flex-grow: 1;">{{ field }}</div>
+                                            <button type="button" class="btn-action" onclick="openCreateTestModal(this)" style="height: 37px; border-color: var(--pr); color: var(--pr); padding: 0 15px;" title="Создать новый тест">
+                                                <i class="fas fa-plus"></i>
+                                            </button>
+                                            <a href="#" class="btn-action btn-edit-questions" target="_blank" style="height: 37px; display: none; border-color: var(--teal); color: var(--teal);" title="Настроить вопросы">
+                                                <i class="fas fa-list-ul"></i> Вопросы
+                                            </a>
                                         </div>
-                                        <button type="button" class="btn-action" onclick="openCreateTestModal(this)" style="height: 37px; border-color: var(--pr); color: var(--pr); padding: 0 15px;" title="Создать новый тест">
-                                            <i class="fas fa-plus"></i>
-                                        </button>
-                                        <a href="#" class="btn-action btn-edit-questions" target="_blank" style="height: 37px; display: none; border-color: var(--teal); color: var(--teal);" title="Настроить вопросы">
-                                            <i class="fas fa-list-ul"></i> Вопросы
-                                        </a>
+                                        {% for error in field.errors %}<span class="errorlist">{{ error }}</span>{% endfor %}
                                     </div>
-                                    {% for error in field.errors %}<span class="errorlist">{{ error }}</span>{% endfor %}
-                                </div>
-                                {% else %}
-                                <p>{{ field.label_tag }} {{ field }} {% for error in field.errors %}<span class="errorlist">{{ error }}</span>{% endfor %}</p>
-                                {% endif %}
+
+                                    {% elif field.name == 'is_published' %}
+                                    <div style="margin-bottom: 15px;">
+                                        <label class="correct-toggle" style="width: 100%; border-color: #cbd5e1; height: auto; padding: 10px 14px;">
+                                            {% if not form.instance.pk %}
+                                            <input type="checkbox" name="{{ field.html_name }}" checked>
+                                            {% else %}
+                                            {{ field }}
+                                            {% endif %}
+                                            <span style="font-weight: 600; font-size: 13px; color: var(--t1);">Опубликовать (сделать видимым)</span>
+                                        </label>
+                                        {% for error in field.errors %}<span class="errorlist">{{ error }}</span>{% endfor %}
+                                    </div>
+
+                                    {% else %}
+                                    <p>{{ field.label_tag }} {{ field }} {% for error in field.errors %}<span class="errorlist">{{ error }}</span>{% endfor %}</p>
+                                    {% endif %}
                                 {% endfor %}
                             </div>
                             {% endfor %}
                         </div>
                         <div id="lesson-form-template" style="display: none;">
                             <div class="formset-item">
-                                <h5>Урок #__prefix__ <span class="delete-row" style="float:right;">Удалить</span>
-                                </h5>
-                                {{ formset.empty_form.id }}
+                                <h5>Урок #__prefix__ <span class="delete-row" style="float:right;">Удалить</span></h5>
                                 {% for field in formset.empty_form.hidden_fields %}{{ field }}{% endfor %}
+
                                 {% for field in formset.empty_form.visible_fields %}
-                                <p>{{ field.label_tag }} {{ field }}</p>
+                                    {% if field.name == 'test' %}
+                                    <div style="margin-bottom: 15px;">
+                                        <label style="display:block;margin-bottom:5px;font-weight:500;font-size:13px;color:var(--t2)">{{ field.label }}</label>
+                                        <div style="display: flex; gap: 10px; align-items: center;">
+                                            <div style="flex-grow: 1;">{{ field }}</div>
+                                            <button type="button" class="btn-action" onclick="openCreateTestModal(this)" style="height: 37px; border-color: var(--pr); color: var(--pr); padding: 0 15px;" title="Создать новый тест">
+                                                <i class="fas fa-plus"></i>
+                                            </button>
+                                            <a href="#" class="btn-action btn-edit-questions" target="_blank" style="height: 37px; display: none; border-color: var(--teal); color: var(--teal);" title="Настроить вопросы">
+                                                <i class="fas fa-list-ul"></i> Вопросы
+                                            </a>
+                                        </div>
+                                    </div>
+                                    {% elif field.name == 'is_published' %}
+                                    <div style="margin-bottom: 15px;">
+                                        <label class="correct-toggle" style="width: 100%; border-color: #cbd5e1; height: auto; padding: 10px 14px;">
+                                            <input type="checkbox" name="{{ field.html_name }}" checked>
+                                            <span style="font-weight: 600; font-size: 13px; color: var(--t1);">Опубликовать (сделать видимым)</span>
+                                        </label>
+                                    </div>
+                                    {% else %}
+                                    <p>{{ field.label_tag }} {{ field }}</p>
+                                    {% endif %}
                                 {% endfor %}
                             </div>
                         </div>
@@ -1162,9 +1228,17 @@
                 const newForm = tempDiv.firstElementChild;
 
                 newForm.querySelectorAll('input, textarea').forEach(input => {
-                    if (input.type === 'checkbox') input.checked = false;
-                    else input.value = '';
-                });
+    if (input.type === 'checkbox') {
+        // Если это поле видимости, оставляем его включенным
+        if (input.name.includes('is_published')) {
+            input.checked = true;
+        } else {
+            input.checked = false;
+        }
+    } else {
+        input.value = '';
+    }
+});
 
                 container.appendChild(newForm);
                 totalFormsInput.value = newIndex + 1;
@@ -1355,6 +1429,16 @@
                 }
             }
     });
+    // 6. АВТОМАТИЧЕСКОЕ ВКЛЮЧЕНИЕ ГАЛОЧКИ ДЛЯ НАЧАЛЬНЫХ ФОРМ
+        document.querySelectorAll('.formset-item').forEach(form => {
+            const idInput = form.querySelector('input[type="hidden"][name$="-id"]');
+            if (idInput && !idInput.value) {
+                const pubCheckbox = form.querySelector('input[type="checkbox"][name$="-is_published"]');
+                if (pubCheckbox) {
+                    pubCheckbox.checked = true;
+                }
+            }
+        });
 </script>
 <style>
     .modal-overlay {
@@ -1493,5 +1577,30 @@ if (currentTestSelect) {
             saveBtn.innerHTML = '<i class="fas fa-check"></i> Создать';
         }
     }
+</script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Запускаем с небольшой задержкой (100мс), чтобы скрипт выполнился
+        // ПОСЛЕ того, как браузер закончит все свои манипуляции с полями формы
+        setTimeout(() => {
+            // Находим все галочки публикации на странице
+            const publishCheckboxes = document.querySelectorAll('input[type="checkbox"][name*="is_published"]');
+
+            publishCheckboxes.forEach(checkbox => {
+                // Находим родительскую карточку формы
+                const formItem = checkbox.closest('.formset-item');
+                if (formItem) {
+                    // Ищем скрытое поле ID объекта в этой форме
+                    const idInput = formItem.querySelector('input[type="hidden"][name$="-id"]');
+
+                    // Если поля ID нет или оно пустое (value=""), значит это абсолютно новая форма,
+                    // которую пользователь только собирается заполнить. Включаем галочку!
+                    if (!idInput || !idInput.value) {
+                        checkbox.checked = true;
+                    }
+                }
+            });
+        }, 100);
+    });
 </script>
 {% endblock %}

@@ -210,7 +210,7 @@ class BlockAdmin(admin.ModelAdmin):
         return ('title', 'subject', 'lessons_count')
 
     def get_list_editable(self, request):
-        return ('position', 'is_published') if is_admin(request.user) else ()
+        return ('position', 'is_published')
 
     def get_fieldsets(self, request, obj=None):
         # Преподавателю показываем только суть, скрываем настройки публикации
@@ -221,7 +221,7 @@ class BlockAdmin(admin.ModelAdmin):
                 ('Итоговый тест', {'fields': ('final_test',)}),
             )
         return (
-            ('Учебный материал', {'fields': ('title', 'subject', 'description', 'final_test')}),
+            ('Учебный материал', {'fields': ('title', 'subject', 'description', 'final_test', 'is_published')}),
         )
 
     def has_view_permission(self, request, obj=None):
@@ -267,10 +267,10 @@ class LessonAdmin(admin.ModelAdmin):
         # Преподаватель видит упрощенный список
         if is_admin(request.user):
             return ('title', 'block', 'position', 'duration', 'video_info', 'is_published')
-        return ('title', 'block', 'video_info')
+        return ('title', 'block', 'video_info', 'is_published')
 
     def get_list_editable(self, request):
-        return ('position', 'duration', 'is_published') if is_admin(request.user) else ()
+        return ('position', 'duration', 'is_published')
 
     def get_fieldsets(self, request, obj=None):
         # Преподавателю даем простую форму для создания урока
@@ -282,7 +282,7 @@ class LessonAdmin(admin.ModelAdmin):
                 ('Настройки отображения', {'fields': ('position', 'duration', 'is_published')}),
             )
         return (
-            ('Содержание урока', {'fields': ('title', 'block', 'summary', 'video', 'test')}),
+            ('Содержание урока', {'fields': ('title', 'block', 'summary', 'video', 'test', 'is_published')}),
         )
 
     def has_view_permission(self, request, obj=None):
