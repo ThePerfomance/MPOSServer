@@ -487,6 +487,17 @@ class UserAdmin(admin.ModelAdmin):
     def get_readonly_fields(self, request, obj=None):
         return [f.name for f in self.model._meta.fields] if not is_admin(request.user) else ()
 
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+
+        # Если это админ, показываем всех пользователей
+        if is_admin(request.user):
+            return qs
+
+        return qs.filter(
+            role='student',
+            memberships__group__group_teachers__teacher=request.user
+        ).distinct()
 
 @admin.register(Group)
 class GroupAdmin(admin.ModelAdmin):
