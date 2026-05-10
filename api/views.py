@@ -1620,18 +1620,43 @@ def course_constructor_view(request):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def create_adaptive_training(request):
-    """Создает адаптивную сессию тренажера"""
-    lesson_id = request.data.get('lesson_id')  # Необязательный параметр
+    """
+    Создает адаптивную сессию или возвращает существующую активную.
+    """
+    user = request.user
+    lesson_id = request.data.get('lesson_id')
 
-    session = generate_adaptive_session(request.user, lesson_id)
+    # 1. Проверяем, есть ли уже активная адаптивная сессия
+    # (Допустим, активной считается сессия, созданная за последние 24 часа и не завершенная)
+    active_session = TrainingSession.objects.filter(
+        user=user,
+        status='active'  # или другое поле, обозначающее статус
+    ).order_by('-created_at').first()
+
+    if active_session:
+        session = active_session
+    else:
+        # 2. Если активной нет, генерируем новую через ваш мат. метод
+        session = generate_adaptive_session(user, lesson_id)
 
     if not session:
         return Response(
-            {"detail": "Не удалось сгенерировать сессию. Недостаточно новых вопросов."},
+            {"detail": "Не удалось сформировать сессию."},
             status=status.HTTP_400_BAD_REQUEST
         )
 
-    return Response(TrainingSessionSerializer(session).data, status=status.HTTP_201_CREATED)
+    # Сериализуем данные
+    data = TrainingSessionSerializer(session).data
+
+    # 3. Добавляем прямой URL для мобильного приложения (Deep Link или API URL)
+    # Это позволит приложению сразу понять, куда переходить
+    data['is_new_session'] = not bool(active_session)
+
+    return Response({
+        "session": TrainingSessionSerializer(session).data,
+        "added_count": session.training_questions.count(),  # Передаем кол-во сгенерированных вопросов
+        "is_new_session": True
+    }, status=status.HTTP_201_CREATED)
 
 
 @api_view(["GET"])
