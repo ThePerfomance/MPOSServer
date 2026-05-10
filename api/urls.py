@@ -87,6 +87,7 @@ urlpatterns = [
     path("training-sessions/<uuid:pk>/", views.training_session_detail, name='training-session-detail'),
     path("training-sessions/from-result/<uuid:result_id>/", views.create_training_from_result, name='create-training-from-result'),
     path("training-questions/<int:pk>/answer/", views.answer_training_question, name='answer-training-question'),
+    path("training-sessions/adaptive/", views.create_adaptive_training, name='create-adaptive-training'),
     
     # ML - НОВЫЕ ENDPOINTS ДЛЯ ДИПЛОМА (персонализированные рекомендации)
     path("ml/analyze-weak-topics/<uuid:user_id>/", views.ml_analyze_weak_topics, name='ml-analyze-weak-topics'),

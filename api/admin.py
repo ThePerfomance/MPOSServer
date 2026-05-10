@@ -9,7 +9,7 @@ from django.conf import settings
 from .models import (
     User, Group, GroupMember, TeacherGroup, GroupSubject, Subject, Block,
     Lesson, Test, Question, Answer, Video, TestResult, VideoType, UserAnswer,
-    TrainingSession, TrainingQuestion
+    TrainingSession, TrainingQuestion, StudentCluster, TestDifficulty
 )
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -644,7 +644,7 @@ class TestResultAdmin(admin.ModelAdmin):
     list_display = ('user', 'test', 'score_badge', 'points_summary', 'completed_at')
     readonly_fields = ('user', 'test', 'earned_points', 'total_points', 'started_at', 'completed_at')
     list_filter = ('test', 'completed_at')
-    search_fields = ('user__email', 'test__title')
+    search_fields = ('user__email', 'user__lastname', 'test__title')
     ordering = ('-completed_at',)
     inlines = [UserAnswerInline]
 
@@ -668,12 +668,10 @@ class TestResultAdmin(admin.ModelAdmin):
             '<span style="color:#999; font-size:11px;">({})</span>',
             color, score_val, label,
         )
-
     score_badge.short_description = "Оценка"
 
     def points_summary(self, obj):
         return f"{obj.earned_points} из {obj.total_points}"
-
     points_summary.short_description = "Баллы"
 
     def has_view_permission(self, request, obj=None):
@@ -782,7 +780,26 @@ class TrainingQuestionAdmin(admin.ModelAdmin):
     def has_change_permission(self, request, obj=None): return False
 
     def has_delete_permission(self, request, obj=None): return is_admin(request.user)
+# ══════════════════════════════════════════════════════════════════════════════
+# мат метод
+# ══════════════════════════════════════════════════════════════════════════════
+@admin.register(TestDifficulty)
+class TestDifficultyAdmin(admin.ModelAdmin):
+    # Поля, которые будут видны в списке
+    list_display = ('test', 'difficulty', 'avg_score_all', 'updated_at')
+    # Фильтр справа для быстрой сортировки по сложности
+    list_filter = ('difficulty',)
+    # Поиск по названию теста
+    search_fields = ('test__title',)
+    ordering = ('-updated_at',)
 
+@admin.register(StudentCluster)
+class StudentClusterAdmin(admin.ModelAdmin):
+    list_display = ('user', 'cluster_label', 'avg_score', 'tests_taken', 'updated_at')
+    list_filter = ('cluster_label',)
+    search_fields = ('user__email', 'user__lastname', 'user__firstname')
+    # Запрещаем редактировать эти данные вручную, так как их считает алгоритм
+    readonly_fields = ('cluster_id', 'cluster_label', 'avg_score', 'tests_taken', 'updated_at')
 
 # ══════════════════════════════════════════════════════════════════════════════
 # КАСТОМНЫЙ ДАШБОРД (ЕДИНЫЙ ДЛЯ АДМИНОВ И ПРЕПОДАВАТЕЛЕЙ)

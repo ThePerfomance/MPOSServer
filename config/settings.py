@@ -185,6 +185,8 @@ JAZZMIN_SETTINGS = {
         "api.useranswer":      "fas fa-pen",
         "api.trainingsession": "fas fa-dumbbell",
         "api.trainingquestion":"fas fa-tasks",
+        "api.StudentCluster": "fas fa-chart-pie",
+        "api.TestDifficulty": "fas fa-brain",
     },
     "default_icon_parents":  "fas fa-chevron-circle-right",
     "default_icon_children": "fas fa-circle",

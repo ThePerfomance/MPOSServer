@@ -527,6 +527,8 @@ class TestDifficulty(models.Model):
 
     class Meta:
         db_table = 'test_difficulties'
+        verbose_name = 'Сложность теста'
+        verbose_name_plural = 'Сложность тестов'
 
     def __str__(self):
         return f"{self.test.title} — {self.difficulty}"

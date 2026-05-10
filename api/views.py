@@ -15,6 +15,9 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 import json
 from .models import User
+from api.services.personalization import update_test_segmentation, update_student_clusters
+from api.services.personalization import generate_adaptive_session
+from api.serializers import TrainingSessionSerializer
 
 from .models import (
     User, Group, GroupMember, Subject, Block, Lesson, Test, Question, Answer, TestResult,
@@ -422,6 +425,12 @@ def test_submit(request, result_id):
     test_result.completed_at = timezone.now()
     test_result.save()
 
+    # Запускаем обновление математической модели персонализации
+    try:
+        update_test_segmentation()
+        update_student_clusters()
+    except Exception as e:
+        print(f"Ошибка обновления кластеров: {e}")
     # Возвращаем детализированный результат
     user_answers = UserAnswer.objects.filter(test_result=test_result)
 
@@ -1606,3 +1615,51 @@ def course_constructor_view(request):
         context['edit_q'] = int(edit_q_id) if edit_q_id and edit_q_id.isdigit() else None
 
     return render(request, 'admin/course_constructor.html', context)
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def create_adaptive_training(request):
+    """Создает адаптивную сессию тренажера"""
+    lesson_id = request.data.get('lesson_id')  # Необязательный параметр
+
+    session = generate_adaptive_session(request.user, lesson_id)
+
+    if not session:
+        return Response(
+            {"detail": "Не удалось сгенерировать сессию. Недостаточно новых вопросов."},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    return Response(TrainingSessionSerializer(session).data, status=status.HTTP_201_CREATED)
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def build_learning_path(request, user_id):
+    """
+    Возвращает персональную траекторию обучения для пользователя.
+    """
+    user = get_object_or_404(User, id=user_id)
+
+    # Проверка прав: только сам пользователь или преподаватель/админ
+    if request.user != user and request.user.role not in ['teacher', 'admin']:
+        return Response(
+            {"detail": "У вас нет прав для просмотра этой траектории."},
+            status=status.HTTP_403_FORBIDDEN
+        )
+
+    # Здесь должна быть логика генерации пути.
+    # Предполагается, что в api.services.personalization есть функция get_learning_path
+    from api.services.personalization import get_learning_path
+
+    path_data = get_learning_path(user)
+
+    if not path_data:
+        return Response(
+            {"detail": "Не удалось сформировать траекторию. Недостаточно данных о результатах тестов."},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+    return Response(path_data, status=status.HTTP_200_OK)
+
