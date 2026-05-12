@@ -1624,36 +1624,48 @@ def create_adaptive_training(request):
     user = request.user
     lesson_id = request.data.get('lesson_id')
 
+    # Считываем переключатели из запроса. По умолчанию ставим True (самый логичный режим)
+    only_passed = request.data.get('only_passed', True)
+    exclude_correct = request.data.get('exclude_correct', True)
+
+    # На всякий случай конвертируем строки 'true'/'false' в boolean, если клиент прислал их так
+    if isinstance(only_passed, str):
+        only_passed = only_passed.lower() == 'true'
+    if isinstance(exclude_correct, str):
+        exclude_correct = exclude_correct.lower() == 'true'
+
+    # --- НАЧИНАЯ ОТСЮДА ОТСТУПЫ СДВИНУТЫ ВЛЕВО НА ОДИН УРОВЕНЬ ---
+
     # 1. Проверяем, есть ли уже активная адаптивная сессия
-    # (Допустим, активной считается сессия, созданная за последние 24 часа и не завершенная)
     active_session = TrainingSession.objects.filter(
         user=user,
-        status='active'  # или другое поле, обозначающее статус
+        status='active'
     ).order_by('-created_at').first()
 
     if active_session:
         session = active_session
     else:
-        # 2. Если активной нет, генерируем новую через ваш мат. метод
-        session = generate_adaptive_session(user, lesson_id)
+        # 2. Передаем переключатели в генератор
+        session = generate_adaptive_session(
+            user,
+            lesson_id=lesson_id,
+            only_passed=only_passed,
+            exclude_correct=exclude_correct
+        )
 
     if not session:
         return Response(
-            {"detail": "Не удалось сформировать сессию."},
+            {"detail": "Не удалось сформировать сессию. Недостаточно вопросов в базе."},
             status=status.HTTP_400_BAD_REQUEST
         )
 
-    # Сериализуем данные
     data = TrainingSessionSerializer(session).data
-
-    # 3. Добавляем прямой URL для мобильного приложения (Deep Link или API URL)
-    # Это позволит приложению сразу понять, куда переходить
     data['is_new_session'] = not bool(active_session)
 
     return Response({
-        "session": TrainingSessionSerializer(session).data,
-        "added_count": session.training_questions.count(),  # Передаем кол-во сгенерированных вопросов
-        "is_new_session": True
+        "session": data,
+        "added_count": session.training_questions.count(),
+        "is_new_session": data['is_new_session']
     }, status=status.HTTP_201_CREATED)
 
 

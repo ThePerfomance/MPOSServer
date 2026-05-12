@@ -164,7 +164,7 @@ def update_student_clusters():
         )
 
 
-def generate_adaptive_session(user, lesson_id=None, total_questions=10):
+def generate_adaptive_session(user, lesson_id=None, total_questions=10, only_passed=True, exclude_correct=True):
         """
         Создает адаптивную сессию тренажера на основе кластера студента.
         Можно привязать к конкретному уроку (lesson_id) или сделать глобальной.
@@ -187,17 +187,24 @@ def generate_adaptive_session(user, lesson_id=None, total_questions=10):
 
         # 3. Собираем базу доступных вопросов
         base_query = Q()
+
         if lesson_id:
-            # Если тренируем конкретный урок, берем вопросы из его теста
+            # Тренируем конкретный урок
             base_query &= Q(test__lesson_for__id=lesson_id)
+        elif only_passed:
+            # ПЕРЕКЛЮЧАТЕЛЬ 1: Только пройденные тесты
+            passed_test_ids = TestResult.objects.filter(user=user).values_list('test_id', flat=True)
+            base_query &= Q(test_id__in=passed_test_ids)
 
-        # Исключаем вопросы, на которые студент уже ответил ПРАВИЛЬНО в тренажере
-        answered_correctly = TrainingQuestion.objects.filter(
-            session__user=user,
-            is_correct=True
-        ).values_list('question_id', flat=True)
-
-        base_query &= ~Q(id__in=answered_correctly)
+        exclude_ids = []
+        if exclude_correct:
+            # ПЕРЕКЛЮЧАТЕЛЬ 2: Исключать те вопросы, на которые уже отвечали верно
+            answered_correctly = TrainingQuestion.objects.filter(
+                session__user=user,
+                is_correct=True
+            ).values_list('question_id', flat=True)
+            base_query &= ~Q(id__in=answered_correctly)
+            exclude_ids.extend(list(answered_correctly))
 
         selected_questions = []
 
@@ -206,12 +213,10 @@ def generate_adaptive_session(user, lesson_id=None, total_questions=10):
             if count <= 0:
                 continue
 
-            # Ищем вопросы нужной сложности
             q_pool = list(Question.objects.filter(
                 base_query & Q(difficulty__difficulty=diff_level)
             ))
 
-            # Если вопросов нужной сложности не хватает, берем сколько есть
             if len(q_pool) > count:
                 selected_questions.extend(random.sample(q_pool, count))
             else:
@@ -220,20 +225,23 @@ def generate_adaptive_session(user, lesson_id=None, total_questions=10):
         # 5. Если вопросов все равно меньше 10 (например, мало базы), добираем любые случайные
         if len(selected_questions) < total_questions:
             shortage = total_questions - len(selected_questions)
-            exclude_ids = [q.id for q in selected_questions] + list(answered_correctly)
-            fallback_pool = list(Question.objects.filter(base_query).exclude(id__in=exclude_ids))
+
+            # Собираем ID уже выбранных вопросов и тех, что нужно исключить
+            current_selected_ids = [q.id for q in selected_questions]
+            fallback_exclude = current_selected_ids + exclude_ids
+
+            fallback_pool = list(Question.objects.filter(base_query).exclude(id__in=fallback_exclude))
 
             if len(fallback_pool) > shortage:
                 selected_questions.extend(random.sample(fallback_pool, shortage))
             else:
                 selected_questions.extend(fallback_pool)
 
-        # Перемешиваем итоговый пул
         random.shuffle(selected_questions)
 
         # 6. Создаем сессию и привязываем вопросы
         if not selected_questions:
-            return None  # Нет вопросов для генерации
+            return None
 
         session = TrainingSession.objects.create(
             user=user,
