@@ -9,6 +9,11 @@ from .models import (
 )
 
 class UserSerializer(serializers.ModelSerializer):
+    # Добавляем получение численного рейтинга напрямую из связанного кластера
+    rating = serializers.FloatField(source='cluster.avg_score', read_only=True, default=0.0)
+
+    # Заодно можно передавать и текстовую группу (Отличники/Хорошисты)
+    cluster_label = serializers.CharField(source='cluster.cluster_label', read_only=True, default="Нет данных")
     class Meta:
         model = User
         exclude = ['password']
@@ -121,11 +126,6 @@ class GroupSubjectSerializer(serializers.ModelSerializer):
         validated_data["subject_id"] = subject_id
         return GroupSubject.objects.create(**validated_data)
 
-class TestSerializer(serializers.ModelSerializer):
-    # Убрали 'subject' из полей
-    class Meta:
-        model = Test
-        fields = ["id", "title", "description", "duration", "is_published"]
 
 
 class VideoSerializer(serializers.ModelSerializer):
@@ -147,6 +147,7 @@ class VideoSerializer(serializers.ModelSerializer):
             return request.build_absolute_uri(url)
 
         return url
+
 
 class LessonSerializer(serializers.ModelSerializer):
     test = serializers.PrimaryKeyRelatedField(queryset=Test.objects.all(), allow_null=True, required=False)
@@ -210,6 +211,44 @@ class QuestionWithAnswersSerializer(serializers.ModelSerializer):
         model = Question
         fields = ["id", "text", "points", "answers"]
 
+
+
+
+# ── ML serializers ──────────────────────────────────
+
+class StudentClusterSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = StudentCluster
+        fields = "__all__"
+
+
+class TestDifficultySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TestDifficulty
+        fields = "__all__"
+
+class QuestionDifficultySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = QuestionDifficulty
+        fields = "__all__"
+
+class QuestionWithAnswersSerializer(serializers.ModelSerializer):
+    answers = AnswerSerializer(many=True, read_only=True)
+    # Добавляем вложенное поле только для чтения
+    difficulty = QuestionDifficultySerializer(read_only=True)
+
+    class Meta:
+        model = Question
+        fields = ["id", "text", "points", "answers", "difficulty"] # Добавили в список
+
+class TestSerializer(serializers.ModelSerializer):
+    # Добавляем вложенное поле только для чтения
+    difficulty = TestDifficultySerializer(read_only=True)
+
+    class Meta:
+        model = Test
+        fields = ["id", "title", "description", "duration", "is_published", "difficulty"] # Добавили в список
+
 class TestResultSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
     test = TestSerializer(read_only=True)
@@ -234,25 +273,6 @@ class TestResultWithTestDetailsSerializer(serializers.ModelSerializer):
             "started_at", "completed_at", "test_details"
         ]
 
-
-# ── ML serializers ──────────────────────────────────
-
-class StudentClusterSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = StudentCluster
-        fields = "__all__"
-
-
-class TestDifficultySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = TestDifficulty
-        fields = "__all__"
-
-class QuestionDifficultySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = QuestionDifficulty
-        fields = "__all__"
-
 class ScorePredictionSerializer(serializers.ModelSerializer):
     class Meta:
         model = ScorePrediction
@@ -269,12 +289,24 @@ class VideoTypeSerializer(serializers.ModelSerializer):
         model = VideoType
         fields = "__all__"
 
+
 class UserAnswerSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserAnswer
-        fields = ['id', 'user', 'question', 'selected_answer', 'is_correct', 'points_earned']
+        fields = ['id', 'test_result', 'question', 'chosen_answer', 'is_correct', 'points_earned']
 
 
+# 1. Единый сериализатор для вопросов со сложностью (убрали дубликаты)
+class QuestionWithAnswersSerializer(serializers.ModelSerializer):
+    answers = AnswerSerializer(many=True, read_only=True)
+    difficulty = QuestionDifficultySerializer(read_only=True)
+
+    class Meta:
+        model = Question
+        fields = ["id", "text", "points", "answers", "difficulty"]
+
+
+# 2. ВОТ ЭТОТ КЛАСС БЫЛ ПОТЕРЯН (Вопросы внутри тренажера)
 class TrainingQuestionSerializer(serializers.ModelSerializer):
     question_details = QuestionWithAnswersSerializer(source='question', read_only=True)
 
@@ -282,6 +314,8 @@ class TrainingQuestionSerializer(serializers.ModelSerializer):
         model = TrainingQuestion
         fields = ['id', 'session', 'question_details', 'status', 'position']
 
+
+# 3. Сессия тренажера
 class TrainingSessionSerializer(serializers.ModelSerializer):
     training_questions = TrainingQuestionSerializer(many=True, read_only=True)
     lesson_id = serializers.PrimaryKeyRelatedField(
@@ -291,7 +325,8 @@ class TrainingSessionSerializer(serializers.ModelSerializer):
         required=False,
         allow_null=True
     )
-    
+
     class Meta:
         model = TrainingSession
-        fields = ['id', 'user', 'lesson', 'lesson_id', 'status', 'source_test_result', 'training_questions', 'created_at']
+        fields = ['id', 'user', 'lesson', 'lesson_id', 'status', 'source_test_result', 'training_questions',
+                  'created_at']
