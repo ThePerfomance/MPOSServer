@@ -1,8 +1,8 @@
 # api/services/personalization.py
-from django.db.models import Avg, Sum, Q, F, Avg, ExpressionWrapper, fields
 from django.utils import timezone
+from django.db.models import Avg, Sum, Q, F, ExpressionWrapper, fields, Count
 from api.models import Test, TestResult, TestDifficulty, User, StudentCluster, Question, TrainingSession, \
-    TrainingQuestion, Lesson
+    TrainingQuestion, Lesson, QuestionDifficulty
 import random
 
 def update_test_segmentation():
@@ -36,7 +36,37 @@ def update_test_segmentation():
                 'avg_score_all': avg_score
             }
         )
+def update_question_segmentation():
+    """Математическая сегментация вопросов по уровню сложности"""
+    questions = Question.objects.annotate(
+        total_attempts=Count('user_answers'),
+        correct_attempts=Count('user_answers', filter=Q(user_answers__is_correct=True))
+    )
 
+    for question in questions:
+        if question.total_attempts == 0:
+            continue
+
+        # Процент успешных ответов
+        success_rate = question.correct_attempts / question.total_attempts
+
+        # Математический расчет сложности
+        difficulty_coef = 1.0 - success_rate
+
+        if difficulty_coef <= 0.3:
+            diff_label = 'easy'
+        elif difficulty_coef <= 0.6:
+            diff_label = 'medium'
+        else:
+            diff_label = 'hard'
+
+        QuestionDifficulty.objects.update_or_create(
+            question=question,
+            defaults={
+                'difficulty': diff_label,
+                'avg_score': success_rate
+            }
+        )
 
 def update_student_clusters():
     students = User.objects.filter(role='student')
@@ -178,7 +208,7 @@ def generate_adaptive_session(user, lesson_id=None, total_questions=10):
 
             # Ищем вопросы нужной сложности
             q_pool = list(Question.objects.filter(
-                base_query & Q(test__difficulty__difficulty=diff_level)
+                base_query & Q(difficulty__difficulty=diff_level)
             ))
 
             # Если вопросов нужной сложности не хватает, берем сколько есть

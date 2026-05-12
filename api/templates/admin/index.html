@@ -341,7 +341,45 @@ h1#site-name,.breadcrumbs{display:none}
     <div class="prog-bar"><div class="prog-fill pf-gn" style="width:{% if videos_count and lessons_count %}{% widthratio videos_count lessons_count 100 %}{% else %}0{% endif %}%"></div></div>
   </div>
 </div>
+{# DIFFICULTY STATS #}
+{% if diff_stats.total > 0 %}
+<div class="slabel">Аналитика сложности вопросов</div>
+<div class="panel" style="padding: 24px; display: flex; flex-wrap: wrap; gap: 30px; align-items: center;">
 
+  <div style="flex: 1; min-width: 250px;">
+     <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+       <span style="font-size:13px; font-weight:600; color:var(--t2);">Лёгкие ({{ diff_stats.easy }})</span>
+       <span style="font-size:13px; font-weight:700; color:var(--green);">{{ diff_stats.easy_pct }}%</span>
+     </div>
+     <div class="prog-bar" style="margin-bottom:16px;"><div class="prog-fill pf-gn" style="width:{{ diff_stats.easy_pct }}%"></div></div>
+
+     <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+       <span style="font-size:13px; font-weight:600; color:var(--t2);">Средние ({{ diff_stats.medium }})</span>
+       <span style="font-size:13px; font-weight:700; color:var(--amber);">{{ diff_stats.med_pct }}%</span>
+     </div>
+     <div class="prog-bar" style="margin-bottom:16px;"><div class="prog-fill pf-am" style="width:{{ diff_stats.med_pct }}%"></div></div>
+
+     <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+       <span style="font-size:13px; font-weight:600; color:var(--t2);">Сложные ({{ diff_stats.hard }})</span>
+       <span style="font-size:13px; font-weight:700; color:var(--rose);">{{ diff_stats.hard_pct }}%</span>
+     </div>
+     <div class="prog-bar"><div class="prog-fill" style="background:linear-gradient(90deg, var(--rose), #FDA4AF); width:{{ diff_stats.hard_pct }}%"></div></div>
+  </div>
+
+  <div style="text-align: center; border-left: 1px dashed var(--border); padding-left: 30px; min-width: 150px;">
+     <div style="font-size: 48px; font-weight: 700; color: var(--t1); line-height: 1; font-family: var(--mono);">
+       {{ diff_stats.total }}
+     </div>
+     <div style="font-size: 11px; color: var(--t3); text-transform: uppercase; font-weight: 600; margin-top: 8px; letter-spacing: 0.5px;">
+       Вопросов<br>проанализировано
+     </div>
+     <a href="{% url 'admin:api_questiondifficulty_changelist' %}" style="display: inline-block; margin-top: 12px; font-size: 12px; font-weight: 600; color: var(--pr); text-decoration: none; padding: 4px 10px; background: var(--pr-l); border-radius: 20px;">
+       Смотреть детали <i class="fas fa-arrow-right" style="font-size: 10px; margin-left: 2px;"></i>
+     </a>
+  </div>
+
+</div>
+{% endif %}
 {# MAIN GRID #}
 <div class="slabel">Рабочее пространство</div>
 <div class="mg">

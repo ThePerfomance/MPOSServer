@@ -9,7 +9,7 @@ from django.conf import settings
 from .models import (
     User, Group, GroupMember, TeacherGroup, GroupSubject, Subject, Block,
     Lesson, Test, Question, Answer, Video, TestResult, VideoType, UserAnswer,
-    TrainingSession, TrainingQuestion, StudentCluster, TestDifficulty
+    TrainingSession, TrainingQuestion, StudentCluster, TestDifficulty, QuestionDifficulty
 )
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -826,6 +826,7 @@ def _custom_index(self, request, extra_context=None):
             lessons_qs = Lesson.objects.all()
             videos_qs = Video.objects.all()
             groups_qs = Group.objects.all()
+            q_diffs_qs = QuestionDifficulty.objects.all()
         else:
             # Преподаватель видит СТРОГО свои объекты (как в конструкторе и таблицах)
             teacher_groups = Group.objects.filter(group_teachers__teacher=user)
@@ -847,6 +848,13 @@ def _custom_index(self, request, extra_context=None):
             # Результаты по тестам этого преподавателя
             results_qs = TestResult.objects.filter(test__creator=user)
 
+            q_diffs_qs = QuestionDifficulty.objects.filter(question__test__creator=user)
+
+        easy_q = q_diffs_qs.filter(difficulty='easy').count()
+        med_q = q_diffs_qs.filter(difficulty='medium').count()
+        hard_q = q_diffs_qs.filter(difficulty='hard').count()
+        total_diffs = easy_q + med_q + hard_q
+
         # Заполняем счетчики
         extra_context.update({
             'subjects_count': subjects_qs.count(),
@@ -856,6 +864,17 @@ def _custom_index(self, request, extra_context=None):
             'blocks_count': blocks_qs.count(),
             'lessons_count': lessons_qs.count(),
             'videos_count': videos_qs.count(),
+
+            # --- НОВЫЕ ДАННЫЕ ДЛЯ ГРАФИКА ---
+            'diff_stats': {
+                'easy': easy_q,
+                'medium': med_q,
+                'hard': hard_q,
+                'total': total_diffs,
+                'easy_pct': int((easy_q / total_diffs) * 100) if total_diffs else 0,
+                'med_pct': int((med_q / total_diffs) * 100) if total_diffs else 0,
+                'hard_pct': int((hard_q / total_diffs) * 100) if total_diffs else 0,
+            }
         })
 
         # Последние результаты (с расчетом процента "на лету")
@@ -880,6 +899,41 @@ def _custom_index(self, request, extra_context=None):
 
     return _orig_index(self, request, extra_context=extra_context)
 
+
+@admin.register(QuestionDifficulty)
+class QuestionDifficultyAdmin(admin.ModelAdmin):
+    list_display = ('question_preview', 'difficulty_badge', 'avg_score_pct', 'updated_at')
+    list_filter = ('difficulty',)
+    search_fields = ('question__text',)
+    ordering = ('-updated_at',)
+
+    # Запрещаем ручное редактирование, так как это считает ML
+    def has_add_permission(self, request): return False
+
+    def has_change_permission(self, request, obj=None): return False
+
+    def has_delete_permission(self, request, obj=None): return is_admin(request.user)
+
+    def question_preview(self, obj):
+        text = obj.question.text
+        return (text[:60] + '…') if len(text) > 60 else text
+
+    question_preview.short_description = 'Вопрос'
+
+    def difficulty_badge(self, obj):
+        colors = {'easy': '#10B981', 'medium': '#F59E0B', 'hard': '#F43F5E'}
+        labels = {'easy': 'Лёгкий', 'medium': 'Средний', 'hard': 'Сложный'}
+        return format_html(
+            '<span style="background:{}; color:#fff; padding:3px 8px; border-radius:12px; font-size:11px; font-weight:600;">{}</span>',
+            colors.get(obj.difficulty, '#666'), labels.get(obj.difficulty, obj.difficulty)
+        )
+
+    difficulty_badge.short_description = 'Сложность'
+
+    def avg_score_pct(self, obj):
+        return f"{obj.avg_score * 100:.1f}%"
+
+    avg_score_pct.short_description = 'Успешность'
 
 _AdminSite.index = _custom_index
 

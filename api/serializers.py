@@ -5,7 +5,7 @@ from .models import (
     User, Group, GroupMember, Subject, Block, Lesson, Test, Question, Answer,
     TestResult, StudentCluster, TestDifficulty, ScorePrediction, Recommendation,
     VideoType, Video, UserAnswer, TrainingSession, TrainingQuestion,
-    TeacherGroup, GroupSubject
+    TeacherGroup, GroupSubject, QuestionDifficulty
 )
 
 class UserSerializer(serializers.ModelSerializer):
@@ -248,6 +248,10 @@ class TestDifficultySerializer(serializers.ModelSerializer):
         model = TestDifficulty
         fields = "__all__"
 
+class QuestionDifficultySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = QuestionDifficulty
+        fields = "__all__"
 
 class ScorePredictionSerializer(serializers.ModelSerializer):
     class Meta:

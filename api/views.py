@@ -14,11 +14,8 @@ from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 import json
-from .models import User
-from api.services.personalization import update_test_segmentation, update_student_clusters
+from api.services.personalization import update_test_segmentation, update_question_segmentation, update_student_clusters
 from api.services.personalization import generate_adaptive_session
-from api.serializers import TrainingSessionSerializer
-
 from .models import (
     User, Group, GroupMember, Subject, Block, Lesson, Test, Question, Answer, TestResult,
     StudentCluster, TestDifficulty, ScorePrediction, Recommendation, VideoType, Video, UserAnswer, TrainingSession,
@@ -428,6 +425,7 @@ def test_submit(request, result_id):
     # Запускаем обновление математической модели персонализации
     try:
         update_test_segmentation()
+        update_question_segmentation()
         update_student_clusters()
     except Exception as e:
         print(f"Ошибка обновления кластеров: {e}")

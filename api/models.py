@@ -533,6 +533,26 @@ class TestDifficulty(models.Model):
     def __str__(self):
         return f"{self.test.title} — {self.difficulty}"
 
+# Сложность дял вопросов
+class QuestionDifficulty(models.Model):
+    DIFFICULTY_CHOICES = [
+        ('easy',   'Лёгкий'),
+        ('medium', 'Средний'),
+        ('hard',   'Сложный'),
+    ]
+    id            = models.BigAutoField(primary_key=True)
+    difficulty    = models.CharField(max_length=10, choices=DIFFICULTY_CHOICES)
+    avg_score     = models.FloatField(default=0, help_text="Процент успешных ответов")
+    updated_at    = models.DateTimeField(auto_now=True)
+    question      = models.OneToOneField('Question', on_delete=models.CASCADE, related_name='difficulty')
+
+    class Meta:
+        db_table = 'question_difficulties'
+        verbose_name = 'Сложность вопроса'
+        verbose_name_plural = 'Сложности вопросов'
+
+    def __str__(self):
+        return f"Q{self.question_id} — {self.get_difficulty_display()}"
 
 class StudentCluster(models.Model):
     id            = models.BigAutoField(primary_key=True)
