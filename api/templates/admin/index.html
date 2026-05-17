@@ -250,6 +250,24 @@ h1#site-name,.breadcrumbs{display:none}
 {% block content %}
 <div class="dw">
 
+{# === БЛОК БЫСТРЫХ ДЕЙСТВИЙ АДМИНИСТРАТОРА (NEW) === #}
+{% if request.user.role == 'admin' %}
+<div class="panel" style="padding: 16px 22px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; background: #fff; border-left: 4px solid var(--pr);">
+    <div style="display: flex; align-items: center; gap: 12px;">
+        <div style="width: 36px; height: 36px; background: var(--pr-l); color: var(--pr); border-radius: var(--r2); display: flex; align-items: center; justify-content: center; font-size: 14px;">
+            <i class="fas fa-user-shield"></i>
+        </div>
+        <div>
+            <h3 style="margin: 0; font-size: 15px; font-weight: 700; color: var(--t1);">Панель администратора</h3>
+            <p style="margin: 2px 0 0; font-size: 12px; color: var(--t3);">Быстрое добавление студентов и преподавателей в систему</p>
+        </div>
+    </div>
+    <button onclick="openRegisterModal()" class="vbtn va" style="background: var(--pr) !important; color: #fff !important; border: none; padding: 10px 22px; border-radius: 30px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(37,99,235,0.15); transition: 0.2s;">
+        <i class="fas fa-user-plus"></i> Быстрая регистрация пользователя
+    </button>
+</div>
+{% endif %}
+
 {# === КОНСТРУКТОР КУРСОВ (ГЛАВНЫЙ БЛОК) === #}
 <div class="panel con-panel" style="background: linear-gradient(to bottom right, #ffffff, #f8fafc); border-color: #cbd5e1; overflow: visible;">
   <div class="ph" style="border-bottom: none; padding-bottom: 0;">
@@ -261,29 +279,29 @@ h1#site-name,.breadcrumbs{display:none}
     <div class="pipeline-container">
         <div class="pipeline-line"></div>
         <div class="step-grid">
-            <a href="{% url 'api:course-constructor' %}?step=1" class="step-card" style="border-color: #667eea;">
-                <div class="step-card-ic">📖</div>
-                <div class="step-card-t" style="color: #667eea;">1. Предмет</div>
+            <a href="{% url 'api:course-constructor' %}?step=1" class="step-card" style="border-color: #3B82F6;">
+                <div class="step-card-ic">📘</div>
+                <div class="step-card-t" style="color: #3B82F6;">1. Предмет</div>
                 <div class="step-card-d">Основа курса</div>
             </a>
-            <a onclick="openContextModal(2, 'Блок', '#f5576c')" class="step-card" style="cursor:pointer; border-color: #f5576c;">
-                <div class="step-card-ic">📦</div>
-                <div class="step-card-t" style="color: #f5576c;">2. Блок</div>
+            <a onclick="openContextModal(2, 'Блок', '#8B5CF6')" class="step-card" style="cursor:pointer; border-color: #8B5CF6;">
+                <div class="step-card-ic">📚</div>
+                <div class="step-card-t" style="color: #8B5CF6;">2. Блок</div>
                 <div class="step-card-d">Главы и модули</div>
             </a>
-            <a onclick="openContextModal(3, 'Урок', '#4facfe')" class="step-card" style="cursor:pointer; border-color: #4facfe;">
+            <a onclick="openContextModal(3, 'Урок', '#0EA5E9')" class="step-card" style="cursor:pointer; border-color: #0EA5E9;">
+                <div class="step-card-ic">📋</div>
+                <div class="step-card-t" style="color: #0EA5E9;">3. Урок</div>
+                <div class="step-card-d">Темы занятий</div>
+            </a>
+            <a onclick="openContextModal(4, 'Контент', '#10B981')" class="step-card" style="cursor:pointer; border-color: #10B981;">
                 <div class="step-card-ic">🎬</div>
-                <div class="step-card-t" style="color: #4facfe;">3. Урок</div>
-                <div class="step-card-d">Темы внутри блоков</div>
+                <div class="step-card-t" style="color: #10B981;">4. Контент</div>
+                <div class="step-card-d">Видео и тесты</div>
             </a>
-            <a onclick="openContextModal(4, 'Контент', '#43e97b')" class="step-card" style="cursor:pointer; border-color: #43e97b;">
-                <div class="step-card-ic">🧩</div>
-                <div class="step-card-t" style="color: #43e97b;">4. Контент</div>
-                <div class="step-card-d">Привязка видео и тестов</div>
-            </a>
-            <a onclick="openContextModal(5, 'Вопросы', '#f093fb')" class="step-card" style="cursor:pointer; border-color: #f093fb;">
+            <a onclick="openContextModal(5, 'Вопросы', '#F59E0B')" class="step-card" style="cursor:pointer; border-color: #F59E0B;">
                 <div class="step-card-ic">❓</div>
-                <div class="step-card-t" style="color: #f093fb;">5. Вопросы</div>
+                <div class="step-card-t" style="color: #F59E0B;">5. Вопросы</div>
                 <div class="step-card-d">Варианты ответов</div>
             </a>
         </div>

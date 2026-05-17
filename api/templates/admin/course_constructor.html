@@ -131,8 +131,30 @@
     .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
     .form-section{background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);padding:20px}
     .form-section.full-width { grid-column: 1 / -1; } /* Added for full-width sections */
-    .form-section h4, .form-section h5{margin-top:0;margin-bottom:16px;font-size:14px;font-weight:600;color:var(--t1)}
-    .form-section h5 { font-size: 13px; color: var(--t2); border-top: 1px solid var(--border); padding-top: 16px; margin-top: 20px; }
+    /* Улучшенные главные заголовки карточек (H4) */
+    .form-section h4 {
+        margin-top: 0;
+        margin-bottom: 24px;
+        font-size: 18px;           /* Увеличенный размер */
+        font-weight: 800;          /* Делаем текст массивным и заметным */
+        letter-spacing: 0.3px;     /* Слегка раздвигаем буквы */
+        padding-bottom: 14px;      /* Отступ до подчеркивания */
+        border-bottom: 2px solid;  /* Толстая линия снизу */
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    /* Второстепенные заголовки (H5) */
+    .form-section h5 {
+        margin-top: 20px;
+        margin-bottom: 16px;
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--t2);
+        border-top: 1px dashed var(--border);
+        padding-top: 16px;
+    }
     .form-section p{margin-bottom:10px}
     .form-section label{display:block;margin-bottom:5px;font-weight:500;font-size:13px;color:var(--t2)}
     .form-section input[type="text"], .form-section select, .form-section textarea, .form-section input[type="number"], .form-section input[type="url"]{width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:var(--r2);background:#fff}
@@ -288,41 +310,45 @@
     /* ========================================================
        ЦВЕТОВЫЕ ТЕМЫ ДЛЯ КАЖДОГО ШАГА КОНСТРУКТОРА
        ======================================================== */
+    .fbtn.s1 { background: #3B82F6 !important; color: #fff !important; }
+    .fbtn.s2 { background: #8B5CF6 !important; color: #fff !important; }
+    .fbtn.s3 { background: #0EA5E9 !important; color: #fff !important; }
+    .fbtn.s4 { background: #10B981 !important; color: #fff !important; }
+    .fbtn.s5 { background: #F59E0B !important; color: #fff !important; }
 
-    /* Шаг 1: Предмет (#667eea) */
-    .theme-step-1 .form-section { border-top: 4px solid #667eea; background: linear-gradient(180deg, #f4f7ff 0%, #ffffff 120px); }
-    .theme-step-1 .form-section .btn { background: #667eea !important; border-color: #667eea !important; color: #fff !important; }
+    /* Шаг 1: Предмет (#3B82F6) */
+    .theme-step-1 .form-section { border-top: 4px solid #3B82F6; background: linear-gradient(180deg, #eff6ff 0%, #ffffff 120px); }
+    .theme-step-1 .form-section .btn { background: #3B82F6 !important; border-color: #3B82F6 !important; color: #fff !important; }
 
-    /* Шаг 2: Блоки (#f5576c) */
-    .theme-step-2 .form-section { border-top: 4px solid #f5576c; background: linear-gradient(180deg, #fff0f2 0%, #ffffff 120px); }
-    .theme-step-2 .formset-item { border-left: 5px solid #f5576c; border-radius: 6px 10px 10px 6px; box-shadow: 0 4px 15px rgba(245, 87, 108, 0.08); background: #fff; }
-    .theme-step-2 .form-section h4 { color: #f5576c; }
-    .theme-step-2 .form-section h5 { color: #f5576c; font-weight: 700; }
-    .theme-step-2 .form-section .btn[type="submit"] { background: #f5576c !important; border-color: #f5576c !important; color: #fff !important; }
-    .theme-step-2 .form-section .add-form-button { background: #fff !important; color: #f5576c !important; border: 2px dashed #f5576c !important; }
-    .theme-step-2 .form-section .add-form-button:hover { background: #fff0f2 !important; }
+    /* Шаг 2: Блоки (#8B5CF6) */
+    .theme-step-2 .form-section { border-top: 4px solid #8B5CF6; background: linear-gradient(180deg, #f5f3ff 0%, #ffffff 120px); }
+    .theme-step-2 .formset-item { border-left: 5px solid #8B5CF6; border-radius: 6px 10px 10px 6px; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.08); background: #fff; }
+    .theme-step-2 .form-section h4, .theme-step-2 .form-section h5 { color: #8B5CF6; }
+    .theme-step-2 .form-section h5 { font-weight: 700; }
+    .theme-step-2 .form-section .btn[type="submit"] { background: #8B5CF6 !important; border-color: #8B5CF6 !important; color: #fff !important; }
+    .theme-step-2 .form-section .add-form-button { background: #fff !important; color: #8B5CF6 !important; border: 2px dashed #8B5CF6 !important; }
+    .theme-step-2 .form-section .add-form-button:hover { background: #f5f3ff !important; }
 
-    /* Шаг 3: Уроки (#4facfe) */
-    .theme-step-3 .form-section { border-top: 4px solid #4facfe; background: linear-gradient(180deg, #f0f9ff 0%, #ffffff 120px); }
-    .theme-step-3 .formset-item { border-left: 5px solid #4facfe; border-radius: 6px 10px 10px 6px; box-shadow: 0 4px 15px rgba(79, 172, 254, 0.08); background: #fff; }
-    .theme-step-3 .form-section h4 { color: #4facfe; }
-    .theme-step-3 .form-section h5 { color: #4facfe; font-weight: 700; }
-    .theme-step-3 .form-section .btn[type="submit"] { background: #4facfe !important; border-color: #4facfe !important; color: #fff !important; }
-    .theme-step-3 .form-section .add-form-button { background: #fff !important; color: #4facfe !important; border: 2px dashed #4facfe !important; }
+    /* Шаг 3: Уроки (#0EA5E9) */
+    .theme-step-3 .form-section { border-top: 4px solid #0EA5E9; background: linear-gradient(180deg, #f0f9ff 0%, #ffffff 120px); }
+    .theme-step-3 .formset-item { border-left: 5px solid #0EA5E9; border-radius: 6px 10px 10px 6px; box-shadow: 0 4px 15px rgba(14, 165, 233, 0.08); background: #fff; }
+    .theme-step-3 .form-section h4, .theme-step-3 .form-section h5 { color: #0EA5E9; }
+    .theme-step-3 .form-section h5 { font-weight: 700; }
+    .theme-step-3 .form-section .btn[type="submit"] { background: #0EA5E9 !important; border-color: #0EA5E9 !important; color: #fff !important; }
+    .theme-step-3 .form-section .add-form-button { background: #fff !important; color: #0EA5E9 !important; border: 2px dashed #0EA5E9 !important; }
     .theme-step-3 .form-section .add-form-button:hover { background: #f0f9ff !important; }
 
-    /* Шаг 4: Контент (#43e97b) */
-    .theme-step-4 .form-section { border-top: 4px solid #43e97b; background: linear-gradient(180deg, #f0fdf4 0%, #ffffff 120px); }
-    .theme-step-4 .form-section h4 { color: #28a745; } /* Чуть темнее для читаемости на белом */
-    .theme-step-4 .form-section .btn[type="submit"], .theme-step-4 .form-section .btn[name="submit_new_video"], .theme-step-4 .form-section .btn[name="submit_new_test"] { background: #43e97b !important; border-color: #43e97b !important; color: #fff !important; text-shadow: 0 1px 1px rgba(0,0,0,0.15); }
+    /* Шаг 4: Контент (#10B981) */
+    .theme-step-4 .form-section { border-top: 4px solid #10B981; background: linear-gradient(180deg, #ecfdf5 0%, #ffffff 120px); }
+    .theme-step-4 .form-section h4 { color: #059669; }
+    .theme-step-4 .form-section .btn[type="submit"], .theme-step-4 .form-section .btn[name="submit_new_video"], .theme-step-4 .form-section .btn[name="submit_new_test"] { background: #10B981 !important; border-color: #10B981 !important; color: #fff !important; }
 
-    /* Шаг 5: Вопросы (#f093fb) */
-    .theme-step-5 .form-section { border-top: 4px solid #f093fb; background: linear-gradient(180deg, #fdf4ff 0%, #ffffff 120px); }
-    .theme-step-5 .form-section h4 { color: #d946ef; } /* Чуть темнее для контраста */
-    .theme-step-5 .formset-item.answer-card { border-left: 5px solid #f093fb; border-radius: 6px 10px 10px 6px; box-shadow: 0 4px 15px rgba(240, 147, 251, 0.1); }
-    .theme-step-5 .form-section .btn[type="submit"] { background: #f093fb !important; border-color: #f093fb !important; color: #fff !important;}
-    .theme-step-5 .form-section .add-form-button { background: #fff !important; color: #d946ef !important; border: 2px dashed #f093fb !important; }
-    .theme-step-5 .form-section .add-form-button:hover { background: #fdf4ff !important; }
+    /* Шаг 5: Вопросы (#F59E0B) */
+    .theme-step-5 .form-section { border-top: 4px solid #F59E0B; background: linear-gradient(180deg, #fffbeb 0%, #ffffff 120px); }
+    .theme-step-5 .form-section h4 { color: #D97706; }
+    .theme-step-5 .formset-item.answer-card { border-left: 5px solid #F59E0B; border-radius: 6px 10px 10px 6px; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.1); }
+    .theme-step-5 .form-section .btn[type="submit"] { background: #F59E0B !important; border-color: #F59E0B !important; color: #fff !important;}
+    .theme-step-5 .form-section .add-form-button { background: #fff !important; color: #D97706 !important; border: 2px dashed #F59E0B !important; }
 </style>
 {% endblock %}
 
@@ -347,7 +373,7 @@
                 <div class="fstep">
                     <a href="{% if subject_id %}{% url 'api:course-constructor' %}?step=2&subject_id={{ subject_id }}{% else %}#{% endif %}"
                        class="fbtn {% if current_step >= 2 %}s2{% else %}s-inactive{% endif %}">
-                        <i class="fas fa-cube"></i> Блок
+                        <i class="fas fa-layer-group"></i> Блок
                     </a>
                     <span class="fnum">Шаг 2</span>
                 </div>
@@ -355,7 +381,7 @@
                 <div class="fstep">
                     <a href="{% if block_id %}{% url 'api:course-constructor' %}?step=3&subject_id={{ subject_id }}&block_id={{ block_id }}{% else %}#{% endif %}"
                        class="fbtn {% if current_step >= 3 %}s3{% else %}s-inactive{% endif %}">
-                        <i class="fas fa-film"></i> Урок
+                        <i class="fas fa-clipboard-list"></i> Урок
                     </a>
                     <span class="fnum">Шаг 3</span>
                 </div>
@@ -363,7 +389,7 @@
                 <div class="fstep">
                     <a href="{% if lesson_id %}{% url 'api:course-constructor' %}?step=4&subject_id={{ subject_id }}&block_id={{ block_id }}&lesson_id={{ lesson_id }}{% else %}#{% endif %}"
                        class="fbtn {% if current_step >= 4 %}s4{% else %}s-inactive{% endif %}">
-                        <i class="fas fa-puzzle-piece"></i> Контент
+                        <i class="fas fa-photo-video"></i> Контент
                     </a>
                     <span class="fnum">Шаг 4</span>
                 </div>
@@ -585,7 +611,7 @@
                 <div class="context-bar">
                     <div class="context-tag"><i class="fas fa-book"></i> Предмет: <strong>{{ subject.name }}</strong></div>
                     <div class="context-sep"><i class="fas fa-chevron-right"></i></div>
-                    <div class="context-tag"><i class="fas fa-cube"></i> Блок: <strong>{{ current_block.title }}</strong></div>
+                    <div class="context-tag"><i class="fas fa-layer-group"></i> Блок: <strong>{{ current_block.title }}</strong></div>
                 </div>
             <div class="info-box" style="display: flex; gap: 12px; align-items: flex-start; margin-bottom: 25px;">
                 <i class="fas fa-lightbulb" style="margin-top: 2px; font-size: 16px; color: var(--pr);"></i>
@@ -701,7 +727,7 @@
                                 </a>
 
                                 <a href="{% url 'api:course-constructor' %}?step=4&subject_id={{ subject_id }}&block_id={{ block_id }}&lesson_id={{ lesson.id }}" class="btn-select">
-                                    Контент <i class="fas fa-arrow-right"></i>
+                                    Выбрать <i class="fas fa-arrow-right"></i>
                                 </a>
                             </div>
                         </li>
@@ -721,7 +747,7 @@
                 <div class="context-bar">
                     <div class="context-tag"><i class="fas fa-book"></i> Предмет: <strong>{{ subject.name }}</strong></div>
                     <div class="context-sep"><i class="fas fa-chevron-right"></i></div>
-                    <div class="context-tag"><i class="fas fa-cube"></i> Блок: <strong>{{ current_block.title }}</strong></div>
+                    <div class="context-tag"><i class="fas fa-layer-group"></i> Блок: <strong>{{ current_block.title }}</strong></div>
                     <div class="context-sep"><i class="fas fa-chevron-right"></i></div>
                     <div class="context-tag"><i class="fas fa-film"></i> Урок: <strong>{{ lesson.title }}</strong></div>
                 </div>
@@ -1076,9 +1102,9 @@
                 <div class="context-bar">
                     <div class="context-tag"><i class="fas fa-book"></i> Предмет: <strong>{{ subject.name }}</strong></div>
                     <div class="context-sep"><i class="fas fa-chevron-right"></i></div>
-                    <div class="context-tag"><i class="fas fa-cube"></i> Блок: <strong>{{ current_block.title }}</strong></div>
+                    <div class="context-tag"><i class="fas fa-layer-group"></i> Блок: <strong>{{ current_block.title }}</strong></div>
                     <div class="context-sep"><i class="fas fa-chevron-right"></i></div>
-                    <div class="context-tag"><i class="fas fa-film"></i> Урок: <strong>{{ lesson.title }}</strong></div>
+                    <div class="context-tag"><i class="fas fa-clipboard-list"></i> Урок: <strong>{{ lesson.title }}</strong></div>
                     <div class="context-sep"><i class="fas fa-chevron-right"></i></div>
                     <div class="context-tag"><i class="fas fa-clipboard-check"></i> Тест: <strong>{{ test.title }}</strong></div>
                 </div>
