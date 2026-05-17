@@ -1326,10 +1326,24 @@ def course_constructor_view(request):
 
     if current_step == 1:
         if request.method == 'POST':
+            # НОВОЕ: Обработка удаления предмета через модальное окно
+            if 'delete_subject_id' in request.POST:
+                del_subj_id = request.POST.get('delete_subject_id')
+                del_subj = get_object_or_404(Subject, id=del_subj_id)
+
+                # Проверка прав: преподаватель может удалять только свои предметы
+                if getattr(request.user, 'role', '') == 'teacher' and del_subj.creator != request.user:
+                    pass  # Игнорируем попытку чужого удаления
+                else:
+                    # Программное удаление: база данных автоматически (CASCADE)
+                    # удалит все блоки, уроки и связанные с ними сессии тренажера студентов.
+                    del_subj.delete()
+
+                return redirect(base_url + '?step=1')
+
+            # Старая логика сохранения
             form = SubjectForm(request.POST)
             if form.is_valid():
-                # БЫЛО: subject = form.save()
-                # СТАЛО:
                 subject = form.save(commit=False)
                 subject.creator = request.user
                 subject.save()
@@ -1353,6 +1367,11 @@ def course_constructor_view(request):
         if not subject_id: return redirect(base_url + '?step=1')
 
         if request.method == 'POST':
+            # НОВОЕ: Удаление блока
+            if 'delete_block_id' in request.POST:
+                del_id = request.POST.get('delete_block_id')
+                get_object_or_404(Block, id=del_id, subject=subject).delete()
+                return redirect(base_url + f'?step=2&subject_id={subject.id}')
 
             formset = BlockFormSet(request.POST, prefix='blocks')
 
@@ -1403,6 +1422,12 @@ def course_constructor_view(request):
             return render(request, 'admin/course_constructor.html', context)
 
         if request.method == 'POST':
+            # НОВОЕ: Удаление урока
+            if 'delete_lesson_id' in request.POST:
+                del_id = request.POST.get('delete_lesson_id')
+                get_object_or_404(Lesson, id=del_id, block=block).delete()
+                return redirect(base_url + f'?step=3&subject_id={subject.id}&block_id={block.id}')
+
             formset = LessonFormSet(request.POST, prefix='lessons')
             if formset.is_valid():
                 for form in formset:
@@ -1431,7 +1456,24 @@ def course_constructor_view(request):
         edit_mode = request.GET.get('edit')
 
         if request.method == 'POST':
+            # НОВОЕ: Удаление видео и тестов из базы
+            if 'delete_video_id' in request.POST:
+                del_video = get_object_or_404(Video, id=request.POST.get('delete_video_id'))
+                if is_teacher and del_video.creator != user:
+                    pass
+                else:
+                    del_video.delete()
+                return redirect(request.get_full_path())
 
+            elif 'delete_test_id' in request.POST:
+                del_test = get_object_or_404(Test, id=request.POST.get('delete_test_id'))
+                if is_teacher and del_test.creator != user:
+                    pass
+                else:
+                    del_test.delete()
+                return redirect(request.get_full_path())
+
+            # Старые открепления
             if 'unlink_video' in request.POST:
 
                 lesson.video = None
@@ -1594,9 +1636,13 @@ def course_constructor_view(request):
             edit_question = get_object_or_404(Question, id=edit_q_id, test=test)
 
         if request.method == 'POST':
+            # НОВОЕ: Удаление вопроса
+            if 'delete_question_id' in request.POST:
+                del_id = request.POST.get('delete_question_id')
+                get_object_or_404(Question, id=del_id, test=test).delete()
+                return redirect(base_url + f'?step=5&subject_id={subject_id}&block_id={block_id}&lesson_id={lesson_id}')
 
-            # НОВОЕ: Обработка сохранения отредактированного вопроса
-
+            # Обработка сохранения отредактированного вопроса
             if 'update_question' in request.POST and edit_question:
 
                 question_form = QuestionForm(request.POST, instance=edit_question)

@@ -307,7 +307,7 @@
         }
         .q-exist-text { font-size: 14px; color: var(--t1); font-weight: 500; line-height: 1.4; }
         .q-exist-meta { display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed var(--border); padding-top: 10px; margin-top: 5px; }
-    /* ========================================================
+   /* ========================================================
        ЦВЕТОВЫЕ ТЕМЫ ДЛЯ КАЖДОГО ШАГА КОНСТРУКТОРА
        ======================================================== */
     .fbtn.s1 { background: #3B82F6 !important; color: #fff !important; }
@@ -319,36 +319,38 @@
     /* Шаг 1: Предмет (#3B82F6) */
     .theme-step-1 .form-section { border-top: 4px solid #3B82F6; background: linear-gradient(180deg, #eff6ff 0%, #ffffff 120px); }
     .theme-step-1 .form-section .btn { background: #3B82F6 !important; border-color: #3B82F6 !important; color: #fff !important; }
+    .theme-step-1 .form-section h4 { color: #1D4ED8; border-bottom-color: #BFDBFE; } /* Темно-синий текст, светло-синяя линия */
 
     /* Шаг 2: Блоки (#8B5CF6) */
     .theme-step-2 .form-section { border-top: 4px solid #8B5CF6; background: linear-gradient(180deg, #f5f3ff 0%, #ffffff 120px); }
     .theme-step-2 .formset-item { border-left: 5px solid #8B5CF6; border-radius: 6px 10px 10px 6px; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.08); background: #fff; }
-    .theme-step-2 .form-section h4, .theme-step-2 .form-section h5 { color: #8B5CF6; }
-    .theme-step-2 .form-section h5 { font-weight: 700; }
     .theme-step-2 .form-section .btn[type="submit"] { background: #8B5CF6 !important; border-color: #8B5CF6 !important; color: #fff !important; }
     .theme-step-2 .form-section .add-form-button { background: #fff !important; color: #8B5CF6 !important; border: 2px dashed #8B5CF6 !important; }
     .theme-step-2 .form-section .add-form-button:hover { background: #f5f3ff !important; }
+    .theme-step-2 .form-section h4 { color: #6D28D9; border-bottom-color: #DDD6FE; } /* Темно-фиолетовый текст, светлая линия */
+    .theme-step-2 .form-section h5 { color: #8B5CF6; }
 
     /* Шаг 3: Уроки (#0EA5E9) */
     .theme-step-3 .form-section { border-top: 4px solid #0EA5E9; background: linear-gradient(180deg, #f0f9ff 0%, #ffffff 120px); }
     .theme-step-3 .formset-item { border-left: 5px solid #0EA5E9; border-radius: 6px 10px 10px 6px; box-shadow: 0 4px 15px rgba(14, 165, 233, 0.08); background: #fff; }
-    .theme-step-3 .form-section h4, .theme-step-3 .form-section h5 { color: #0EA5E9; }
-    .theme-step-3 .form-section h5 { font-weight: 700; }
     .theme-step-3 .form-section .btn[type="submit"] { background: #0EA5E9 !important; border-color: #0EA5E9 !important; color: #fff !important; }
     .theme-step-3 .form-section .add-form-button { background: #fff !important; color: #0EA5E9 !important; border: 2px dashed #0EA5E9 !important; }
     .theme-step-3 .form-section .add-form-button:hover { background: #f0f9ff !important; }
+    .theme-step-3 .form-section h4 { color: #0369A1; border-bottom-color: #BAE6FD; } /* Темно-голубой текст, светлая линия */
+    .theme-step-3 .form-section h5 { color: #0EA5E9; }
 
     /* Шаг 4: Контент (#10B981) */
     .theme-step-4 .form-section { border-top: 4px solid #10B981; background: linear-gradient(180deg, #ecfdf5 0%, #ffffff 120px); }
-    .theme-step-4 .form-section h4 { color: #059669; }
     .theme-step-4 .form-section .btn[type="submit"], .theme-step-4 .form-section .btn[name="submit_new_video"], .theme-step-4 .form-section .btn[name="submit_new_test"] { background: #10B981 !important; border-color: #10B981 !important; color: #fff !important; }
+    .theme-step-4 .form-section h4 { color: #047857; border-bottom-color: #A7F3D0; } /* Темно-зеленый текст, светлая линия */
 
     /* Шаг 5: Вопросы (#F59E0B) */
     .theme-step-5 .form-section { border-top: 4px solid #F59E0B; background: linear-gradient(180deg, #fffbeb 0%, #ffffff 120px); }
-    .theme-step-5 .form-section h4 { color: #D97706; }
     .theme-step-5 .formset-item.answer-card { border-left: 5px solid #F59E0B; border-radius: 6px 10px 10px 6px; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.1); }
     .theme-step-5 .form-section .btn[type="submit"] { background: #F59E0B !important; border-color: #F59E0B !important; color: #fff !important;}
     .theme-step-5 .form-section .add-form-button { background: #fff !important; color: #D97706 !important; border: 2px dashed #F59E0B !important; }
+    .theme-step-5 .form-section .add-form-button:hover { background: #fffbeb !important; }
+    .theme-step-5 .form-section h4 { color: #B45309; border-bottom-color: #FDE68A; } /* Темно-желтый текст, светлая линия */
 </style>
 {% endblock %}
 
@@ -430,9 +432,13 @@
                         <li>
                             <span>{{ subject.name }}</span>
                             <div style="display: flex; gap: 8px;">
-                                <a href="{% url 'admin:api_subject_delete' subject.id %}" target="_blank" class="btn-select" style="color: var(--rose); border-color: #fda4af;" title="Удалить предмет со всем содержимым">
+                                <button type="button"
+                                        onclick="openUniversalDeleteModal('{{ subject.id }}', '{{ subject.name|escapejs }}', 'предмет', 'delete_subject_id', 'Все вложенные блоки, уроки и история сессий тренажёра')"
+                                        class="btn-select"
+                                        style="color: var(--rose); border-color: #fda4af; background: transparent; cursor: pointer;"
+                                        title="Удалить предмет">
                                     <i class="fas fa-trash"></i>
-                                </a>
+                                </button>
 
                                 <a href="{% url 'api:course-constructor' %}?step=2&subject_id={{ subject.id }}"
                                    class="btn-select">Выбрать <i class="fas fa-arrow-right"></i></a>
@@ -558,9 +564,13 @@
                                     <i class="fas fa-edit"></i> Редактировать
                                 </a>
 
-                                <a href="{% url 'admin:api_block_delete' block.id %}" target="_blank" class="btn-select" style="color: var(--rose); border-color: #fda4af;" title="Удалить блок">
+                                <button type="button"
+                                        onclick="openUniversalDeleteModal('{{ block.id }}', '{{ block.title|escapejs }}', 'блок', 'delete_block_id', 'Все уроки этого блока и история сессий тренажёра по ним')"
+                                        class="btn-select"
+                                        style="color: var(--rose); border-color: #fda4af; background: transparent; cursor: pointer;"
+                                        title="Удалить блок">
                                     <i class="fas fa-trash"></i>
-                                </a>
+                                </button>
 
                                 <a href="{% url 'api:course-constructor' %}?step=3&subject_id={{ subject_id }}&block_id={{ block.id }}" class="btn-select">
                                     Выбрать <i class="fas fa-arrow-right"></i>
@@ -722,9 +732,13 @@
                                     <i class="fas fa-edit"></i> Редактировать
                                 </a>
 
-                                <a href="{% url 'admin:api_lesson_delete' lesson.id %}" target="_blank" class="btn-select" style="color: var(--rose); border-color: #fda4af;" title="Удалить урок">
+                                <button type="button"
+                                        onclick="openUniversalDeleteModal('{{ lesson.id }}', '{{ lesson.title|escapejs }}', 'урок', 'delete_lesson_id', 'История сессий тренажёра по этому уроку (видео и тесты останутся в базе данных)')"
+                                        class="btn-select"
+                                        style="color: var(--rose); border-color: #fda4af; background: transparent; cursor: pointer;"
+                                        title="Удалить урок">
                                     <i class="fas fa-trash"></i>
-                                </a>
+                                </button>
 
                                 <a href="{% url 'api:course-constructor' %}?step=4&subject_id={{ subject_id }}&block_id={{ block_id }}&lesson_id={{ lesson.id }}" class="btn-select">
                                     Выбрать <i class="fas fa-arrow-right"></i>
@@ -842,9 +856,12 @@
                                     <i class="fas fa-unlink"></i> Открепить
                                 </button>
                             </form>
-                            <a href="{% url 'admin:api_video_delete' lesson.video.id %}" target="_blank" class="btn-action btn-danger" title="Полностью удалить из базы">
+                            <button type="button"
+                                    onclick="openUniversalDeleteModal('{{ lesson.video.id }}', '{{ lesson.video.name|escapejs }}', 'видео', 'delete_video_id', 'Файл будет навсегда удален из базы и откреплен от всех уроков')"
+                                    class="btn-action btn-danger" style="background: transparent; cursor: pointer;"
+                                    title="Полностью удалить из базы">
                                 <i class="fas fa-trash"></i> Удалить
-                            </a>
+                            </button>
                         </div>
                     </div>
                     {% endif %}
@@ -1001,9 +1018,12 @@
                                     <i class="fas fa-unlink"></i> Открепить
                                 </button>
                             </form>
-                            <a href="{% url 'admin:api_test_delete' lesson.test.id %}" target="_blank" class="btn-action btn-danger" title="Полностью удалить тест">
+                            <button type="button"
+                                    onclick="openUniversalDeleteModal('{{ lesson.test.id }}', '{{ lesson.test.title|escapejs }}', 'тест', 'delete_test_id', 'Все вопросы, варианты ответов и результаты прохождений этого теста')"
+                                    class="btn-action btn-danger" style="background: transparent; cursor: pointer;"
+                                    title="Полностью удалить из базы">
                                 <i class="fas fa-trash"></i> Удалить
-                            </a>
+                            </button>
                         </div>
                     </div>
                     {% endif %}
@@ -1226,9 +1246,12 @@
                             <div class="q-exist-meta">
                                 <span style="font-size: 12px; color: var(--t3);"><i class="fas fa-list"></i> Вариантов: {{ question.answers.count }}</span>
                                 <div style="display: flex; gap: 8px;">
-                                    <a href="{% url 'admin:api_question_delete' question.id %}" target="_blank" class="btn-action btn-danger" style="padding: 4px 10px; font-size: 11px;">
+                                    <button type="button"
+                                            onclick="openUniversalDeleteModal('{{ question.id }}', '{{ question.text|truncatechars:30|escapejs }}', 'вопрос', 'delete_question_id', 'Вопрос и его варианты ответов навсегда исчезнут из теста')"
+                                            class="btn-action btn-danger"
+                                            style="padding: 4px 10px; font-size: 11px; background: transparent; border: 1px solid #fda4af; cursor: pointer;">
                                         <i class="fas fa-trash"></i> Удалить
-                                    </a>
+                                    </button>
 
                                     <a href="{% url 'api:course-constructor' %}?step=5&subject_id={{ subject_id }}&block_id={{ block_id }}&lesson_id={{ lesson_id }}&edit_q={{ question.id }}" class="btn-action" style="padding: 4px 10px; font-size: 11px;">
                                         <i class="fas fa-edit"></i> Редактировать
@@ -1564,7 +1587,54 @@
         </div>
     </div>
 </div>
+<div class="modal-overlay" id="universalDeleteModal">
+    <div class="modal-box" style="max-width: 450px;">
+        <div class="modal-header" style="border-bottom: none; padding-bottom: 0;">
+            <div style="width: 48px; height: 48px; background: #fff1f2; color: #f43f5e; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; margin-bottom: 12px;">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <h3 style="font-size: 18px; color: #0f172a; margin: 0;">Удалить <span id="delItemTypeLC">объект</span>?</h3>
+            <button class="modal-close" onclick="closeUniversalDeleteModal()" style="position: absolute; top: 16px; right: 16px;"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body" style="padding-top: 10px;">
+            <p style="margin-top: 0; color: #475569; font-size: 14px; line-height: 1.5;">
+                Вы уверены, что хотите удалить <span id="delItemType">объект</span> <strong id="delItemName" style="color: #0f172a;"></strong>?<br><br>
+                Это действие <b>необратимо</b>. Будут навсегда удалены:
+            </p>
+            <ul style="color: #f43f5e; font-size: 13px; font-weight: 500; background: #fff1f2; padding: 12px 12px 12px 30px; border-radius: 8px; margin-bottom: 0;">
+                <li id="delWarningText">Связанные данные</li>
+            </ul>
+        </div>
+        <div class="modal-footer" style="background: transparent; border-top: none; padding-top: 0;">
+            <form method="post" action="" style="width: 100%; display: flex; gap: 10px; margin: 0;">
+                {% csrf_token %}
+                <input type="hidden" name="" id="delItemIdInput">
+                <button type="button" class="btn-cancel" onclick="closeUniversalDeleteModal()" style="flex: 1;">Отмена</button>
+                <button type="submit" class="btn-save" style="flex: 1; background: #f43f5e; border-color: #f43f5e; box-shadow: 0 4px 12px rgba(244, 63, 94, 0.2);">
+                    <i class="fas fa-trash-alt"></i> Да, удалить
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+<script>
+    function openUniversalDeleteModal(id, name, type, inputName, warning) {
+        document.getElementById('delItemName').innerText = `«${name}»`;
+        document.getElementById('delItemType').innerText = type.toLowerCase();
+        document.getElementById('delItemTypeLC').innerText = type.toLowerCase();
+        document.getElementById('delWarningText').innerText = warning;
 
+        const input = document.getElementById('delItemIdInput');
+        input.name = inputName;  // Например 'delete_block_id'
+        input.value = id;
+
+        document.getElementById('universalDeleteModal').classList.add('active');
+    }
+
+    function closeUniversalDeleteModal() {
+        document.getElementById('universalDeleteModal').classList.remove('active');
+    }
+</script>
 <script>
     // Функция для обновления видимости и ссылки кнопки "Вопросы"
 function updateQuestionButton(selectElement) {
@@ -1655,6 +1725,7 @@ if (currentTestSelect) {
         }
     }
 </script>
+
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         // Запускаем с небольшой задержкой (100мс), чтобы скрипт выполнился
@@ -1679,5 +1750,14 @@ if (currentTestSelect) {
             });
         }, 100);
     });
+    function openDeleteSubjectModal(id, name) {
+        document.getElementById('delSubjName').innerText = `«${name}»`;
+        document.getElementById('delSubjIdInput').value = id;
+        document.getElementById('deleteSubjectModal').classList.add('active');
+    }
+
+    function closeDeleteModal() {
+        document.getElementById('deleteSubjectModal').classList.remove('active');
+    }
 </script>
 {% endblock %}
