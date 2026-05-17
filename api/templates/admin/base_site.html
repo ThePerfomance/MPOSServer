@@ -55,6 +55,61 @@ document.addEventListener("DOMContentLoaded", function() {
         const el = document.querySelector(sel);
         if (el) el.remove();
     });
+    // === ДОБАВЛЕНИЕ ИКОНКИ «ГЛАЗ» ДЛЯ ВСЕХ ПОЛЕЙ ПАРОЛЕЙ ===
+    const passwordInputs = document.querySelectorAll('input[type="password"]');
+
+    passwordInputs.forEach(function(input) {
+        // Создаем обертку, чтобы иконка позиционировалась ровно внутри поля
+        const wrapper = document.createElement('div');
+        wrapper.style.position = 'relative';
+
+        // Подстраиваем обертку под стили текущего инпута
+        if (window.getComputedStyle(input).display === 'block' || input.classList.contains('vTextField')) {
+            wrapper.style.display = 'block';
+            wrapper.style.width = '100%';
+            input.style.width = '100%';
+        } else {
+            wrapper.style.display = 'inline-block';
+        }
+
+        // Перемещаем инпут внутрь обертки
+        input.parentNode.insertBefore(wrapper, input);
+        wrapper.appendChild(input);
+
+        // Добавляем отступ тексту, чтобы он не залезал под иконку
+        input.style.paddingRight = '40px';
+
+        // Создаем саму иконку
+        const eyeIcon = document.createElement('i');
+        eyeIcon.className = 'fas fa-eye';
+        eyeIcon.style.position = 'absolute';
+        eyeIcon.style.right = '12px';
+        eyeIcon.style.top = '50%';
+        eyeIcon.style.transform = 'translateY(-50%)';
+        eyeIcon.style.cursor = 'pointer';
+        eyeIcon.style.color = '#94a3b8'; // Серый цвет по умолчанию
+        eyeIcon.style.zIndex = '10';
+        eyeIcon.style.fontSize = '14px';
+        eyeIcon.title = 'Показать пароль';
+
+        // Логика переключения (показать/скрыть)
+        eyeIcon.addEventListener('click', function() {
+            if (input.type === 'password') {
+                input.type = 'text';
+                eyeIcon.className = 'fas fa-eye-slash'; // Зачеркнутый глаз
+                eyeIcon.style.color = '#2563eb'; // Подсвечиваем синим активное состояние
+                eyeIcon.title = 'Скрыть пароль';
+            } else {
+                input.type = 'password';
+                eyeIcon.className = 'fas fa-eye'; // Обычный глаз
+                eyeIcon.style.color = '#94a3b8';
+                eyeIcon.title = 'Показать пароль';
+            }
+        });
+
+        // Добавляем иконку в обертку
+        wrapper.appendChild(eyeIcon);
+    });
 // === ГЛОБАЛЬНОЕ МЕНЮ ПРЕПОДАВАТЕЛЯ ===
     const leftNav = document.querySelector('.main-header .navbar-nav:not(.ml-auto)');
     if (leftNav) {

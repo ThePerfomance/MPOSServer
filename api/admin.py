@@ -4,6 +4,7 @@ from django.contrib import admin
 from django.contrib.auth.models import Group as AuthGroup
 from django.utils.html import format_html
 from django.contrib.admin import AdminSite as _AdminSite
+from django import forms
 import logging
 from django.conf import settings
 from .models import (
@@ -460,7 +461,7 @@ class AnswerAdmin(admin.ModelAdmin):
 # ══════════════════════════════════════════════════════════════════════════════
 
 @admin.register(User)
-class UserAdmin(admin.ModelAdmin):
+class CustomUserAdmin(admin.ModelAdmin):
     """Пользователи платформы."""
     list_filter = ('role', 'is_active', 'is_staff')
     search_fields = ('email', 'lastname', 'firstname')
@@ -479,12 +480,27 @@ class UserAdmin(admin.ModelAdmin):
 
     role_badge.short_description = "Роль"
 
+    # === 1. ДОБАВЛЯЕМ НАБОР ПОЛЕЙ ДЛЯ СОЗДАНИЯ ===
+    add_fieldsets = (
+        ('Создание нового пользователя', {
+            'classes': ('wide',),
+            'fields': ('email', 'password', 'firstname', 'lastname', 'patronymic', 'role', 'is_active'),
+        }),
+    )
+
     def get_list_display(self, request):
         if is_admin(request.user):
             return ('email', 'full_name', 'role_badge', 'is_active', 'is_staff')
         return ('email', 'full_name', 'role_badge')
 
+        # === 2. ОБНОВЛЯЕМ get_fieldsets ===
+
     def get_fieldsets(self, request, obj=None):
+        # Если obj равен None (значит, мы на странице "Добавить пользователя")
+        if obj is None:
+            return self.add_fieldsets
+
+        # Если obj существует (значит, мы редактируем старого пользователя)
         if is_admin(request.user):
             return (
                 ('Личная информация', {'fields': ('firstname', 'lastname', 'patronymic', 'email')}),
@@ -518,6 +534,12 @@ class UserAdmin(admin.ModelAdmin):
             role='student',
             memberships__group__group_teachers__teacher=request.user
         ).distinct()
+
+    def get_form(self, request, obj=None, **kwargs):
+        # obj is None означает, что мы создаем НОВОГО пользователя, а не редактируем старого
+        if obj is None:
+            kwargs['form'] = UserAdminCreationForm
+        return super().get_form(request, obj, **kwargs)
 
 @admin.register(Group)
 class GroupAdmin(admin.ModelAdmin):
@@ -948,5 +970,23 @@ def _custom_app_index(self, request, app_label, extra_context=None):
 
     return _orig_app_index(self, request, app_label, extra_context)
 
+# --- НОВАЯ ФОРМА ДЛЯ СОЗДАНИЯ ПОЛЬЗОВАТЕЛЯ В АДМИНКЕ ---
+class UserAdminCreationForm(forms.ModelForm):
+    password = forms.CharField(
+        label='Пароль',
+        widget=forms.PasswordInput(attrs={'class': 'vTextField', 'placeholder': 'Введите пароль'}),
+        required=True
+    )
+
+    class Meta:
+        model = User
+        fields = ('email', 'password', 'firstname', 'lastname', 'patronymic', 'role', 'is_active')
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        user.set_password(self.cleaned_data["password"])
+        if commit:
+            user.save()
+        return user
 
 _AdminSite.app_index = _custom_app_index

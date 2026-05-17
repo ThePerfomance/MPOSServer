@@ -35,6 +35,15 @@ class LessonForm(forms.ModelForm):
             'position': 'Позиция',
             'is_published': 'Опубликовано',
         }
+        # НОВОЕ: Задаем элементу класс и стартовый размер (6 строк)
+        widgets = {
+            'summary': forms.Textarea(attrs={
+                'rows': 6,
+                'class': 'vLargeTextField tab-textarea',
+                'style': 'width: 100%; min-height: 120px;',
+                'placeholder': 'Введите краткое содержание или план урока...'
+            })
+        }
 
 class VideoForm(forms.ModelForm):
     class Meta:

@@ -305,7 +305,7 @@ class Lesson(models.Model):
         help_text='Видеоматериал урока', verbose_name="Связанное видео"
     )
     title        = models.CharField(max_length=255, blank=True, null=True, verbose_name="Заголовок")
-    summary      = models.CharField(max_length=1000, blank=True, null=True, verbose_name="Саммари урока")
+    summary = models.TextField(blank=True, null=True, verbose_name="Краткое содержание")
     duration     = models.IntegerField(default=0, help_text='Суммарная длительность урока в секундах', verbose_name="Длительность")
     position     = models.IntegerField(default=0, help_text='Влияет на порядок обьектов ', verbose_name="Позиция урока")
     is_published = models.BooleanField(default=False, help_text='Видимость для пользователей ', verbose_name="Опубликовано?")
