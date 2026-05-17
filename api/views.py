@@ -1792,3 +1792,40 @@ def build_learning_path(request, user_id):
 
     return Response(path_data, status=status.HTTP_200_OK)
 
+@api_view(["POST"])
+@permission_classes([IsAuthenticated]) # Смена пароля доступна только авторизованным пользователям
+def user_change_password(request):
+    """Эндпоинт для смены пароля из мобильного приложения"""
+    user = request.user
+    old_password = request.data.get("old_password")
+    new_password = request.data.get("new_password")
+
+    if not old_password or not new_password:
+        return Response(
+            {"detail": "Необходимо указать старый и новый пароли."},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    # 1. Проверяем, совпадает ли присланный старый пароль с текущим в базе
+    if not user.check_password(old_password):
+        return Response(
+            {"detail": "Неверный старый пароль."},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    # Валидация длины нового пароля (базовая проверка)
+    if len(new_password) < 6:
+        return Response(
+            {"detail": "Новый пароль должен содержать не менее 6 символов."},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    # 2. Хэшируем и сохраняем новый пароль
+    user.set_password(new_password)
+    user.save()
+
+    return Response(
+        {"status": "success", "message": "Пароль успешно изменен."},
+        status=status.HTTP_200_OK
+    )
+

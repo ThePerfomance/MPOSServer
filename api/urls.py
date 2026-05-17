@@ -19,6 +19,7 @@ urlpatterns = [
     path("users/<uuid:user_id>/groups/", views.groups_for_user, name='user-groups-for-user'),
     path("users/<uuid:user_id>/results/", views.results_for_user, name='user-results-for-user'),
     #path('auth/login/', views.authenticate_user, name='authenticate_user'),
+    path("users/change-password/", views.user_change_password, name="user-change-password"),
 
     # Groups
     path("groups/", views.groups_list, name='groups-list'), # <-- Добавил слэш
