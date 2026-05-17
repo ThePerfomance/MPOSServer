@@ -203,17 +203,6 @@ class QuestionSerializer(serializers.ModelSerializer):
         model = Question
         fields = ['id', 'text', 'points']
 
-
-class QuestionWithAnswersSerializer(serializers.ModelSerializer):
-    answers = AnswerSerializer(many=True, read_only=True)
-
-    class Meta:
-        model = Question
-        fields = ["id", "text", "points", "answers"]
-
-
-
-
 # ── ML serializers ──────────────────────────────────
 
 class StudentClusterSerializer(serializers.ModelSerializer):
@@ -240,6 +229,22 @@ class QuestionWithAnswersSerializer(serializers.ModelSerializer):
     class Meta:
         model = Question
         fields = ["id", "text", "points", "answers", "difficulty"] # Добавили в список
+
+class QuestionWithAnswersSerializer(serializers.ModelSerializer):
+    answers = AnswerSerializer(many=True, read_only=True)
+    difficulty = QuestionDifficultySerializer(read_only=True)
+
+    # НОВОЕ ПОЛЕ: вычисляется динамически
+    is_multiple_choice = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Question
+        fields = ["id", "text", "points", "answers", "difficulty", "is_multiple_choice"]
+
+    def get_is_multiple_choice(self, obj):
+        # Если правильных ответов больше одного, возвращаем True
+        correct_count = obj.answers.filter(is_correct=True).count()
+        return correct_count > 1
 
 class TestSerializer(serializers.ModelSerializer):
     # Добавляем вложенное поле только для чтения
@@ -293,7 +298,7 @@ class VideoTypeSerializer(serializers.ModelSerializer):
 class UserAnswerSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserAnswer
-        fields = ['id', 'test_result', 'question', 'chosen_answer', 'is_correct', 'points_earned']
+        fields = ['id', 'test_result', 'question', 'chosen_answers', 'is_correct', 'points_earned']
 
 
 # 1. Единый сериализатор для вопросов со сложностью (убрали дубликаты)
@@ -301,9 +306,19 @@ class QuestionWithAnswersSerializer(serializers.ModelSerializer):
     answers = AnswerSerializer(many=True, read_only=True)
     difficulty = QuestionDifficultySerializer(read_only=True)
 
+    # 1. ВОЗВРАЩАЕМ ВЫЧИСЛЯЕМОЕ ПОЛЕ
+    is_multiple_choice = serializers.SerializerMethodField()
+
     class Meta:
         model = Question
-        fields = ["id", "text", "points", "answers", "difficulty"]
+        # 2. ДОБАВЛЯЕМ ЕГО В СПИСОК FIELDS
+        fields = ["id", "text", "points", "answers", "difficulty", "is_multiple_choice"]
+
+    # 3. ВОЗВРАЩАЕМ ФУНКЦИЮ ПОДСЧЕТА
+    def get_is_multiple_choice(self, obj):
+        # Считаем количество правильных ответов
+        correct_count = obj.answers.filter(is_correct=True).count()
+        return correct_count > 1
 
 
 # 2. ВОТ ЭТОТ КЛАСС БЫЛ ПОТЕРЯН (Вопросы внутри тренажера)

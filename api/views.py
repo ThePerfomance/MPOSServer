@@ -10,6 +10,7 @@ from rest_framework.authentication import SessionAuthentication
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from django.utils import timezone
+from collections import defaultdict
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
@@ -376,43 +377,56 @@ def test_submit(request, result_id):
     answers_data = request.data.get("answers", [])
 
     # 1. Считаем max_points на основе ВСЕХ вопросов в тесте
-    all_questions = Question.objects.filter(test=test_result.test)
+    all_questions = Question.objects.prefetch_related('answers').filter(test=test_result.test)
     max_points = sum(q.points for q in all_questions)
     total_earned = 0
 
-    # Преобразуем присланные ответы в словарь {question_id: answer_id} для быстрого поиска
-    user_answers_dict = {ans.get("question"): ans.get("answer") for ans in answers_data}
+    # Преобразуем присланные ответы [{"question": 1, "answer": 5}, {"question": 1, "answer": 6}]
+    # в словарь со списками: {1: [5, 6]}
+    user_answers_dict = defaultdict(list)
+    for ans in answers_data:
+        q_id = ans.get("question")
+        a_id = ans.get("answer")
+        if q_id and a_id:
+            user_answers_dict[q_id].append(a_id)
 
     # 2. Проходим по всем вопросам теста
     for question in all_questions:
-        chosen_answer_id = user_answers_dict.get(question.id)
+        chosen_answer_ids = user_answers_dict.get(question.id, [])
 
-        # Если ответ был предоставлен
-        if chosen_answer_id:
-            chosen_answer = Answer.objects.filter(pk=chosen_answer_id, question=question).first()
-            if chosen_answer:
-                is_correct = chosen_answer.is_correct
-                points = question.points if is_correct else 0
+        if chosen_answer_ids:
+            # Сверяем со списком правильных ответов
+            correct_answers = question.answers.filter(is_correct=True)
+            correct_ids = set(correct_answers.values_list('id', flat=True))
+            submitted_ids = set(chosen_answer_ids)
+
+            # Проверка на 100% совпадение (выбраны все правильные и ни одного лишнего)
+            if correct_ids and submitted_ids == correct_ids:
+                is_correct = True
+                points = question.points
             else:
-                chosen_answer = None
                 is_correct = False
                 points = 0
         else:
             # Пользователь пропустил вопрос
-            chosen_answer = None
             is_correct = False
             points = 0
 
-        # Сохраняем результат ответа
-        UserAnswer.objects.update_or_create(
+        # Сохраняем результат ответа (без M2M поля chosen_answers)
+        user_answer, created = UserAnswer.objects.update_or_create(
             test_result=test_result,
             question=question,
             defaults={
-                'chosen_answer': chosen_answer,
                 'is_correct': is_correct,
                 'points_earned': points
             }
         )
+
+        # Теперь добавляем связи ManyToMany
+        if chosen_answer_ids:
+            user_answer.chosen_answers.set(chosen_answer_ids)
+        else:
+            user_answer.chosen_answers.clear()
 
         total_earned += points
 
@@ -429,8 +443,9 @@ def test_submit(request, result_id):
         update_student_clusters()
     except Exception as e:
         print(f"Ошибка обновления кластеров: {e}")
+
     # Возвращаем детализированный результат
-    user_answers = UserAnswer.objects.filter(test_result=test_result)
+    user_answers = UserAnswer.objects.filter(test_result=test_result).prefetch_related('chosen_answers')
 
     return Response({
         "id": test_result.id,
@@ -443,7 +458,7 @@ def test_submit(request, result_id):
         "user_answers": [
             {
                 "question": ua.question_id,
-                "chosen_answer": ua.chosen_answer_id,
+                "chosen_answers": list(ua.chosen_answers.values_list('id', flat=True)),
                 "is_correct": ua.is_correct,
                 "points_earned": ua.points_earned
             } for ua in user_answers
@@ -496,26 +511,34 @@ def test_results_list(request):
 
     # 2. Сохраняем ответы UserAnswer
     try:
+        # Группируем ответы
+        user_answers_dict = defaultdict(list)
         for ans in answers_data:
-            # Если флаг is_correct не передан, определяем его автоматически
-            is_correct = ans.get("is_correct")
-            if is_correct is None:
-                question_id = ans.get("question_id")
-                chosen_answer_id = ans.get("chosen_answer_id")
-                if question_id and chosen_answer_id:
-                    correct_answer = Answer.objects.filter(question_id=question_id, is_correct=True).first()
-                    is_correct = (correct_answer and correct_answer.id == chosen_answer_id)
-                else:
-                    is_correct = False
+            q_id = ans.get("question_id")
+            a_id = ans.get("chosen_answer_id")
+            if q_id and a_id:
+                user_answers_dict[q_id].append(a_id)
 
-            UserAnswer.objects.create(
+        for q_id, a_ids in user_answers_dict.items():
+            question = Question.objects.filter(id=q_id).first()
+            if not question:
+                continue
+
+            # Проверяем правильность
+            correct_ids = set(question.answers.filter(is_correct=True).values_list('id', flat=True))
+            submitted_ids = set(a_ids)
+            is_correct = bool(correct_ids and submitted_ids == correct_ids)
+
+            ua = UserAnswer.objects.create(
                 test_result=test_result,
-                question_id=ans.get("question_id"),
-                chosen_answer_id=ans.get("chosen_answer_id"),
+                question_id=q_id,
                 is_correct=is_correct
             )
+            # Привязываем массив ответов
+            ua.chosen_answers.set(a_ids)
+
     except Exception as e:
-        # Если ответы не сохранились, лучше удалить сам результат, чтобы не было дублей при перезаписи
+        # Если ответы не сохранились, лучше удалить сам результат
         test_result.delete()
         return Response({"error": f"Ошибка при сохранении ответов: {str(e)}"}, status=500)
 
@@ -1184,22 +1207,35 @@ def create_training_from_result(request, result_id):
 def answer_training_question(request, pk):
     """Принимает ответ пользователя внутри тренажёра."""
     tq = get_object_or_404(TrainingQuestion, pk=pk)
-    chosen_answer_id = request.data.get('chosen_answer_id')
 
-    if not chosen_answer_id:
-        return Response({"detail": "chosen_answer_id обязателен"}, status=status.HTTP_400_BAD_REQUEST)
+    # ИСПРАВЛЕНИЕ 1: Читаем и chosen_answers, и chosenAnswers (если клиент прислал camelCase)
+    chosen_answer_ids = request.data.get('chosen_answers') or request.data.get('chosenAnswers', [])
 
-    answer = get_object_or_404(Answer, pk=chosen_answer_id)
-    tq.chosen_answer = answer
-    tq.is_correct = answer.is_correct
-    tq.status = 'correct' if answer.is_correct else 'wrong'
+    # Обратная совместимость
+    legacy_answer = request.data.get('chosen_answer_id')
+    if legacy_answer and not chosen_answer_ids:
+        chosen_answer_ids = [legacy_answer]
+
+    if not chosen_answer_ids:
+        return Response({"detail": "Массив chosen_answers обязателен"}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Вычисляем правильные ответы
+    correct_ids = set(tq.question.answers.filter(is_correct=True).values_list('id', flat=True))
+    submitted_ids = set(chosen_answer_ids)
+
+    # Проверка на 100% совпадение
+    is_correct = bool(correct_ids and submitted_ids == correct_ids)
+
+    tq.is_correct = is_correct
+    tq.status = 'correct' if is_correct else 'wrong'
     tq.answered_at = timezone.now()
     tq.save()
 
-    # 1. Получаем сессию
-    session = tq.session
+    # Сохраняем связи ManyToMany
+    tq.chosen_answers.set(chosen_answer_ids)
 
-    #Закрываем сессию ТОЛЬКО если НЕТ вопросов со статусом, отличным от 'correct'
+    # Логика закрытия сессии
+    session = tq.session
     if not session.training_questions.exclude(status='correct').exists():
         session.status = 'completed'
         session.completed_at = timezone.now()
@@ -1210,7 +1246,12 @@ def answer_training_question(request, pk):
             session.completed_at = None
             session.save()
 
-    return Response(TrainingQuestionSerializer(tq).data)
+    # ИСПРАВЛЕНИЕ 2: Формируем ответ и явно добавляем туда нужные приложению поля
+    response_data = TrainingQuestionSerializer(tq).data
+    response_data['is_correct'] = is_correct
+    response_data['correctAnswerIds'] = list(correct_ids)  # <-- Вот это поле ждет приложение!
+
+    return Response(response_data)
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -1569,7 +1610,10 @@ def course_constructor_view(request):
 
                     return redirect(
                         base_url + f'?step=5&subject_id={subject_id}&block_id={block_id}&lesson_id={lesson_id}')
-
+                else:
+                    # ИСПРАВЛЕНИЕ: Возвращаем форму с ошибками на экран
+                    context['question_form'] = question_form
+                    context['answer_formset'] = answer_formset
 
             # Старая логика: сохранение нового вопроса
 
@@ -1591,6 +1635,10 @@ def course_constructor_view(request):
                     answer_formset.save()
 
                     return redirect(request.get_full_path())
+                else:
+                    # ИСПРАВЛЕНИЕ: Возвращаем форму с ошибками на экран
+                    context['question_form'] = question_form
+                    context['answer_formset'] = answer_formset
 
         else:
 

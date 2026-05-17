@@ -57,7 +57,7 @@ class AnswerInline(admin.TabularInline):
 class UserAnswerInline(admin.TabularInline):
     """Детализация ответов внутри результата теста (только чтение)."""
     model = UserAnswer
-    readonly_fields = ('question', 'chosen_answer', 'is_correct', 'points_earned', 'answered_at')
+    readonly_fields = ('question', 'chosen_answers', 'is_correct', 'points_earned', 'answered_at')
     extra = 0
     can_delete = False
     verbose_name = "Ответ"
@@ -71,7 +71,7 @@ class UserAnswerInline(admin.TabularInline):
 class TrainingQuestionInline(admin.TabularInline):
     """Вопросы внутри сессии тренажёра (только чтение)."""
     model = TrainingQuestion
-    readonly_fields = ('question', 'status', 'is_correct', 'chosen_answer', 'position')
+    readonly_fields = ('question', 'status', 'is_correct', 'chosen_answers', 'position')
     extra = 0
     can_delete = False
     verbose_name = "Вопрос"
@@ -692,7 +692,7 @@ class UserAnswerAdmin(admin.ModelAdmin):
     list_display = ('user_email', 'test_name', 'question_short', 'correct_badge', 'points_earned', 'answered_at')
     list_filter = ('is_correct', 'answered_at', 'test_result__test')
     search_fields = ('test_result__user__email', 'question__text')
-    readonly_fields = ('test_result', 'question', 'chosen_answer', 'is_correct', 'points_earned', 'answered_at')
+    readonly_fields = ('test_result', 'question', 'chosen_answers', 'is_correct', 'points_earned', 'answered_at')
 
     def user_email(self, obj): return obj.test_result.user.email if obj.test_result.user else "Аноним"
 
@@ -755,7 +755,7 @@ class TrainingSessionAdmin(admin.ModelAdmin):
 class TrainingQuestionAdmin(admin.ModelAdmin):
     list_display = ('session_short', 'question_short', 'correct_badge')
     list_filter = ('status',)
-    readonly_fields = ('session', 'question', 'chosen_answer', 'is_correct', 'position', 'status', 'answered_at')
+    readonly_fields = ('session', 'question', 'chosen_answers', 'is_correct', 'position', 'status', 'answered_at')
 
     def session_short(self, obj): return str(obj.session.id)[:8] + '…'
 

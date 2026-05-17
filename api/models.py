@@ -419,8 +419,7 @@ class UserAnswer(models.Model):
                                        related_name='user_answers', verbose_name="ИД результата тестирования")
     question       = models.ForeignKey(Question, on_delete=models.CASCADE,
                                        related_name='user_answers', verbose_name="Вопрос")
-    chosen_answer  = models.ForeignKey(Answer, on_delete=models.SET_NULL,
-                                       null=True, blank=True, related_name='chosen_in', verbose_name="Выбранный ответ")
+    chosen_answers = models.ManyToManyField(Answer, blank=True, related_name='chosen_in', verbose_name="Выбранные ответы")
     is_correct     = models.BooleanField(default=False, verbose_name="Правильность")
     points_earned  = models.IntegerField("Получено баллов", default=0)
     answered_at    = models.DateTimeField(auto_now_add=True, verbose_name="Отвечено в")
@@ -490,9 +489,8 @@ class TrainingQuestion(models.Model):
                                        related_name='training_questions', verbose_name="Сессия")
     question       = models.ForeignKey(Question, on_delete=models.CASCADE,
                                        related_name='training_questions', verbose_name="Вопрос")
-    chosen_answer  = models.ForeignKey(Answer, on_delete=models.SET_NULL,
-                                       null=True, blank=True,
-                                       related_name='chosen_in_training', verbose_name="Выбранный ответ")
+    chosen_answers = models.ManyToManyField(Answer, blank=True, related_name='chosen_in_training',
+                                            verbose_name="Выбранные ответы")
     is_correct     = models.BooleanField(null=True, blank=True, verbose_name="Правильность")   # null = ещё не отвечено
     position       = models.IntegerField(default=0, verbose_name="Позиция")
     status         = models.CharField(max_length=8, choices=STATUS_CHOICES, default='pending', verbose_name="Статус прохождения")
