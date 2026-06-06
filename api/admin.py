@@ -6,6 +6,10 @@ from django.utils.html import format_html
 from django.contrib.admin import AdminSite as _AdminSite
 from django import forms
 import logging
+import json
+from django.contrib import admin
+from django.db.models import Avg, Count, F
+from django.db.models.functions import TruncDate
 from django.conf import settings
 from .models import (
     User, Group, GroupMember, TeacherGroup, GroupSubject, Subject, Block,
