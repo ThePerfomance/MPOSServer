@@ -158,7 +158,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 data: { labels: ratingLabels, datasets: [{ data: ratingData.map(Number), backgroundColor: '#10B981', borderRadius: 4 }] },
                 options: {
                     responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
-                    scales: { y: { beginAtZero: true } }
+                     scales: { y: { beginAtZero: true, max: 100, ticks: { callback: value => value + '%' } } }
                 }
             });
         }
