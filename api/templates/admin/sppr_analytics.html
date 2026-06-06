@@ -1,0 +1,185 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block content %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<div class="container-fluid" style="padding: 24px; font-family: 'Onest', sans-serif; background: #f1f5f9; min-height: 100vh;">
+
+    <div class="card shadow-sm mb-4" style="border-radius: 12px; border-left: 6px solid #2563EB; background: #fff; padding: 20px;">
+        <h2 style="margin: 0 0 8px 0; color: #0F172A; font-weight: 700;">📐 Валидация адаптивного математического аппарата СППР</h2>
+        <p style="margin: 0; color: #475569; font-size: 14px;">Мониторинг латентных параметров способностей на базе взвешенных коэффициентов IRT и автоматическая локализация деструктивных зон успеваемости.</p>
+    </div>
+
+    <div class="card shadow-sm mb-4" style="border-radius: 12px; border: 1px solid #e2e8f0; background: #fff; padding: 20px;">
+        <form method="GET" action="" id="filterForm" style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-end;">
+            <div style="flex: 1; min-width: 220px;">
+                <label style="font-weight: 600; font-size: 13px; color: #475569; margin-bottom: 8px; display: block;">Учебная дисциплина</label>
+                <select name="subject_id" id="subjectSelect" style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid #cbd5e1; outline: none; background: #f8fafc; font-family: inherit;">
+                    <option value="">Все дисциплины (Сквозной срез)</option>
+                    {% for s in subjects %}
+                        <option value="{{ s.id }}" {% if s.id|stringformat:"s" == selected_subject %}selected{% endif %}>{{ s.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div style="flex: 1; min-width: 220px;">
+                <label style="font-weight: 600; font-size: 13px; color: #475569; margin-bottom: 8px; display: block;">Учебная группа</label>
+                <select name="group_id" id="groupSelect" style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid #cbd5e1; outline: none; background: #f8fafc; font-family: inherit;">
+                    <option value="">Все группы</option>
+                    {% for g in groups %}
+                        <option value="{{ g.id }}" {% if g.id|stringformat:"s" == selected_group %}selected{% endif %}>{{ g.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div style="flex: 1; min-width: 220px;">
+                <label style="font-weight: 600; font-size: 13px; color: #475569; margin-bottom: 8px; display: block;">Студент</label>
+                <select name="student_id" id="studentSelect" style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid #cbd5e1; outline: none; background: #f8fafc; font-family: inherit;">
+                    <option value="">Все студенты</option>
+                </select>
+            </div>
+
+            <div>
+                <button type="submit" style="background: #2563EB; color: #fff; border: none; padding: 10px 24px; border-radius: 8px; font-weight: 600; cursor: pointer; height: 43px; display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-calculator"></i> Пересчитать метрики
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 24px; width: 100%; margin-bottom: 24px;">
+        <div style="flex: 1; min-width: 400px; background: #fff; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: var(--sh1);">
+            <h4 style="margin-top:0; font-weight:600; color:#1e293b; font-size:15px;"><i class="fas fa-cubes text-primary mr-2"></i>Распределение сложности контролирующих элементов (IRT калибровка)</h4>
+            <div style="position: relative; height: 280px; width: 100%;">
+                <canvas id="irtBarChart"></canvas>
+            </div>
+        </div>
+
+        <div style="flex: 1; min-width: 450px; background: #fff; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: var(--sh1);">
+            <h4 style="margin-top:0; font-weight:600; color:#1e293b; font-size:15px;"><i class="fas fa-tasks text-success mr-2"></i>Средний рейтинг успеваемости по тестам</h4>
+            <div style="position: relative; height: 280px; width: 100%;">
+                <canvas id="ratingBarChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div style="width: 100%; background: #fff; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: var(--sh1); margin-bottom: 24px;">
+        <h4 style="margin-top:0; font-weight:600; color:#1e293b; font-size:15px;"><i class="fas fa-chart-line text-info mr-2"></i>Динамика изменения латентного IRT-рейтинга способностей студента</h4>
+        <div style="position: relative; height: 320px; width: 100%;">
+            <canvas id="dynLineChart"></canvas>
+        </div>
+    </div>
+
+    <div style="width: 100%; background: #fff; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: var(--sh1);">
+        <h4 style="margin-top:0; font-weight:600; color:#e11d48; font-size:15px; margin-bottom:16px;"><i class="fas fa-exclamation-triangle text-danger mr-2"></i>Выявленные критические пробелы в знаниях (Рейтинг < 60%)</h4>
+
+        {% if problematic_tests %}
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 14px;">
+                <thead>
+                    <tr style="border-bottom: 2px solid #e2e8f0; color: #475569; background: #f8fafc;">
+                        <th style="padding: 12px;">Студент</th>
+                        <th style="padding: 12px;">Проблемный тест</th>
+                        <th style="padding: 12px;">Результат (%)</th>
+                        <th style="padding: 12px;">Набранные баллы</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in problematic_tests %}
+                    <tr style="border-bottom: 1px solid #f1f5f9; color: #0f172a;">
+                        <td style="padding: 12px; font-weight: 600;">{{ p.student }}</td>
+                        <td style="padding: 12px; color: #475569;">{{ p.test_title }}</td>
+                        <td style="padding: 12px;"><span style="background: #fff1f2; color: #e11d48; padding: 4px 10px; border-radius: 20px; font-weight: 700; font-family: monospace;">{{ p.score_pct }}%</span></td>
+                        <td style="padding: 12px; font-family: monospace;">{{ p.earned }} из {{ p.total }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div style="text-align: center; padding: 30px; color: #94a3b8;">
+            <i class="fas fa-check-circle fa-2x" style="color: #10B981; margin-bottom: 10px; display: block;"></i>
+            Критических зон уязвимости не обнаружено. Все студенты преодолели пороговый уровень успешности.
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const groupStudentsMap = JSON.parse('{{ group_students_map_json|safe|escapejs }}' || '{}');
+    const subjectSelect = document.getElementById('subjectSelect');
+    const groupSelect = document.getElementById('groupSelect');
+    const studentSelect = document.getElementById('studentSelect');
+    const selectedStudent = '{{ selected_student }}';
+
+    function updateStudentDropdown() {
+        const groupId = groupSelect.value;
+        studentSelect.innerHTML = '<option value="">Все студенты выбранной группы</option>';
+        if (groupId && groupStudentsMap[groupId]) {
+            groupStudentsMap[groupId].forEach(st => {
+                const opt = document.createElement('option');
+                opt.value = st.id;
+                opt.textContent = st.name;
+                if (st.id === selectedStudent) opt.selected = true;
+                studentSelect.appendChild(opt);
+            });
+        }
+    }
+
+    subjectSelect.addEventListener('change', function() {
+        groupSelect.value = "";
+        studentSelect.innerHTML = '<option value="">Все студенты</option>';
+    });
+
+    groupSelect.addEventListener('change', updateStudentDropdown);
+    updateStudentDropdown();
+
+    try {
+        const irtLabels = JSON.parse('{{ irt_labels|safe|escapejs }}');
+        const irtData = JSON.parse('{{ irt_data|safe|escapejs }}');
+        const ratingLabels = JSON.parse('{{ rating_labels|safe|escapejs }}');
+        const ratingData = JSON.parse('{{ rating_data|safe|escapejs }}');
+        const dynLabels = JSON.parse('{{ dyn_labels|safe|escapejs }}');
+        const dynData = JSON.parse('{{ dyn_data|safe|escapejs }}');
+
+        if (irtLabels.length > 0) {
+            new Chart(document.getElementById('irtBarChart').getContext('2d'), {
+                type: 'bar',
+                data: { labels: irtLabels, datasets: [{ data: irtData.map(Number), backgroundColor: '#2563EB', borderRadius: 4 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            });
+        }
+
+        if (ratingLabels.length > 0) {
+            new Chart(document.getElementById('ratingBarChart').getContext('2d'), {
+                type: 'bar',
+                data: { labels: ratingLabels, datasets: [{ data: ratingData.map(Number), backgroundColor: '#10B981', borderRadius: 4 }] },
+                options: {
+                    responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+        }
+
+        if (dynLabels.length > 0) {
+            new Chart(document.getElementById('dynLineChart').getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: dynLabels,
+                    datasets: [{
+                        data: dynData.map(Number), borderColor: '#06B6D4', backgroundColor: 'rgba(6, 182, 212, 0.04)',
+                        fill: true, tension: 0.25, borderWidth: 3, pointRadius: 4, pointBackgroundColor: '#06B6D4'
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+        }
+    } catch(e) { console.error("Ошибка инициализации графиков СППР:", e); }
+});
+</script>
+{% endblock %}

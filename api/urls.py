@@ -95,6 +95,9 @@ urlpatterns = [
     path("ml/personalized-recommendations/<uuid:user_id>/", views.ml_personalized_recommendations, name='ml-personalized-recommendations'),
     path("ml/learning-path/<uuid:user_id>/", views.build_learning_path, name='ml-learning-path'),
 
+    # Публичная аналитика математического аппарата системы
+    path('public-analytics/', views.public_sppr_analytics_view, name='public-sppr-analytics'),
+
     #constructor
     path('create-test-ajax/', views.create_test_ajax, name='create_test_ajax'),
     #admin panel (web)

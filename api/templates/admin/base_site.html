@@ -117,7 +117,7 @@ document.addEventListener("DOMContentLoaded", function() {
             <li class="nav-item"><a href="{% url 'admin:index' %}" class="nav-link" style="color: #2563eb; font-weight: 600;"><i class="fas fa-rocket"></i> Дашборд</a></li>
             <li class="nav-item"><a href="{% url 'admin:api_subject_changelist' %}" class="nav-link"><i class="fas fa-book"></i> Предметы</a></li>
             <li class="nav-item"><a href="{% url 'admin:api_group_changelist' %}" class="nav-link"><i class="fas fa-users"></i> Мои группы</a></li>
-            <li class="nav-item"><a href="{% url 'admin:api_testresult_changelist' %}" class="nav-link"><i class="fas fa-chart-pie"></i> Результаты</a></li>
+            <li class="nav-item"><a href="/api/public-analytics/" class="nav-link" style="color: #10B981; font-weight: 600;"><i class="fas fa-calculator"></i> Аналитика СППР</a></li>
         `;
     }
     const rightNav = document.querySelector('.main-header .navbar-nav.ml-auto');

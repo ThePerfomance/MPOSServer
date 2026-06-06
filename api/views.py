@@ -1,5 +1,5 @@
 from django.contrib.auth.hashers import check_password
-from django.db.models import Avg, Count
+from django.db.models import Avg, Count, F, Q
 from django.shortcuts import get_object_or_404, render, redirect
 from django.urls import reverse
 from rest_framework import status
@@ -10,6 +10,7 @@ from rest_framework.authentication import SessionAuthentication
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from django.utils import timezone
+from django.utils.timezone import localtime
 from collections import defaultdict
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
@@ -21,7 +22,7 @@ from .models import (
     User, Group, GroupMember, Subject, Block, Lesson, Test, Question, Answer, TestResult,
     StudentCluster, TestDifficulty, ScorePrediction, Recommendation, VideoType, Video, UserAnswer, TrainingSession,
     TrainingQuestion,
-    TeacherGroup, GroupSubject
+    TeacherGroup, GroupSubject, QuestionDifficulty
 )
 from .serializers import (
     UserSerializer, UserRegistrationSerializer, GroupSerializer, GroupMemberSerializer, SubjectSerializer,
@@ -1828,4 +1829,122 @@ def user_change_password(request):
         {"status": "success", "message": "Пароль успешно изменен."},
         status=status.HTTP_200_OK
     )
+
+def public_sppr_analytics_view(request):
+    """
+    Публичный аналитический дашборд СППР.
+    Вычисляет динамический IRT-рейтинг студентов и локализует проблемные зоны обучения.
+    """
+    subject_id = request.GET.get('subject_id', '')
+    group_id = request.GET.get('group_id', '')
+    student_id = request.GET.get('student_id', '')
+
+    try:
+        # Каскадная фильтрация селекторов
+        subjects = Subject.objects.all().order_by('name')
+        groups = Group.objects.filter(group_subjects__subject_id=subject_id).order_by(
+            'name') if subject_id else Group.objects.all().order_by('name')
+
+        group_students_map = {}
+        for g in groups:
+            members = GroupMember.objects.filter(group=g).select_related('user')
+            group_students_map[str(g.id)] = [
+                {'id': str(m.user.id), 'name': f"{m.user.firstname} {m.user.lastname}".strip() or m.user.email}
+                for m in members
+            ]
+
+        # Базовая фильтрация результатов тестирования
+        results_qs = TestResult.objects.filter(total_points__gt=0).select_related('test', 'user')
+        irt_qs = QuestionDifficulty.objects.all()
+
+        if subject_id:
+            subject_filter = Q(test__lesson_for__block__subject_id=subject_id) | Q(
+                test__final_block_of__subject_id=subject_id)
+            results_qs = results_qs.filter(subject_filter)
+            irt_qs = irt_qs.filter(Q(question__test__lesson_for__block__subject_id=subject_id) | Q(
+                question__test__final_block_of__subject_id=subject_id))
+
+        if student_id:
+            results_qs = results_qs.filter(user_id=student_id)
+        elif group_id:
+            results_qs = results_qs.filter(user__memberships__group_id=group_id)
+
+        # 1. ГРАФИК 1: Распределение сложности вопросов (IRT пул)
+        diff_query = irt_qs.values('difficulty').annotate(count=Count('id')).order_by('difficulty')
+        irt_labels = [f"Уровень {item['difficulty']}" for item in diff_query]
+        irt_data = [int(item['count']) for item in diff_query]
+
+        # 2. ГРАФИК 2: Средний рейтинг по тестам
+        test_ratings = results_qs.values('test__title') \
+            .annotate(avg_rating=Avg(F('earned_points') * 100.0 / F('total_points'))) \
+            .order_by('-avg_rating')[:15]
+        rating_labels = [item['test__title'][:15] + "..." if len(item['test__title']) > 18 else item['test__title'] for
+                         item in test_ratings]
+        rating_data = [round(float(item['avg_rating']), 2) for item in test_ratings]
+
+        # 3. ГРАФИК 3: Динамика изменения латентного IRT-рейтинга успеваемости
+        # Извлекаем попытки в хронологическом порядке для отслеживания вектора способностей
+        dynamics_list = list(results_qs.order_by('-completed_at')[:30])
+        dynamics_list.reverse()
+
+        dyn_labels = []
+        dyn_data = []
+        current_irt_rating = 50.0  # Базовая точка инициализации способностей (нейтральный уровень)
+
+        # Веса сложности тестов для масштабирования IRT
+        difficulty_weights = {'easy': 0.8, 'medium': 1.0, 'hard': 1.3}
+
+        for i, res in enumerate(dynamics_list, 1):
+            time_str = localtime(res.completed_at).strftime('%d.%m %H:%M') if res.completed_at else f"№{i}"
+            dyn_labels.append(f"Поп. {i} ({time_str})")
+
+            # Базовый процент выполнения текущего теста
+            base_perf = (res.earned_points * 100.0) / res.total_points
+
+            # Извлекаем калиброванную сложность теста из TestDifficulty
+            diff_obj = TestDifficulty.objects.filter(test=res.test).first()
+            weight = difficulty_weights.get(diff_obj.difficulty, 1.0) if diff_obj else 1.0
+
+            # Итерационный пересчет латентного параметра (прокси-алгоритм адаптивного шага IRT)
+            # Успешный ответ на сложный тест толкает рейтинг вверх сильнее
+            target_rating = base_perf * weight
+            if target_rating > 100.0: target_rating = 100.0
+
+            # Экспоненциальное сглаживание траектории (альфа = 0.3)
+            current_irt_rating = (current_irt_rating * 0.7) + (target_rating * 0.3)
+            dyn_data.append(round(current_irt_rating, 2))
+
+        # 4. ВЫЯВЛЕНИЕ ПРОБЛЕМНЫХ ТЕСТОВ (Успеваемость < 60%)
+        problematic_tests = []
+        # Фильтруем худшие результаты для локализации пробелов в знаниях
+        bad_results = results_qs.filter(earned_points__lt=F('total_points') * 0.6).order_by('completed_at')[:10]
+        for r in bad_results:
+            pct = (r.earned_points * 100.0) / r.total_points
+            problematic_tests.append({
+                'student': f"{r.user.firstname} {r.user.lastname}",
+                'test_title': r.test.title,
+                'score_pct': round(pct, 1),
+                'earned': r.earned_points,
+                'total': r.total_points
+            })
+
+        # Демо-данные для холодного старта
+        if not irt_labels: irt_labels, irt_data = ["Уровень easy", "Уровень medium", "Уровень hard"], [15, 30, 10]
+        if not rating_labels: rating_labels, rating_data = ["Тест HTML", "Тест CSS"], [85.0, 42.5]
+        if not dyn_labels: dyn_labels, dyn_data = ["Поп. 1", "Поп. 2", "Поп. 3"], [50.0, 58.5, 72.4]
+
+    except Exception as e:
+        print(f"Критическая ошибка модуля аналитики: {e}")
+        subjects, groups, group_students_map, problematic_tests = [], [], {}, []
+        irt_labels, irt_data, rating_labels, rating_data, dyn_labels, dyn_data = [], [], [], [], [], []
+
+    context = {
+        'subjects': subjects, 'groups': groups, 'problematic_tests': problematic_tests,
+        'selected_subject': subject_id, 'selected_group': group_id, 'selected_student': student_id,
+        'group_students_map_json': json.dumps(group_students_map),
+        'irt_labels': json.dumps(irt_labels), 'irt_data': json.dumps(irt_data),
+        'rating_labels': json.dumps(rating_labels), 'rating_data': json.dumps(rating_data),
+        'dyn_labels': json.dumps(dyn_labels), 'dyn_data': json.dumps(dyn_data),
+    }
+    return render(request, 'admin/sppr_analytics.html', context)
 
