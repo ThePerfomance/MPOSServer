@@ -43,24 +43,31 @@ def create_test_result(user, test_obj, correct_answers_count, start_time):
     for q in questions[:correct_answers_count]:
         correct_answer = q.answers.filter(is_correct=True).first()
         if correct_answer:
-            UserAnswer.objects.create(
+            # 1. Сначала создаем объект без поля ManyToMany
+            user_answer = UserAnswer.objects.create(
                 test_result=test_result,
                 question=q,
-                chosen_answer=correct_answer,
-                points_earned=q.points
+                points_earned=q.points,
+                is_correct=True  # Явно указываем правильность
             )
+            # 2. Добавляем ответ через метод .add()
+            user_answer.chosen_answers.add(correct_answer)
+
             earned_points += q.points
 
     # Process incorrect answers
     for q in questions[correct_answers_count:]:
         incorrect_answer = q.answers.filter(is_correct=False).first()
         if incorrect_answer:
-            UserAnswer.objects.create(
+            # 1. Сначала создаем объект без поля ManyToMany
+            user_answer = UserAnswer.objects.create(
                 test_result=test_result,
                 question=q,
-                chosen_answer=incorrect_answer,
-                points_earned=0
+                points_earned=0,
+                is_correct=False
             )
+            # 2. Добавляем ответ через метод .add()
+            user_answer.chosen_answers.add(incorrect_answer)
 
     # Finalize the result with calculated points
     test_result.earned_points = earned_points
