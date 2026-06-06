@@ -1,49 +1,42 @@
 # api/context_processors.py
 import json
-from django.db.models import Count, Avg, F
-from django.utils.timezone import localtime
-from api.models import TestResult, StudentCluster
-
+from django.db.models import Avg, F
+from django.db.models.functions import TruncDate
+from api.models import TestResult, GroupMember
 
 def sppr_dashboard_data(request):
     if not request.path.startswith('/admin'):
         return {}
 
     try:
-        # Хронологическая выборка последних 30 попыток (без схлопывания по дням)
-        progress = TestResult.objects.all().order_by('completed_at')[:30]
+        user = request.user
+        # Фильтр: берем только тех студентов, которые состоят в группах этого преподавателя
+        # Если юзер - админ, берем всех
+        if getattr(user, 'role', '') == 'admin':
+            queryset = TestResult.objects.filter(completed_at__isnull=False, total_points__gt=0)
+        else:
+            student_ids = GroupMember.objects.filter(
+                group__group_teachers__teacher=user
+            ).values_list('user_id', flat=True)
+            queryset = TestResult.objects.filter(
+                user_id__in=student_ids,
+                completed_at__isnull=False,
+                total_points__gt=0
+            )
 
-        sppr_labels = []
-        sppr_data = []
+        # Агрегируем по дням
+        daily_progress = queryset.annotate(date=TruncDate('completed_at')) \
+            .values('date') \
+            .annotate(avg_perf=Avg(F('earned_points') * 100.0 / F('total_points'))) \
+            .order_by('date')
 
-        for i, item in enumerate(progress, 1):
-            if item.completed_at:
-                local_time = localtime(item.completed_at)
-                time_str = local_time.strftime('%d.%m %H:%M')
-                sppr_labels.append(f"Поп. {i} ({time_str})")
-            else:
-                sppr_labels.append(f"Поп. {i}")
+        sppr_labels = [str(item['date']) for item in daily_progress]
+        sppr_data = [round(item['avg_perf'], 2) for item in daily_progress]
 
-            earned = item.earned_points or 0
-            total = item.total_points or 0
-            perf = (earned * 100.0) / total if total > 0 else 0.0
-            sppr_data.append(round(float(perf), 2))
-
-        # Агрегация данных из таблицы кластеризации K-Means
-        cluster_stats = StudentCluster.objects.values('cluster_label') \
-            .annotate(student_count=Count('id')) \
-            .order_by('cluster_label')
-
-        cluster_labels = [str(item['cluster_label']) for item in cluster_stats]
-        cluster_counts = [int(item['student_count']) for item in cluster_stats]
-
-    except Exception as e:
+    except Exception:
         sppr_labels, sppr_data = [], []
-        cluster_labels, cluster_counts = [], []
 
     return {
         'sppr_labels': json.dumps(sppr_labels),
         'sppr_data': json.dumps(sppr_data),
-        'cluster_labels': json.dumps(cluster_labels),
-        'cluster_counts': json.dumps(cluster_counts),
     }
